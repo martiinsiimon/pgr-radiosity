@@ -1,0 +1,20 @@
+PGR-radiosity
+=============
+Computer graphics - Radiosity with OpenCL
+
+Who are authors?
+----------------
+ * Martin Simon <xsimon14@stud.fit.vutbr.cz>
+ * Lukas Brzobohaty <xbrzob06
+
+What the project license?
+-------------------------
+See file LICENSE. If any part is taken from other source, it's mentined in file header
+
+How to build/run?
+-----------------
+See file INSTALL
+
+Is this project documented? Where?
+----------------------------------
+Take a look into `doc` directory

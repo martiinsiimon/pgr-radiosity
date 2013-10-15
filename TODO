@@ -1,0 +1,22 @@
+TODO list
+=========
+Note: Choose whatever you want and write a name next to it. The documentation should be team work, so after any implementing something important (like radiosity) write it down to the documentation
+ * model improvements
+   * add lights
+   * add colors
+   * add more object
+ * default renderer
+   * implement at least lambert lighting model
+ * radiosity renderer
+   * radiosity renderer in general
+   * refactoring radiosity to implement via OpenCL (design)
+   * radiosity computed via OpenCL (implementation)
+   * do some experiments to reach up the best paralelism/performance
+ * documentation
+ * testing
+   * build && run - linux
+   * build && run - windows
+ * gui
+   * allow to turn light on/off independently
+
+

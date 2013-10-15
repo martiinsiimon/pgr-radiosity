@@ -1,0 +1,17 @@
+Short installation manual
+=========================
+
+Dependecies
+-----------
+ * make
+ * g++
+ * freeglut-devel
+ * libXmu-devel
+
+How to build?
+-------------
+ $ make
+
+How to run?
+-----------
+ $ make run
