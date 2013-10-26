@@ -3,7 +3,7 @@
  * Author: Martin Simon      <xsimon14@stud.fit.vutbr.cz>
  *         Lukas Brzobohaty  <xbrzob06@stud.fit.vutbr.cz>
  *
- * Created on 2013-10-13, 21:30
+ * Created on 2013-10-13, 21:30 - changed
  *
  *  * License note: This OBJ file loader is designed by tutorial at
  * http://www.tutorialized.com/tutorial/Write-a-WaveFront-OpenGL-3D-object-loader-in-C++/59679
