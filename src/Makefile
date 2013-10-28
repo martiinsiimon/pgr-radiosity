@@ -1,6 +1,6 @@
-FILES=main.cpp PGR_renderer.cpp PGR_model.cpp
+FILES=main.cpp PGR_renderer.cpp
 OBJ=${FILES:.cpp=.o}
-FLAGS=-Wall -pedantic -g
+FLAGS=-Wall -pedantic -g -IGL -DGL_GLEXT_PROTOTYPES -pipe -ggdb
 
 EXE=radiosity
 
@@ -10,7 +10,7 @@ RM=rm -rf
 ifeq ($(OS), Windows_NT)
         LIBS=-lopengl32 -lglu32 -lglut32
 else
-        LIBS=-lGL -lGLU -lglut -lXmu -lX11 -lXi -L/usr/X11R6/lib
+        LIBS=-lGL -lGLU -lglut -lXmu -lX11 -lXi -L/usr/lib -lGLEW
 endif
 
 

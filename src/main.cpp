@@ -6,38 +6,63 @@
  * Created on 2013-10-11, 11:34
  */
 
+#include <GL/glew.h>
 #include <iostream>
 #include <GL/glut.h>
 #include "PGR_renderer.h"
+
+#include <glm/gtc/matrix_transform.hpp>
 
 using namespace std;
 
 /* Program constants - mostly default values */
 #define PGR_WINDOW_WIDTH 1024 // Window width
 #define PGR_WINDOW_HEIGHT 768 // Window height
-#define PGR_CAMERA_Z 3500.0f // Translation of camera in z-axis direction
-#define PGR_CAMERA_Y 2000.0f // Translation of camera in y-axis direction
+#define PGR_CAMERA_Z 5.0f // Translation of camera in z-axis direction
+#define PGR_CAMERA_Y 0.75f // Translation of camera in y-axis direction
 #define PGR_CAMERA_X 0.0f // Translation of camera in x-axis direction
-#define PGR_ROTATE_X 10 // Rotation about x-axis
-#define PGR_ROTATE_Y 5 // Rotation about y-axis
-#define PGR_MODEL "model.obj" // Model in WaweFront (*.obj) format with triangles
+#define PGR_ROTATE_X 0.0f // Rotation about x-axis
+#define PGR_ROTATE_Y 2 // Rotation about y-axis
 
 /* Program global variables - initialized to default values*/
 GLuint width = PGR_WINDOW_WIDTH;
 GLuint height = PGR_WINDOW_HEIGHT;
-GLint camera_rot_y = PGR_ROTATE_Y; // Rotation about y-axis
+GLfloat camera_rot_y = PGR_ROTATE_Y; // Rotation about y-axis
+GLfloat camera_rot_x = PGR_ROTATE_X;
 bool renderRadiosity = false;
 
 /* Mouse handeling variables */
 int old_mouse_x = 0;
+int old_mouse_y = 0;
 int mouse_state = 0;
+
+/* Model geometry */
+GLuint roomVBO, roomEBO;
+GLuint winBackVBO, winBackEBO;
+GLuint winRightVBO, winRightEBO;
+GLuint topLightVBO, topLightEBO;
+GLuint SphereVBO, SphereEBO;
+
+
+/* Shaders */
+GLuint iVS, iFS, iProg;
+GLuint positionAttrib, colorAttrib, mvpUniform;
+
+const char * vertexShaderRoom
+    = "#version 130\n in vec3 position; in vec4 color; uniform mat4 mvp; out vec4 c; void main() { gl_Position = mvp*vec4(position,1); c = color;}";
+const char * fragmentShaderRoom
+    = "#version 130\n in vec4 c; out vec4 fragColor; void main() { fragColor = c; }";
+
+
+GLuint winBackVS, winBackFS, winBackProg;
+GLuint SpositionAttrib, SnormalAttrib, ScolorAttrib, SmvpUniform, SlightvecUniform;
+const char * vertexShaderWinBack
+    = "#version 130\n in vec3 position; in vec3 normal; in vec3 color; uniform mat4 mvp; uniform vec3 lightvec; out float intensity; out vec4 c; void main() { gl_Position = mvp*vec4(position,1); intensity = 0.3 + 0.7*max(0, dot(normal, lightvec)); c = vec4(color, 1); }";
+const char * fragmentShaderWinBack
+    = "#version 130\n in float intensity; in vec4 c; out vec4 fragColor; void main() { fragColor = vec4(intensity) * c; }";
 
 /* Renderer */
 PGR_renderer renderer;
-
-
-/* Function declarations */
-void initialize();
 
 /**
  * Callback for rendering display. Default rotation and translation is done and
@@ -45,24 +70,45 @@ void initialize();
  */
 void onDisplay()
 {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glLoadIdentity();
+    glm::mat4 projection;
 
-    /* Translate scene */
-    glTranslatef(-PGR_CAMERA_X, -PGR_CAMERA_Y, -PGR_CAMERA_Z);
+    projection = glm::perspective(75.0f, (float) width / (float) height, 0.1f, 200.0f);
 
-    /* Rotate scene */
-    glRotated(PGR_ROTATE_X, 1.0, 0.0, 0.0);
-    glRotated(camera_rot_y, 0.0, 1.0, 0.0);
+    glm::mat4 mvp = glm::rotate(
+                                glm::rotate(
+                                            glm::translate(
+                                                           projection,
+                                                           glm::vec3(PGR_CAMERA_X, -PGR_CAMERA_Y, -PGR_CAMERA_Z)
+                                                           ),
+                                            camera_rot_x, glm::vec3(1, 0, 0)
+                                            ),
+                                camera_rot_y, glm::vec3(0, 1, 0)
+                                );
+
 
     /* Choose renderer */
-    if (renderRadiosity)
+    if (!renderRadiosity)
     {
-        renderer.drawSceneRadiosity();
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LESS);
+
+        renderer.drawSceneDefault(mvp);
+
+        glutSwapBuffers();
     }
     else
     {
-        renderer.drawSceneDefault();
+        //TODO here should be radiosity rendering
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LESS);
+
+        renderer.drawSceneRadiosity(mvp);
+
+        glutSwapBuffers();
     }
 }
 
@@ -79,14 +125,10 @@ void onReshape(int w, int h)
         /* Set new window size */
         width = w;
         height = h;
-
-        /* Re-compute projection matrix */
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-        glViewport(0, 0, width, height);
-        gluPerspective(100, (GLfloat) width / (GLfloat) height, 1.0, 100000.0);
-        glMatrixMode(GL_MODELVIEW);
     }
+
+    /* Re-compute projection matrix */
+    glViewport(0, 0, width, height);
 }
 
 /**
@@ -102,7 +144,6 @@ void onKeyboard(unsigned char key, int x, int y)
     case 't':
         /* Change rendering core */
         renderRadiosity = !renderRadiosity;
-        initialize();
         break;
 
     case 27:
@@ -120,30 +161,6 @@ void onKeyboard(unsigned char key, int x, int y)
     glutPostRedisplay();
 }
 
-/**
- * Initialization of scene
- */
-void initialize()
-{
-    glEnable(GL_DEPTH_TEST); // enable depth testing
-    glClearColor(1.0, 1.0, 1.0, 1.0); //set background color
-
-    /* Initialization depends on chosen renderer */
-    if (renderRadiosity)
-    {
-        // ### DBG ###
-        glShadeModel(GL_SMOOTH);
-        glEnable(GL_LIGHTING);
-        glEnable(GL_LIGHT0);
-        // ### DBG ###
-    }
-    else
-    {
-        glShadeModel(GL_FLAT);
-        glEnable(GL_LIGHTING);
-        glEnable(GL_LIGHT0);
-    }
-}
 
 /**
  * Callback registering mouse click events. We need to register which button
@@ -158,6 +175,7 @@ void onMouseClick(int button, int _state, int x, int y)
 {
     /* Remember position */
     old_mouse_x = x;
+    old_mouse_y = y;
 
     /* Do not permit scene rotation when radiosity rendering */
     if (renderRadiosity)
@@ -172,9 +190,6 @@ void onMouseClick(int button, int _state, int x, int y)
     {
         mouse_state = 0;
     }
-
-    /* Force re-rendering */
-    glutPostRedisplay();
 }
 
 /**
@@ -193,11 +208,16 @@ void onMouseMotion(int x, int y)
     if (mouse_state == 1)
     {
         camera_rot_y += x - old_mouse_x; // compute new rotation
+        camera_rot_x += y - old_mouse_y;
         glutPostRedisplay(); // force re-rendering
     }
+    else
+    {
 
+    }
     /* Remember position */
     old_mouse_x = x;
+    old_mouse_y = y;
 }
 
 /**
@@ -210,17 +230,26 @@ int main(int argc, char** argv)
 
     glutInitWindowSize(width, height);
     glutInitDisplayMode(GLUT_RGB | GLUT_DEPTH | GLUT_DOUBLE);
-
     glutCreateWindow("gi04 - Radiosita na OpenCL");
+
+    // GL init
+    glewInit();
+    if (!glewIsSupported("GL_VERSION_2_0 " "GL_ARB_pixel_buffer_object"))
+    {
+        std::cerr << "Support for necessary OpenGL extensions missing."
+            << std::endl;
+        return EXIT_FAILURE;
+    }
+
     glutDisplayFunc(onDisplay);
     glutReshapeFunc(onReshape);
     glutKeyboardFunc(onKeyboard);
     glutMouseFunc(onMouseClick);
     glutMotionFunc(onMouseMotion);
 
-    renderer = PGR_renderer(PGR_MODEL);
+    renderer = PGR_renderer();
 
-    initialize();
+    renderer.initialize();
     glutMainLoop();
     return 0;
 }

@@ -9,9 +9,9 @@
 #ifndef PGR_RENDERER_H
 #define	PGR_RENDERER_H
 
-#include <GL/glut.h>
 #include <iostream>
-#include "PGR_model.h"
+
+#include <glm/gtc/type_ptr.hpp>
 
 using namespace std;
 
@@ -21,11 +21,9 @@ public:
     PGR_renderer(const PGR_renderer& orig);
     PGR_renderer(string);
     virtual ~PGR_renderer();
-    void drawSceneDefault();
-    void drawSceneRadiosity();
-private:
-    string _modelFile;
-    PGR_model model;
+    void initialize();
+    void drawSceneDefault(glm::mat4);
+    void drawSceneRadiosity(glm::mat4);
 };
 
 #endif	/* PGR_RENDERER_H */
