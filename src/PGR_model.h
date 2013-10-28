@@ -11,12 +11,6 @@
 #ifndef PGR_MODEL_H
 #define	PGR_MODEL_H
 
-//#include <vector>
-//#include <GL/gl.h>
-//#include <iostream>
-//#include <fstream>
-//#include <string.h>
-
 using namespace std;
 
 struct Point {
