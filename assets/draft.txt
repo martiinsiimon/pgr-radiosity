@@ -1,0 +1,26 @@
+Radiosta:
+---------
+
+ * PGR_Model.h
+   * Udrzuje cely model sceny - predelat do ctyruhelniku (jednoduche, jen indicie) + zjednodusit scenu na jedno svetlo a cca 2-3 objekty
+   * Hlavickovy soubor tridy PGR_Model
+ * PGR_Model.cpp
+   * Trid PGR_Model, ktera obaluje a drzi cely model sceny
+   * Umoznuje z hlavickoveho souboru nacist a pridavat (addObject) objekty do sceny, kde konkatenuje vrcholy a posunuje indicie
+   * Udrzuje pole vrcholu (struktura Point)
+   * Udrzuje pole inidicii (jednotlive body, ze kterych se seskladava ctyruhelnik sceny)
+   * Udrzuje pole plosek (objekt Patch) - synchronizovano s polem vrcholu a inidicii
+   * Umoznuje delit plosky dle zadane maximalni plochy plosky (pro radiositu)
+   * metody getVertices a getIndices vrati pole vrcholu a indicii pro vykresleni
+ * PGR_Patch.cpp
+   * Trida reprezentujici plosku
+   * Udrzuje informace o vrcholech, barve, prijate energii, vyzarene energii
+ * PGR_Renderer.cpp
+   * Renderer vykrelslujici vsechno
+   * Inicializuje model, vola radiositu, vola OpenCL
+   * Vysledek osvetleni radiosity je kreslen do textury
+     * Je vytvorena textura konfiguracnich faktoru (pohled do polokrychle ze svetelneho zdroje (svetlo je intenzivnejsi tam, kde dopada primo - tyto "intenzity zavisle na uhlu" jsou do teto textury predpocitany))
+     * Je vytvorena textura sceny (pro kazdy objekt?)
+   * OpenCL pocita pro kazdou plosku a predava si energie s dalsimi ploskami
+   * Po vysledku vypoctu radiosity (zmeny jsou jiz minimalni) je vysledek hodnot plosek promitnut zpet do textury a vynasoben s maskou konfiguracnich faktoru
+   * Tento vysledek je pak zobrazen
