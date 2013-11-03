@@ -6,6 +6,8 @@
  * Created on 2013-10-11, 11:34
  */
 
+#define GLEW_MX
+
 #include <GL/glew.h>
 #include <iostream>
 #include <GL/glut.h>
@@ -23,6 +25,7 @@ using namespace std;
 #define PGR_CAMERA_X 0.0f // Translation of camera in x-axis direction
 #define PGR_ROTATE_X 0.0f // Rotation about x-axis
 #define PGR_ROTATE_Y 2 // Rotation about y-axis
+#define PGR_CORE cpu //Radiosity computing unit {cpu,gpu}
 
 /* Program global variables - initialized to default values*/
 GLuint width = PGR_WINDOW_WIDTH;
@@ -42,14 +45,14 @@ GLuint winBackVBO, winBackEBO;
 GLuint winRightVBO, winRightEBO;
 GLuint topLightVBO, topLightEBO;
 GLuint SphereVBO, SphereEBO;
-
+GLuint tableVBO, tableEBO;
 
 /* Shaders */
 GLuint iVS, iFS, iProg;
 GLuint positionAttrib, colorAttrib, mvpUniform;
 
 const char * vertexShaderRoom
-    = "#version 130\n in vec3 position; in vec4 color; uniform mat4 mvp; out vec4 c; void main() { gl_Position = mvp*vec4(position,1); c = color;}";
+    = "#version 130\n in vec3 position; in vec3 color; uniform mat4 mvp; out vec4 c; void main() { gl_Position = mvp*vec4(position,1); c = vec4(color,1);}";
 const char * fragmentShaderRoom
     = "#version 130\n in vec4 c; out vec4 fragColor; void main() { fragColor = c; }";
 

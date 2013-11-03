@@ -23,6 +23,7 @@ extern GLuint winBackVBO, winBackEBO;
 extern GLuint winRightVBO, winRightEBO;
 extern GLuint topLightVBO, topLightEBO;
 extern GLuint SphereVBO, SphereEBO;
+extern GLuint tableVBO, tableEBO;
 
 /* Shaders */
 extern GLuint iVS, iFS, iProg;
@@ -85,6 +86,7 @@ void PGR_renderer::initialize()
     colorAttrib = glGetAttribLocation(iProg, "color");
     mvpUniform = glGetUniformLocation(iProg, "mvp");
 
+
     SpositionAttrib = glGetAttribLocation(winBackProg, "position");
     SnormalAttrib = glGetAttribLocation(winBackProg, "normal");
     ScolorAttrib = glGetAttribLocation(winBackProg, "color");
@@ -136,7 +138,16 @@ void PGR_renderer::initialize()
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, SphereEBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof (sphere), sphere, GL_STATIC_DRAW);
 
-    glClearColor(1.0, 1.0, 1.0, 1.0);
+    /* Create buffers for table */
+    glGenBuffers(1, &tableVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, tableVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof (tableVertices), tableVertices, GL_STATIC_DRAW);
+
+    glGenBuffers(1, &tableEBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, tableEBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof (table), table, GL_STATIC_DRAW);
+
+    //glClearColor(1.0, 1.0, 1.0, 1.0);
 }
 
 /**
@@ -194,6 +205,14 @@ void PGR_renderer::drawSceneDefault(glm::mat4 mvp)
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, roomEBO);
     glDrawElements(GL_TRIANGLES, sizeof (room) / sizeof (*room), GL_UNSIGNED_BYTE, NULL);
+
+    /* Draw table */
+    glBindBuffer(GL_ARRAY_BUFFER, tableVBO);
+    glVertexAttribPointer(positionAttrib, 3, GL_FLOAT, GL_FALSE, sizeof (Point), (void*) offsetof(Point, position));
+    glVertexAttribPointer(colorAttrib, 3, GL_FLOAT, GL_FALSE, sizeof (Point), (void*) offsetof(Point, color));
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, tableEBO);
+    glDrawElements(GL_TRIANGLES, sizeof (table) / sizeof (*table), GL_UNSIGNED_BYTE, NULL);
 
 
     /* Draw spheres */
@@ -268,6 +287,13 @@ void PGR_renderer::drawSceneRadiosity(glm::mat4 mvp)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, roomEBO);
     glDrawElements(GL_TRIANGLES, sizeof (room) / sizeof (*room), GL_UNSIGNED_BYTE, NULL);
 
+    /* Draw table */
+    glBindBuffer(GL_ARRAY_BUFFER, tableVBO);
+    glVertexAttribPointer(positionAttrib, 3, GL_FLOAT, GL_FALSE, sizeof (Point), (void*) offsetof(Point, position));
+    glVertexAttribPointer(colorAttrib, 3, GL_FLOAT, GL_FALSE, sizeof (Point), (void*) offsetof(Point, color));
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, tableEBO);
+    glDrawElements(GL_TRIANGLES, sizeof (table) / sizeof (*table), GL_UNSIGNED_BYTE, NULL);
 
     /* Draw spheres */
     glBindBuffer(GL_ARRAY_BUFFER, SphereVBO);
