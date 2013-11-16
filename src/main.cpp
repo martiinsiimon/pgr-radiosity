@@ -6,8 +6,6 @@
  * Created on 2013-10-11, 11:34
  */
 
-#define GLEW_MX
-
 #include <GL/glew.h>
 #include <iostream>
 #include <GL/glut.h>
