@@ -6,11 +6,11 @@
  * Created on 2013-10-11, 11:34
  */
 
-#include <GL/glew.h>
+#include "pgr.h"
 #include <iostream>
-#include <GL/glut.h>
 #include "PGR_renderer.h"
-
+//#include "model.h"
+#include "PGR_model.h"
 #include <glm/gtc/matrix_transform.hpp>
 
 using namespace std;
@@ -18,11 +18,11 @@ using namespace std;
 /* Program constants - mostly default values */
 #define PGR_WINDOW_WIDTH 1024 // Window width
 #define PGR_WINDOW_HEIGHT 768 // Window height
-#define PGR_CAMERA_Z 5.0f // Translation of camera in z-axis direction
+#define PGR_CAMERA_Z 3.9f // Translation of camera in z-axis direction
 #define PGR_CAMERA_Y 0.75f // Translation of camera in y-axis direction
 #define PGR_CAMERA_X 0.0f // Translation of camera in x-axis direction
 #define PGR_ROTATE_X 0.0f // Rotation about x-axis
-#define PGR_ROTATE_Y 2 // Rotation about y-axis
+#define PGR_ROTATE_Y 0.0f // Rotation about y-axis
 #define PGR_CORE cpu //Radiosity computing unit {cpu,gpu}
 
 /* Program global variables - initialized to default values*/
@@ -32,44 +32,61 @@ GLfloat camera_rot_y = PGR_ROTATE_Y; // Rotation about y-axis
 GLfloat camera_rot_x = PGR_ROTATE_X;
 bool renderRadiosity = false;
 
-/* Mouse handeling variables */
-int old_mouse_x = 0;
-int old_mouse_y = 0;
-int mouse_state = 0;
 
 /* Model geometry */
 GLuint roomVBO, roomEBO;
-GLuint winBackVBO, winBackEBO;
-GLuint winRightVBO, winRightEBO;
-GLuint topLightVBO, topLightEBO;
-GLuint SphereVBO, SphereEBO;
-GLuint tableVBO, tableEBO;
+//GLuint winBackVBO, winBackEBO;
+//GLuint winRightVBO, winRightEBO;
+//GLuint topLightVBO, topLightEBO;
+//GLuint SphereVBO, SphereEBO;
+//GLuint tableVBO, tableEBO;
 
 /* Shaders */
 GLuint iVS, iFS, iProg;
-GLuint positionAttrib, colorAttrib, mvpUniform;
+GLuint positionAttrib, colorAttrib, normalAttrib, mvpUniform, laUniform, ldUniform, lightPosUniform;
 
 const char * vertexShaderRoom
-    = "#version 130\n in vec3 position; in vec3 color; uniform mat4 mvp; out vec4 c; void main() { gl_Position = mvp*vec4(position,1); c = vec4(color,1);}";
+    = "#version 130\n in vec3 position; in vec3 color; in vec3 normal; uniform mat4 mvp; out vec4 c; out vec3 n; void main() { gl_Position = mvp*vec4(position,1); c = vec4(color,1); n = normal;}";
 const char * fragmentShaderRoom
-    = "#version 130\n in vec4 c; out vec4 fragColor; void main() { fragColor = c; }";
+    = "#version 130\n in vec4 c; out vec4 fragColor; in vec3 n; uniform vec3 la,ld,lightPos; void main() { fragColor = c*vec4(la,1) + c*vec4(ld,1)*max(0.0, dot(normalize(n), normalize(lightPos))); }";
 
 
-GLuint winBackVS, winBackFS, winBackProg;
-GLuint SpositionAttrib, SnormalAttrib, ScolorAttrib, SmvpUniform, SlightvecUniform;
-const char * vertexShaderWinBack
-    = "#version 130\n in vec3 position; in vec3 normal; in vec3 color; uniform mat4 mvp; uniform vec3 lightvec; out float intensity; out vec4 c; void main() { gl_Position = mvp*vec4(position,1); intensity = 0.3 + 0.7*max(0, dot(normal, lightvec)); c = vec4(color, 1); }";
-const char * fragmentShaderWinBack
-    = "#version 130\n in float intensity; in vec4 c; out vec4 fragColor; void main() { fragColor = vec4(intensity) * c; }";
 
 /* Renderer */
 PGR_renderer renderer;
+PGR_model model;
+
+void onInit()
+{
+    /* Create shaders */
+    iVS = compileShader(GL_VERTEX_SHADER, vertexShaderRoom);
+    iFS = compileShader(GL_FRAGMENT_SHADER, fragmentShaderRoom);
+    iProg = linkShader(2, iVS, iFS);
+
+    /* Link shader input/output to gl variables */
+    positionAttrib = glGetAttribLocation(iProg, "position");
+    normalAttrib = glGetAttribLocation(iProg, "normal");
+    colorAttrib = glGetAttribLocation(iProg, "color");
+    mvpUniform = glGetUniformLocation(iProg, "mvp");
+    laUniform = glGetUniformLocation(iProg, "la");
+    ldUniform = glGetUniformLocation(iProg, "ld");
+    lightPosUniform = glGetUniformLocation(iProg, "lightPos");
+
+    /* Create buffers */
+    glGenBuffers(1, &roomVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, roomVBO);
+    glBufferData(GL_ARRAY_BUFFER, model.getVerticesCount() * sizeof (Point), model.getVertices(), GL_STATIC_DRAW);
+
+    glGenBuffers(1, &roomEBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, roomEBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, model.getIndicesCount() * sizeof (unsigned char), model.getIndices(), GL_STATIC_DRAW);
+}
 
 /**
  * Callback for rendering display. Default rotation and translation is done and
  * correct renderer is called.
  */
-void onDisplay()
+void onWindowRedraw()
 {
     glm::mat4 projection;
 
@@ -97,7 +114,7 @@ void onDisplay()
 
         renderer.drawSceneDefault(mvp);
 
-        glutSwapBuffers();
+        SDL_GL_SwapBuffers();
     }
     else
     {
@@ -109,117 +126,11 @@ void onDisplay()
 
         renderer.drawSceneRadiosity(mvp);
 
-        glutSwapBuffers();
+        SDL_GL_SwapBuffers();
     }
 }
 
-/**
- * Callback for window change size event
- * @param w New window width
- * @param h New window height
- */
-void onReshape(int w, int h)
-{
-    /* Reshaping is not allowed if radiosity renderer is used */
-    if (!renderRadiosity)
-    {
-        /* Set new window size */
-        width = w;
-        height = h;
-    }
 
-    /* Re-compute projection matrix */
-    glViewport(0, 0, width, height);
-}
-
-/**
- * Callback for key press event
- * @param key The key which is pressed
- * @param x Cursor x-coordinate in moment of key pressing
- * @param y Cursor y-coordinate in moment of key pressing
- */
-void onKeyboard(unsigned char key, int x, int y)
-{
-    switch (key)
-    {
-    case 't':
-        /* Change rendering core */
-        renderRadiosity = !renderRadiosity;
-        break;
-
-    case 27:
-    case 'q':
-    case 'x':
-        /* Quit program */
-        exit(0);
-        break;
-
-    default:
-        break;
-    }
-
-    /* Call re-rendering */
-    glutPostRedisplay();
-}
-
-
-/**
- * Callback registering mouse click events. We need to register which button
- * causes the event.
- * @license Taken from IZG2011/12, FIT BUT
- * @param button The button which causes mouse click event
- * @param state Wheter the click means "press" or "release"
- * @param x Coordinate in x-axis direction
- * @param y Coordinate in y-axis direction
- */
-void onMouseClick(int button, int _state, int x, int y)
-{
-    /* Remember position */
-    old_mouse_x = x;
-    old_mouse_y = y;
-
-    /* Do not permit scene rotation when radiosity rendering */
-    if (renderRadiosity)
-        return;
-
-    /* Check if the left key is pressed down or not */
-    if (button == GLUT_LEFT_BUTTON && _state == GLUT_DOWN)
-    {
-        mouse_state = 1;
-    }
-    else
-    {
-        mouse_state = 0;
-    }
-}
-
-/**
- * Callback for mouse motion when key pressed
- * @license Taken from IZG2011/12, FIT BUT
- * @param x Coordinate in x-axis direction
- * @param y Coordinate in y-axis diriection
- */
-void onMouseMotion(int x, int y)
-{
-    /* Do not permit scene rotation when radiosity rendering */
-    if (renderRadiosity)
-        return;
-
-    /* Check if correct mouse button is pressed down */
-    if (mouse_state == 1)
-    {
-        camera_rot_y += x - old_mouse_x; // compute new rotation
-        camera_rot_x += y - old_mouse_y;
-        glutPostRedisplay(); // force re-rendering
-    }
-    else
-    {
-
-    }
-    /* Remember position */
-    old_mouse_x = x;
-    old_mouse_y = y;
-}
 
 /**
  * Main function. Event handlers are registered and scene and renderer are
@@ -227,30 +138,90 @@ void onMouseMotion(int x, int y)
  */
 int main(int argc, char** argv)
 {
-    glutInit(&argc, argv);
-
-    glutInitWindowSize(width, height);
-    glutInitDisplayMode(GLUT_RGB | GLUT_DEPTH | GLUT_DOUBLE);
-    glutCreateWindow("gi04 - Radiosita na OpenCL");
-
-    // GL init
-    glewInit();
-    if (!glewIsSupported("GL_VERSION_2_0 " "GL_ARB_pixel_buffer_object"))
+    try
     {
-        std::cerr << "Support for necessary OpenGL extensions missing."
-            << std::endl;
+        // Init SDL - only video subsystem will be used
+        if (SDL_Init(SDL_INIT_VIDEO) < 0) throw SDL_Exception();
+
+        // Shutdown SDL when program ends
+        atexit(SDL_Quit);
+
+        renderer = PGR_renderer();
+        model = PGR_model();
+
+        init(width, height, 24, 24, 8);
+
+        mainLoop();
+
+    }
+    catch (exception & ex)
+    {
+        cout << "ERROR : " << ex.what() << endl;
         return EXIT_FAILURE;
     }
 
-    glutDisplayFunc(onDisplay);
-    glutReshapeFunc(onReshape);
-    glutKeyboardFunc(onKeyboard);
-    glutMouseFunc(onMouseClick);
-    glutMotionFunc(onMouseMotion);
+    return EXIT_SUCCESS;
+}
 
-    renderer = PGR_renderer();
+void onMouseDown(Uint8 /*button*/, unsigned /*x*/, unsigned /*y*/)
+{
+}
 
-    renderer.initialize();
-    glutMainLoop();
-    return 0;
+void onMouseUp(Uint8 /*button*/, unsigned /*x*/, unsigned /*y*/)
+{
+}
+
+void onKeyUp(SDLKey /*key*/, Uint16 /*mod*/)
+{
+}
+
+/**
+ * Callback for window change size event
+ * @param w New window width
+ * @param h New window height
+ */
+void onWindowResized(int w, int h)
+{
+    glViewport(0, 0, w, h);
+
+    /* Reshaping is not allowed if radiosity renderer is used */
+    if (!renderRadiosity)
+    {
+        /* Set new window size */
+        width = w;
+        height = h;
+    }
+}
+
+void onKeyDown(SDLKey key, Uint16 /*mod*/)
+{
+    switch (key)
+    {
+    case SDLK_t:
+        /* Change rendering core */
+        renderRadiosity = !renderRadiosity;
+        redraw();
+        return;
+
+    case SDLK_q:
+    case SDLK_x:
+    case SDLK_ESCAPE: quit();
+        return;
+    default: return;
+    }
+}
+
+void onMouseMove(unsigned /*x*/, unsigned /*y*/, int xrel, int yrel, Uint8 buttons)
+{
+    /* Do not permit scene rotation when radiosity rendering */
+    if (renderRadiosity)
+        return;
+
+    /* Check if correct mouse button is pressed down */
+    if (buttons & SDL_BUTTON_LMASK)
+    {
+        camera_rot_y += xrel; // compute new rotation
+        camera_rot_x += yrel;
+        redraw(); // force re-rendering
+    }
 }

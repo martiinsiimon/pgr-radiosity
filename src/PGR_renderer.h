@@ -21,7 +21,6 @@ public:
     PGR_renderer(const PGR_renderer& orig);
     PGR_renderer(string);
     virtual ~PGR_renderer();
-    void initialize();
     void drawSceneDefault(glm::mat4);
     void drawSceneRadiosity(glm::mat4);
 };

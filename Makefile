@@ -1,7 +1,5 @@
 #makefile pro projekt pgr-radiosita
 
-FILES=main.cpp
-
 SRC=src/
 DOC=doc/
 
@@ -35,4 +33,4 @@ clean-doc:
 	make -C $(DOC) clean
 
 pack: doc src clean
-	$(AR) $(ARCHIVE) Makefile README INSTALL LICENSE $(SRC)$(FILES) $(SRC)Makefile $(PDFFILE)
+	$(AR) $(ARCHIVE) Makefile README INSTALL LICENSE $(SRC)* $(SRC)Makefile $(PDFFILE)
