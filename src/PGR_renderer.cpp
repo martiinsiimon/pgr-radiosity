@@ -15,6 +15,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+
+
 /* Buffers */
 extern GLuint roomVBO, roomEBO;
 
@@ -29,7 +31,8 @@ glm::vec3 light_pos = glm::vec3(0, 2.5, 0);
 
 PGR_renderer::PGR_renderer()
 {
-
+    this->model = PGR_model();
+    this->maxArea = -1.0;
 }
 
 PGR_renderer::PGR_renderer(const PGR_renderer& orig)
@@ -40,6 +43,44 @@ PGR_renderer::~PGR_renderer()
 {
 }
 
+void PGR_renderer::setMaxArea(float area)
+{
+    this->maxArea = area;
+}
+
+void PGR_renderer::init()
+{
+    /* Create shaders */
+    iVS = compileShader(GL_VERTEX_SHADER, vertexShaderRoom);
+    iFS = compileShader(GL_FRAGMENT_SHADER, fragmentShaderRoom);
+    iProg = linkShader(2, iVS, iFS);
+
+    /* Link shader input/output to gl variables */
+    positionAttrib = glGetAttribLocation(iProg, "position");
+    normalAttrib = glGetAttribLocation(iProg, "normal");
+    colorAttrib = glGetAttribLocation(iProg, "color");
+    mvpUniform = glGetUniformLocation(iProg, "mvp");
+    laUniform = glGetUniformLocation(iProg, "la");
+    ldUniform = glGetUniformLocation(iProg, "ld");
+    lightPosUniform = glGetUniformLocation(iProg, "lightPos");
+
+    if (this->maxArea > 0.0)
+    {
+        /* Max area set, need to divide all patches */
+        this->model.setMaxArea(this->maxArea);
+        this->model.updateArrays();
+    }
+
+    /* Create buffers */
+    glGenBuffers(1, &roomVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, roomVBO);
+    glBufferData(GL_ARRAY_BUFFER, this->model.getVerticesCount() * sizeof (Point), this->model.getVertices(), GL_STATIC_DRAW);
+
+    glGenBuffers(1, &roomEBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, roomEBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, this->model.getIndicesCount() * sizeof (unsigned char), this->model.getIndices(), GL_STATIC_DRAW);
+}
+
 
 /**
  * Draw 3D scene using default renderer. This rendering should be real-time and
@@ -47,7 +88,7 @@ PGR_renderer::~PGR_renderer()
  */
 void PGR_renderer::drawSceneDefault(glm::mat4 mvp)
 {
-
+    //this->model.updatePatches();
     glUseProgram(iProg);
 
     glUniformMatrix4fv(mvpUniform, 1, GL_FALSE, glm::value_ptr(mvp));
@@ -68,7 +109,7 @@ void PGR_renderer::drawSceneDefault(glm::mat4 mvp)
     glVertexAttribPointer(normalAttrib, 3, GL_FLOAT, GL_FALSE, sizeof (Point), (void*) offsetof(Point, normal));
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, roomEBO);
-    glDrawElements(GL_QUADS, sizeof (room) / sizeof (*room), GL_UNSIGNED_BYTE, NULL);
+    glDrawElements(GL_QUADS, this->model.getIndicesCount() * sizeof (unsigned char), GL_UNSIGNED_BYTE, NULL);
 
     glDisableVertexAttribArray(positionAttrib);
     glDisableVertexAttribArray(colorAttrib);
@@ -84,7 +125,10 @@ void PGR_renderer::drawSceneDefault(glm::mat4 mvp)
  */
 void PGR_renderer::drawSceneRadiosity(glm::mat4 mvp)
 {
-    // ###DBG###
+    this->model.setMaxArea(this->maxArea);
+    this->model.updateArrays();
+
+
     glUseProgram(iProg);
 
     glUniformMatrix4fv(mvpUniform, 1, GL_FALSE, glm::value_ptr(mvp));
@@ -101,7 +145,7 @@ void PGR_renderer::drawSceneRadiosity(glm::mat4 mvp)
     glVertexAttribPointer(colorAttrib, 3, GL_FLOAT, GL_FALSE, sizeof (Point), (void*) offsetof(Point, color));
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, roomEBO);
-    glDrawElements(GL_QUADS, sizeof (room) / sizeof (*room), GL_UNSIGNED_BYTE, NULL);
+    glDrawElements(GL_QUADS, this->model.getIndicesCount() * sizeof (unsigned char), GL_UNSIGNED_BYTE, NULL);
 
     glDisableVertexAttribArray(positionAttrib);
     glDisableVertexAttribArray(colorAttrib);

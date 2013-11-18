@@ -9,7 +9,11 @@
 #ifndef PGR_MODEL_H
 #define	PGR_MODEL_H
 
+#define MIN(a,b) (((a)<(b))?(a):(b))
+#define MAX(a,b) (((a)>(b))?(a):(b))
+
 #include "model.h"
+#include "PGR_patch.h"
 #include <vector>
 
 using namespace std;
@@ -21,13 +25,21 @@ public:
     PGR_model(const PGR_model& orig);
     virtual ~PGR_model();
 
-    void update();
+    void updateArrays();
+    void updatePatches();
+    void setMaxArea(float area);
     float * getVertices();
     unsigned int getVerticesCount();
 
     unsigned char * getIndices();
     unsigned int getIndicesCount();
 private:
+    void divide();
+
+
+private:
+
+    vector<PGR_patch*> patches;
 
     Point *vertices;
     unsigned int verticesCount;
@@ -35,6 +47,7 @@ private:
     unsigned char * indices;
     unsigned int indicesCount;
 
+    float maxArea;
 };
 
 #endif	/* PGR_MODEL_H */

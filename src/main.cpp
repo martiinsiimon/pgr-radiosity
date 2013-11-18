@@ -9,8 +9,6 @@
 #include "pgr.h"
 #include <iostream>
 #include "PGR_renderer.h"
-//#include "model.h"
-#include "PGR_model.h"
 #include <glm/gtc/matrix_transform.hpp>
 
 using namespace std;
@@ -18,12 +16,13 @@ using namespace std;
 /* Program constants - mostly default values */
 #define PGR_WINDOW_WIDTH 1024 // Window width
 #define PGR_WINDOW_HEIGHT 768 // Window height
-#define PGR_CAMERA_Z 3.9f // Translation of camera in z-axis direction
+#define PGR_CAMERA_Z 4.0f // Translation of camera in z-axis direction
 #define PGR_CAMERA_Y 0.75f // Translation of camera in y-axis direction
 #define PGR_CAMERA_X 0.0f // Translation of camera in x-axis direction
 #define PGR_ROTATE_X 0.0f // Rotation about x-axis
-#define PGR_ROTATE_Y 0.0f // Rotation about y-axis
+#define PGR_ROTATE_Y 90.0f // Rotation about y-axis
 #define PGR_CORE cpu //Radiosity computing unit {cpu,gpu}
+#define PGR_MAX_AREA 35.0f
 
 /* Program global variables - initialized to default values*/
 GLuint width = PGR_WINDOW_WIDTH;
@@ -35,11 +34,6 @@ bool renderRadiosity = false;
 
 /* Model geometry */
 GLuint roomVBO, roomEBO;
-//GLuint winBackVBO, winBackEBO;
-//GLuint winRightVBO, winRightEBO;
-//GLuint topLightVBO, topLightEBO;
-//GLuint SphereVBO, SphereEBO;
-//GLuint tableVBO, tableEBO;
 
 /* Shaders */
 GLuint iVS, iFS, iProg;
@@ -51,35 +45,12 @@ const char * fragmentShaderRoom
     = "#version 130\n in vec4 c; out vec4 fragColor; in vec3 n; uniform vec3 la,ld,lightPos; void main() { fragColor = c*vec4(la,1) + c*vec4(ld,1)*max(0.0, dot(normalize(n), normalize(lightPos))); }";
 
 
-
 /* Renderer */
 PGR_renderer renderer;
-PGR_model model;
 
 void onInit()
 {
-    /* Create shaders */
-    iVS = compileShader(GL_VERTEX_SHADER, vertexShaderRoom);
-    iFS = compileShader(GL_FRAGMENT_SHADER, fragmentShaderRoom);
-    iProg = linkShader(2, iVS, iFS);
-
-    /* Link shader input/output to gl variables */
-    positionAttrib = glGetAttribLocation(iProg, "position");
-    normalAttrib = glGetAttribLocation(iProg, "normal");
-    colorAttrib = glGetAttribLocation(iProg, "color");
-    mvpUniform = glGetUniformLocation(iProg, "mvp");
-    laUniform = glGetUniformLocation(iProg, "la");
-    ldUniform = glGetUniformLocation(iProg, "ld");
-    lightPosUniform = glGetUniformLocation(iProg, "lightPos");
-
-    /* Create buffers */
-    glGenBuffers(1, &roomVBO);
-    glBindBuffer(GL_ARRAY_BUFFER, roomVBO);
-    glBufferData(GL_ARRAY_BUFFER, model.getVerticesCount() * sizeof (Point), model.getVertices(), GL_STATIC_DRAW);
-
-    glGenBuffers(1, &roomEBO);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, roomEBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, model.getIndicesCount() * sizeof (unsigned char), model.getIndices(), GL_STATIC_DRAW);
+    renderer.init();
 }
 
 /**
@@ -103,7 +74,6 @@ void onWindowRedraw()
                                 camera_rot_y, glm::vec3(0, 1, 0)
                                 );
 
-
     /* Choose renderer */
     if (!renderRadiosity)
     {
@@ -124,6 +94,7 @@ void onWindowRedraw()
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LESS);
 
+        renderer.setMaxArea(PGR_MAX_AREA);
         renderer.drawSceneRadiosity(mvp);
 
         SDL_GL_SwapBuffers();
@@ -147,7 +118,6 @@ int main(int argc, char** argv)
         atexit(SDL_Quit);
 
         renderer = PGR_renderer();
-        model = PGR_model();
 
         init(width, height, 24, 24, 8);
 
@@ -193,6 +163,11 @@ void onWindowResized(int w, int h)
     }
 }
 
+/**
+ * Callback for key press event
+ *
+ * @param key Pressed key
+ */
 void onKeyDown(SDLKey key, Uint16 /*mod*/)
 {
     switch (key)
@@ -211,6 +186,13 @@ void onKeyDown(SDLKey key, Uint16 /*mod*/)
     }
 }
 
+/**
+ * Callback for mouse motion event
+ *
+ * @param xrel Move in direction of x-axis
+ * @param yrel Move in direction of y-axis
+ * @param buttons Mask of pressed buttons
+ */
 void onMouseMove(unsigned /*x*/, unsigned /*y*/, int xrel, int yrel, Uint8 buttons)
 {
     /* Do not permit scene rotation when radiosity rendering */
