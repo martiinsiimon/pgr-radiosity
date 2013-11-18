@@ -33,14 +33,13 @@ public:
 
     unsigned char * getIndices();
     unsigned int getIndicesCount();
-private:
     void divide();
 
 
-private:
+
 
     vector<PGR_patch*> patches;
-
+private:
     Point *vertices;
     unsigned int verticesCount;
 

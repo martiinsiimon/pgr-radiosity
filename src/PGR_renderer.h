@@ -27,8 +27,14 @@ public:
     void drawSceneDefault(glm::mat4);
     void drawSceneRadiosity(glm::mat4);
 private:
-    PGR_model model;
+    void createBuffers();
+    bool divide();
+    void printPatches(); //DBG method
+
+private:
+    PGR_model * model;
     float maxArea;
+    bool divided;
 };
 
 #endif	/* PGR_RENDERER_H */

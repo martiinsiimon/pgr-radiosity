@@ -16,11 +16,11 @@ using namespace std;
 /* Program constants - mostly default values */
 #define PGR_WINDOW_WIDTH 1024 // Window width
 #define PGR_WINDOW_HEIGHT 768 // Window height
-#define PGR_CAMERA_Z 4.0f // Translation of camera in z-axis direction
-#define PGR_CAMERA_Y 0.75f // Translation of camera in y-axis direction
+#define PGR_CAMERA_Z 5.3f // Translation of camera in z-axis direction
+#define PGR_CAMERA_Y 2.5f // Translation of camera in y-axis direction
 #define PGR_CAMERA_X 0.0f // Translation of camera in x-axis direction
-#define PGR_ROTATE_X 0.0f // Rotation about x-axis
-#define PGR_ROTATE_Y 90.0f // Rotation about y-axis
+#define PGR_ROTATE_X 20.0f // Rotation about x-axis
+#define PGR_ROTATE_Y -25.0f // Rotation about y-axis
 #define PGR_CORE cpu //Radiosity computing unit {cpu,gpu}
 #define PGR_MAX_AREA 35.0f
 
@@ -29,6 +29,7 @@ GLuint width = PGR_WINDOW_WIDTH;
 GLuint height = PGR_WINDOW_HEIGHT;
 GLfloat camera_rot_y = PGR_ROTATE_Y; // Rotation about y-axis
 GLfloat camera_rot_x = PGR_ROTATE_X;
+GLfloat camera_z = PGR_CAMERA_Z;
 bool renderRadiosity = false;
 
 
@@ -46,11 +47,12 @@ const char * fragmentShaderRoom
 
 
 /* Renderer */
-PGR_renderer renderer;
+PGR_renderer * renderer;
 
 void onInit()
 {
-    renderer.init();
+    renderer->setMaxArea(PGR_MAX_AREA);
+    renderer->init();
 }
 
 /**
@@ -67,7 +69,7 @@ void onWindowRedraw()
                                 glm::rotate(
                                             glm::translate(
                                                            projection,
-                                                           glm::vec3(PGR_CAMERA_X, -PGR_CAMERA_Y, -PGR_CAMERA_Z)
+                                                           glm::vec3(PGR_CAMERA_X, -PGR_CAMERA_Y, -camera_z)
                                                            ),
                                             camera_rot_x, glm::vec3(1, 0, 0)
                                             ),
@@ -82,7 +84,7 @@ void onWindowRedraw()
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LESS);
 
-        renderer.drawSceneDefault(mvp);
+        renderer->drawSceneDefault(mvp);
 
         SDL_GL_SwapBuffers();
     }
@@ -94,8 +96,8 @@ void onWindowRedraw()
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LESS);
 
-        renderer.setMaxArea(PGR_MAX_AREA);
-        renderer.drawSceneRadiosity(mvp);
+
+        renderer->drawSceneRadiosity(mvp);
 
         SDL_GL_SwapBuffers();
     }
@@ -117,7 +119,7 @@ int main(int argc, char** argv)
         // Shutdown SDL when program ends
         atexit(SDL_Quit);
 
-        renderer = PGR_renderer();
+        renderer = new PGR_renderer();
 
         init(width, height, 24, 24, 8);
 
@@ -130,6 +132,7 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
+    delete renderer;
     return EXIT_SUCCESS;
 }
 
@@ -205,5 +208,10 @@ void onMouseMove(unsigned /*x*/, unsigned /*y*/, int xrel, int yrel, Uint8 butto
         camera_rot_y += xrel; // compute new rotation
         camera_rot_x += yrel;
         redraw(); // force re-rendering
+    }
+    else if (buttons & SDL_BUTTON_RMASK)
+    {
+        camera_z += yrel / 10.0;
+        redraw();
     }
 }

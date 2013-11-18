@@ -21,6 +21,7 @@ PGR_model::PGR_model()
 
     this->maxArea = -1.0;
     this->updatePatches();
+    cout << "test" << endl;
 }
 
 PGR_model::PGR_model(const PGR_model& orig)
@@ -60,8 +61,6 @@ void PGR_model::setMaxArea(float area)
 
 void PGR_model::updateArrays()
 {
-    this->divide();
-
     delete []this->indices;
     delete []this->vertices;
 
@@ -88,7 +87,6 @@ void PGR_model::updateArrays()
         *(this->indices + sizeIndices) = i++;
         sizeIndices += charSize;
 
-        // cout << n << "[0]" << this->patches.at(n)->vertices[0] << endl;
         *(this->vertices + sizeVertices) = this->patches.at(n)->vertices[0];
         sizeVertices += pointSize;
         *(this->vertices + sizeVertices) = this->patches.at(n)->vertices[1];
@@ -98,37 +96,17 @@ void PGR_model::updateArrays()
         *(this->vertices + sizeVertices) = this->patches.at(n)->vertices[3];
         sizeVertices += pointSize;
     }
-
-    cout << "indices: ";
-    for (int i = 0; i < this->indicesCount; i++)
-    {
-        cout << (unsigned int) this->indices[i] << ", ";
-    }
-    cout << endl;
-
-    cout << "vertices: ";
-    for (int i = 0; i < this->verticesCount; i++)
-    {
-        cout << "[" << this->vertices[i].position[0] << "," << this->vertices[i].position[1] << "," << this->vertices[i].position[2] << "], ";
-    }
-    cout << endl;
-
-    this->updatePatches();
 }
 
 void PGR_model::updatePatches()
 {
-    cout << "Update patches: enter" << endl;
     for (int i = 0; i < this->patches.size(); i++)
     {
-        cout << "Update patches: delete p" << endl;
-
         PGR_patch *p = this->patches.at(i);
         delete p;
     }
     this->patches.clear();
 
-    cout << "Update patches: verticesCount=" << this->verticesCount << endl;
 
     for (int i = 0; i < this->indicesCount; i += 4)
     {
@@ -136,18 +114,12 @@ void PGR_model::updatePatches()
         p->addVertices(this->vertices[i], this->vertices[i + 1], this->vertices[i + 2], this->vertices[i + 3]);
         this->patches.push_back(p);
     }
-    cout << "Update patches: patchesSize=" << this->patches.size() << endl;
-    cout << "Update patches: leave" << endl;
-
 }
 
 void PGR_model::divide()
 {
     if (this->maxArea <= 0.0)
         return;
-
-    cout << "Divide: verticesCount=" << this->verticesCount << endl;
-    cout << "Divide: patchesSize=" << this->patches.size() << endl;
 
     vector<PGR_patch*> tmpPatches;
 
@@ -156,9 +128,6 @@ void PGR_model::divide()
         //FIXME the area is computed in for rectangles only
         float area;
         int c1, c2;
-        //cout << "OLD: {[" << (*it)->vertices[0].position[0] << "," << (*it)->vertices[0].position[1] << "," << (*it)->vertices[0].position[2] << "], ";
-        //cout << "[" << (*it)->vertices[1].position[0] << "," << (*it)->vertices[1].position[1] << "," << (*it)->vertices[1].position[2] << "], ";
-        //cout << "[" << (*it)->vertices[2].position[0] << "," << (*it)->vertices[2].position[1] << "," << (*it)->vertices[2].position[2] << "]}" << endl;
         if ((*it)->vertices[0].position[0] == (*it)->vertices[1].position[0]
             && (*it)->vertices[1].position[0] == (*it)->vertices[2].position[0]
             && (*it)->vertices[2].position[0] == (*it)->vertices[3].position[0])
@@ -166,7 +135,6 @@ void PGR_model::divide()
             /* in x-axis direction */
             c1 = 1;
             c2 = 2;
-
         }
         else if ((*it)->vertices[0].position[1] == (*it)->vertices[1].position[1]
             && (*it)->vertices[1].position[1] == (*it)->vertices[2].position[1]
@@ -217,9 +185,7 @@ void PGR_model::divide()
         {
             tmpPatches.push_back((*it));
         }
-        //cout << "NEW: {[" << tmpPatches.back()->vertices[0].position[0] << "," << tmpPatches.back()->vertices[0].position[1] << "," << tmpPatches.back()->vertices[0].position[2] << "], ";
-        //cout << "[" << tmpPatches.back()->vertices[1].position[0] << "," << tmpPatches.back()->vertices[1].position[1] << "," << tmpPatches.back()->vertices[1].position[2] << "], ";
-        //cout << "[" << tmpPatches.back()->vertices[2].position[0] << "," << tmpPatches.back()->vertices[2].position[1] << "," << tmpPatches.back()->vertices[2].position[2] << "]}" << endl;
+
     }
 
     while (!this->patches.empty())
@@ -228,8 +194,6 @@ void PGR_model::divide()
         delete p;
         this->patches.pop_back();
     }
-    cout << "Divide: verticesCount=" << this->verticesCount << endl;
-    cout << "Divide: patchesSize=" << tmpPatches.size() << endl;
-    this->patches = tmpPatches;
 
+    this->patches = tmpPatches;
 }

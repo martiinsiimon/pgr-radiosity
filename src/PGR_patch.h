@@ -21,7 +21,7 @@ public:
     virtual ~PGR_patch();
 
     vector<PGR_patch*> divide(float area);
-    void addVertex(Point p);
+    //void addVertex(Point p);
     void addVertices(Point p0, Point p1, Point p2, Point p3);
 public:
     Point vertices[4];

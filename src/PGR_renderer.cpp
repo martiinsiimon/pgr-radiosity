@@ -31,8 +31,9 @@ glm::vec3 light_pos = glm::vec3(0, 2.5, 0);
 
 PGR_renderer::PGR_renderer()
 {
-    this->model = PGR_model();
+    this->model = new PGR_model();
     this->maxArea = -1.0;
+    this->divided = true;
 }
 
 PGR_renderer::PGR_renderer(const PGR_renderer& orig)
@@ -41,11 +42,13 @@ PGR_renderer::PGR_renderer(const PGR_renderer& orig)
 
 PGR_renderer::~PGR_renderer()
 {
+    delete this->model;
 }
 
 void PGR_renderer::setMaxArea(float area)
 {
     this->maxArea = area;
+    this->divided = false;
 }
 
 void PGR_renderer::init()
@@ -64,23 +67,49 @@ void PGR_renderer::init()
     ldUniform = glGetUniformLocation(iProg, "ld");
     lightPosUniform = glGetUniformLocation(iProg, "lightPos");
 
-    if (this->maxArea > 0.0)
+    this->divide();
+
+    this->createBuffers();
+}
+
+bool PGR_renderer::divide()
+{
+    if (!this->divided && this->maxArea > 0.0)
     {
         /* Max area set, need to divide all patches */
-        this->model.setMaxArea(this->maxArea);
-        this->model.updateArrays();
+        this->model->setMaxArea(this->maxArea);
+        this->model->divide();
+        this->model->updateArrays();
+        this->divided = true;
+        return true;
     }
+    else
+        return false;
+}
 
+void PGR_renderer::printPatches()
+{
+    for (int i = 0; i <this->model->patches.size(); i++)
+    {
+        cout << "Patch: " << i << endl;
+        cout << "\t[" << this->model->patches[i]->vertices[0].position[0] << "," << this->model->patches[i]->vertices[0].position[1] << "," << this->model->patches[i]->vertices[0].position[2] << "]" << endl;
+        cout << "\t[" << this->model->patches[i]->vertices[1].position[0] << "," << this->model->patches[i]->vertices[1].position[1] << "," << this->model->patches[i]->vertices[1].position[2] << "]" << endl;
+        cout << "\t[" << this->model->patches[i]->vertices[2].position[0] << "," << this->model->patches[i]->vertices[2].position[1] << "," << this->model->patches[i]->vertices[2].position[2] << "]" << endl;
+        cout << "\t[" << this->model->patches[i]->vertices[3].position[0] << "," << this->model->patches[i]->vertices[3].position[1] << "," << this->model->patches[i]->vertices[3].position[2] << "]" << endl;
+    }
+}
+
+void PGR_renderer::createBuffers()
+{
     /* Create buffers */
     glGenBuffers(1, &roomVBO);
     glBindBuffer(GL_ARRAY_BUFFER, roomVBO);
-    glBufferData(GL_ARRAY_BUFFER, this->model.getVerticesCount() * sizeof (Point), this->model.getVertices(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, this->model->getVerticesCount() * sizeof (Point), this->model->getVertices(), GL_STATIC_DRAW);
 
     glGenBuffers(1, &roomEBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, roomEBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, this->model.getIndicesCount() * sizeof (unsigned char), this->model.getIndices(), GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, this->model->getIndicesCount() * sizeof (unsigned char), this->model->getIndices(), GL_STATIC_DRAW);
 }
-
 
 /**
  * Draw 3D scene using default renderer. This rendering should be real-time and
@@ -88,14 +117,12 @@ void PGR_renderer::init()
  */
 void PGR_renderer::drawSceneDefault(glm::mat4 mvp)
 {
-    //this->model.updatePatches();
     glUseProgram(iProg);
 
     glUniformMatrix4fv(mvpUniform, 1, GL_FALSE, glm::value_ptr(mvp));
     glUniform3f(laUniform, 0.2, 0.2, 0.2);
     glUniform3f(lightPosUniform, light_pos[0], light_pos[1], light_pos[2]);
     glUniform3f(ldUniform, 0.5, 0.5, 0.5);
-
 
     /* Draw room */
     /* Note: Here should be the second shader program, object to bottom from here should react to light */
@@ -109,7 +136,7 @@ void PGR_renderer::drawSceneDefault(glm::mat4 mvp)
     glVertexAttribPointer(normalAttrib, 3, GL_FLOAT, GL_FALSE, sizeof (Point), (void*) offsetof(Point, normal));
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, roomEBO);
-    glDrawElements(GL_QUADS, this->model.getIndicesCount() * sizeof (unsigned char), GL_UNSIGNED_BYTE, NULL);
+    glDrawElements(GL_QUADS, this->model->getIndicesCount() * sizeof (unsigned char), GL_UNSIGNED_BYTE, NULL);
 
     glDisableVertexAttribArray(positionAttrib);
     glDisableVertexAttribArray(colorAttrib);
@@ -125,14 +152,13 @@ void PGR_renderer::drawSceneDefault(glm::mat4 mvp)
  */
 void PGR_renderer::drawSceneRadiosity(glm::mat4 mvp)
 {
-    this->model.setMaxArea(this->maxArea);
-    this->model.updateArrays();
-
+    /* If there's something to divide */
+    if (this->divide())
+        this->createBuffers();
 
     glUseProgram(iProg);
 
     glUniformMatrix4fv(mvpUniform, 1, GL_FALSE, glm::value_ptr(mvp));
-
 
     /* Draw room */
     /* Note: Here should be the second shader program, object to bottom from here should react to light */
@@ -145,7 +171,7 @@ void PGR_renderer::drawSceneRadiosity(glm::mat4 mvp)
     glVertexAttribPointer(colorAttrib, 3, GL_FLOAT, GL_FALSE, sizeof (Point), (void*) offsetof(Point, color));
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, roomEBO);
-    glDrawElements(GL_QUADS, this->model.getIndicesCount() * sizeof (unsigned char), GL_UNSIGNED_BYTE, NULL);
+    glDrawElements(GL_QUADS, this->model->getIndicesCount() * sizeof (unsigned char), GL_UNSIGNED_BYTE, NULL);
 
     glDisableVertexAttribArray(positionAttrib);
     glDisableVertexAttribArray(colorAttrib);

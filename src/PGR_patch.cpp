@@ -35,6 +35,8 @@ void PGR_patch::addVertices(Point p0, Point p1, Point p2, Point p3)
 vector<PGR_patch*> PGR_patch::divide(float area)
 {
     vector<PGR_patch*> vec;
-    vec.push_back(this);
+    PGR_patch * p = new PGR_patch();
+    p->addVertices(this->vertices[0], this->vertices[1], this->vertices[2], this->vertices[3]);
+    vec.push_back(p);
     return vec;
 }
