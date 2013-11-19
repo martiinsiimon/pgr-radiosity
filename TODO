@@ -1,14 +1,8 @@
 TODO list
 =========
 Note: Choose whatever you want and write a name next to it. The documentation should be team work, so after any implementing something important (like radiosity) write it down to the documentation
- * model improvements
-   * add more object
  * radiosity renderer
-   * model triangle division to get same area patches (needed to radiosity)
-   * radiosity renderer in general
    * refactoring radiosity to implement via OpenCL (paralel design)
    * radiosity computed via OpenCL (implementation)
    * do some experiments to reach up the best paralelism/performance
  * documentation
-
-
