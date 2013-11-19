@@ -11,7 +11,7 @@
 
 PGR_model::PGR_model()
 {
-    this->indices = new unsigned char[(sizeof (room)) / sizeof (*room)];
+    this->indices = new unsigned int[(sizeof (room)) / sizeof (*room)];
     memcpy(this->indices, room, sizeof (room));
     this->indicesCount = sizeof (room) / sizeof (*room);
 
@@ -21,7 +21,6 @@ PGR_model::PGR_model()
 
     this->maxArea = -1.0;
     this->updatePatches();
-    cout << "test" << endl;
 }
 
 PGR_model::PGR_model(const PGR_model& orig)
@@ -34,7 +33,7 @@ PGR_model::~PGR_model()
 }
 
 
-unsigned char* PGR_model::getIndices()
+unsigned int* PGR_model::getIndices()
 {
     return this->indices;
 }
@@ -61,59 +60,51 @@ void PGR_model::setMaxArea(float area)
 
 void PGR_model::updateArrays()
 {
-    delete []this->indices;
-    delete []this->vertices;
+    delete [] this->indices;
+    delete [] this->vertices;
 
-    this->indices = new unsigned char[this->patches.size() * 4];
+    this->indices = new unsigned int[this->patches.size() * 4];
     this->vertices = new Point[this->patches.size() * 4];
 
     this->indicesCount = this->patches.size() * 4;
     this->verticesCount = this->patches.size() * 4;
 
-    unsigned int sizeIndices = 0;
-    unsigned int sizeVertices = 0;
-    unsigned int pointSize = sizeof (Point);
-    unsigned int charSize = sizeof (unsigned char);
-    unsigned char i = 0;
-
     for (int n = 0; n < this->patches.size(); n++)
     {
-        *(this->indices + sizeIndices) = i++;
-        sizeIndices += charSize;
-        *(this->indices + sizeIndices) = i++;
-        sizeIndices += charSize;
-        *(this->indices + sizeIndices) = i++;
-        sizeIndices += charSize;
-        *(this->indices + sizeIndices) = i++;
-        sizeIndices += charSize;
+        this->indices[n * 4 + 0] = n * 4 + 0;
+        this->indices[n * 4 + 1] = n * 4 + 1;
+        this->indices[n * 4 + 2] = n * 4 + 2;
+        this->indices[n * 4 + 3] = n * 4 + 3;
 
-        *(this->vertices + sizeVertices) = this->patches.at(n)->vertices[0];
-        sizeVertices += pointSize;
-        *(this->vertices + sizeVertices) = this->patches.at(n)->vertices[1];
-        sizeVertices += pointSize;
-        *(this->vertices + sizeVertices) = this->patches.at(n)->vertices[2];
-        sizeVertices += pointSize;
-        *(this->vertices + sizeVertices) = this->patches.at(n)->vertices[3];
-        sizeVertices += pointSize;
+        this->vertices[n * 4 + 0] = this->patches.at(n)->vertices[0];
+        this->vertices[n * 4 + 1] = this->patches.at(n)->vertices[1];
+        this->vertices[n * 4 + 2] = this->patches.at(n)->vertices[2];
+        this->vertices[n * 4 + 3] = this->patches.at(n)->vertices[3];
     }
 }
 
 void PGR_model::updatePatches()
 {
-    for (int i = 0; i < this->patches.size(); i++)
-    {
-        PGR_patch *p = this->patches.at(i);
-        delete p;
-    }
-    this->patches.clear();
-
+    this->deletePatches();
 
     for (int i = 0; i < this->indicesCount; i += 4)
     {
         PGR_patch * p = new PGR_patch();
-        p->addVertices(this->vertices[i], this->vertices[i + 1], this->vertices[i + 2], this->vertices[i + 3]);
+        p->setVertices(this->vertices[i],
+                       this->vertices[i + 1],
+                       this->vertices[i + 2],
+                       this->vertices[i + 3]);
         this->patches.push_back(p);
     }
+}
+
+void PGR_model::deletePatches()
+{
+    for (int i = 0; i < this->patches.size(); i++)
+    {
+        delete this->patches.at(i);
+    }
+    this->patches.clear();
 }
 
 void PGR_model::divide()
@@ -123,77 +114,37 @@ void PGR_model::divide()
 
     vector<PGR_patch*> tmpPatches;
 
-    for (vector<PGR_patch*>::iterator it = this->patches.begin(); it != this->patches.end(); it++)
+    for (int i = 0; i < this->patches.size(); i++)
     {
-        //FIXME the area is computed in for rectangles only
-        float area;
-        int c1, c2;
-        if ((*it)->vertices[0].position[0] == (*it)->vertices[1].position[0]
-            && (*it)->vertices[1].position[0] == (*it)->vertices[2].position[0]
-            && (*it)->vertices[2].position[0] == (*it)->vertices[3].position[0])
+        if (this->patches[i]->area > this->maxArea)
         {
-            /* in x-axis direction */
-            c1 = 1;
-            c2 = 2;
-        }
-        else if ((*it)->vertices[0].position[1] == (*it)->vertices[1].position[1]
-            && (*it)->vertices[1].position[1] == (*it)->vertices[2].position[1]
-            && (*it)->vertices[2].position[1] == (*it)->vertices[3].position[1])
-        {
-            /* in y-axis direction */
-            c1 = 0;
-            c2 = 2;
-        }
-        else if ((*it)->vertices[0].position[2] == (*it)->vertices[1].position[2]
-            && (*it)->vertices[1].position[2] == (*it)->vertices[2].position[2]
-            && (*it)->vertices[2].position[2] == (*it)->vertices[3].position[2])
-        {
-            /* in z-axis direction */
-            c1 = 0;
-            c2 = 1;
-        }
-        else
-        {
-            /* general direction */
-            return; //NOT IMPLEMENTED
-        }
-        float l1 = MAX(
-                       MAX((*it)->vertices[0].position[c1], (*it)->vertices[1].position[c1]),
-                       MAX((*it)->vertices[2].position[c1], (*it)->vertices[3].position[c1]))
-            - MIN(
-                  MIN((*it)->vertices[0].position[c1], (*it)->vertices[1].position[c1]),
-                  MIN((*it)->vertices[2].position[c1], (*it)->vertices[3].position[c1]));
-        float l2 = MAX(
-                       MAX((*it)->vertices[0].position[c2], (*it)->vertices[1].position[c2]),
-                       MAX((*it)->vertices[2].position[c2], (*it)->vertices[3].position[c2]))
-            - MIN(
-                  MIN((*it)->vertices[0].position[c2], (*it)->vertices[1].position[c2]),
-                  MIN((*it)->vertices[2].position[c2], (*it)->vertices[3].position[c2]));
-        area = l1 * l2;
+            vector<PGR_patch*> vec;
+            this->patches[i]->divide(this->maxArea, &vec);
 
-        if (area > this->maxArea)
-        {
-            vector<PGR_patch*> vec = (*it)->divide(this->maxArea);
-
-            for (vector<PGR_patch*>::iterator tmp = vec.begin(); tmp != vec.end(); tmp++)
+            for (int n = 0; n < vec.size(); n++)
             {
-                tmpPatches.push_back(*tmp);
+                PGR_patch * np = new PGR_patch();
+                np->setVertices(vec[n]->vertices[0],
+                                vec[n]->vertices[1],
+                                vec[n]->vertices[2],
+                                vec[n]->vertices[3]);
+                tmpPatches.push_back(np);
+                delete vec[n];
             }
-
+            vec.clear();
         }
         else
         {
-            tmpPatches.push_back((*it));
+            PGR_patch * np = new PGR_patch();
+            np->setVertices(this->patches[i]->vertices[0],
+                            this->patches[i]->vertices[1],
+                            this->patches[i]->vertices[2],
+                            this->patches[i]->vertices[3]);
+            tmpPatches.push_back(np);
         }
-
     }
 
-    while (!this->patches.empty())
-    {
-        PGR_patch *p = this->patches.back();
-        delete p;
-        this->patches.pop_back();
-    }
+    this->deletePatches();
 
     this->patches = tmpPatches;
 }

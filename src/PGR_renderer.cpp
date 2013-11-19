@@ -78,8 +78,10 @@ bool PGR_renderer::divide()
     {
         /* Max area set, need to divide all patches */
         this->model->setMaxArea(this->maxArea);
+        cout << "Patches before dividing:" << this->model->patches.size() << endl;
         this->model->divide();
         this->model->updateArrays();
+        cout << "Patches after dividing:" << this->model->patches.size() << endl;
         this->divided = true;
         return true;
     }
@@ -108,7 +110,7 @@ void PGR_renderer::createBuffers()
 
     glGenBuffers(1, &roomEBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, roomEBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, this->model->getIndicesCount() * sizeof (unsigned char), this->model->getIndices(), GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, this->model->getIndicesCount() * sizeof (unsigned int), this->model->getIndices(), GL_STATIC_DRAW);
 }
 
 /**
@@ -135,8 +137,11 @@ void PGR_renderer::drawSceneDefault(glm::mat4 mvp)
     glVertexAttribPointer(colorAttrib, 3, GL_FLOAT, GL_FALSE, sizeof (Point), (void*) offsetof(Point, color));
     glVertexAttribPointer(normalAttrib, 3, GL_FLOAT, GL_FALSE, sizeof (Point), (void*) offsetof(Point, normal));
 
+
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, roomEBO);
-    glDrawElements(GL_QUADS, this->model->getIndicesCount() * sizeof (unsigned char), GL_UNSIGNED_BYTE, NULL);
+    glDrawElements(GL_QUADS, this->model->getIndicesCount(), GL_UNSIGNED_INT, NULL);
 
     glDisableVertexAttribArray(positionAttrib);
     glDisableVertexAttribArray(colorAttrib);
@@ -170,8 +175,9 @@ void PGR_renderer::drawSceneRadiosity(glm::mat4 mvp)
     glVertexAttribPointer(positionAttrib, 3, GL_FLOAT, GL_FALSE, sizeof (Point), (void*) offsetof(Point, position));
     glVertexAttribPointer(colorAttrib, 3, GL_FLOAT, GL_FALSE, sizeof (Point), (void*) offsetof(Point, color));
 
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, roomEBO);
-    glDrawElements(GL_QUADS, this->model->getIndicesCount() * sizeof (unsigned char), GL_UNSIGNED_BYTE, NULL);
+    glDrawElements(GL_QUADS, this->model->getIndicesCount(), GL_UNSIGNED_INT, NULL);
 
     glDisableVertexAttribArray(positionAttrib);
     glDisableVertexAttribArray(colorAttrib);

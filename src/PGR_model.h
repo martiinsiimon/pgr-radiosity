@@ -31,19 +31,18 @@ public:
     float * getVertices();
     unsigned int getVerticesCount();
 
-    unsigned char * getIndices();
+    unsigned int * getIndices();
     unsigned int getIndicesCount();
     void divide();
 
-
-
-
     vector<PGR_patch*> patches;
 private:
+    void deletePatches();
+
     Point *vertices;
     unsigned int verticesCount;
 
-    unsigned char * indices;
+    unsigned int * indices;
     unsigned int indicesCount;
 
     float maxArea;
