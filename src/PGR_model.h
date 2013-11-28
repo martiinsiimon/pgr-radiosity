@@ -35,6 +35,20 @@ public:
     unsigned int getIndicesCount();
     void divide();
 
+    /* Return number of patches */
+    int getPatchesCount();
+
+    /* Fill given opencl memory object with patches */
+    int getPatchesCL(/* cl_mem * patches*/);
+
+    /* Fill a list indices if N most energized patches. The index is in vector
+     * patches */
+    int getIdsOfNMostEnergizedPatches(int **ids);
+
+    /* Get the energy of the most energized patch. Used to decide to terminate
+     * radiosity computation */
+    double getMaximalEnergy();
+
     vector<PGR_patch*> patches;
 private:
     void deletePatches();

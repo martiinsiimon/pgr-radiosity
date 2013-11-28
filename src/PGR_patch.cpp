@@ -53,6 +53,16 @@ void PGR_patch::setArea(float a)
     this->area = a;
 }
 
+void PGR_patch::setEnergy(double e)
+{
+    this->energy = e;
+}
+
+double PGR_patch::getEnergy()
+{
+    return this->energy;
+}
+
 void PGR_patch::computeArea()
 {
     float l1, l2;
