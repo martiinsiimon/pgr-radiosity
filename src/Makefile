@@ -9,12 +9,12 @@ CC=g++
 GCC=gcc
 
 ifeq ($(OS), Windows_NT)
-    LIBS=-lopengl32 -lglew32 -lSDL
+    LIBS=-lopengl32 -lglew32 -lSDL -lOpenCL
     FLAGS=$(CFLAGS_COMMON) -Wl,--enable-auto-import
     RM=del
     DEPS=pgr.o
 else
-    LIBS=-L/usr/lib `sdl-config --libs` -lGL -lGLEW
+    LIBS=-L/usr/lib `sdl-config --libs` -lGL -lGLEW -lOpenCL
     FLAGS=$(CFLAGS_COMMON) `sdl-config --cflags` -I. -IGL -DUSE_GLEE
     RM=rm -f
     USE_GLEE=1
