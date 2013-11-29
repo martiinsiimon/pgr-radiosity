@@ -1,4 +1,4 @@
-FILES=main.cpp PGR_renderer.cpp PGR_model.cpp PGR_patch.cpp pgr.cpp
+FILES=main.cpp PGR_renderer.cpp PGR_model.cpp PGR_patch.cpp PGR_radiosity.cpp pgr.cpp
 OBJ=${FILES:.cpp=.o}
 CFLAGS_COMMON=-pipe -Wall -ggdb
 

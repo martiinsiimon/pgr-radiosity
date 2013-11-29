@@ -15,6 +15,7 @@
 #include "model.h"
 #include "PGR_patch.h"
 #include <vector>
+#include <iostream>
 
 using namespace std;
 
@@ -60,6 +61,8 @@ private:
     unsigned int indicesCount;
 
     float maxArea;
+
+
 };
 
 #endif	/* PGR_MODEL_H */

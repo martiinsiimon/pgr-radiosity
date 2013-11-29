@@ -34,6 +34,8 @@ PGR_renderer::PGR_renderer()
     this->model = new PGR_model();
     this->maxArea = -1.0;
     this->divided = true;
+
+    this->radiosity = new PGR_radiosity(this->model);
 }
 
 PGR_renderer::PGR_renderer(const PGR_renderer& orig)
@@ -42,6 +44,8 @@ PGR_renderer::PGR_renderer(const PGR_renderer& orig)
 
 PGR_renderer::~PGR_renderer()
 {
+
+    delete this->radiosity;
     delete this->model;
 }
 
@@ -161,6 +165,8 @@ void PGR_renderer::drawSceneRadiosity(glm::mat4 mvp)
     if (this->divide())
         this->createBuffers();
 
+    this->radiosity->compute();
+
     glUseProgram(iProg);
 
     glUniformMatrix4fv(mvpUniform, 1, GL_FALSE, glm::value_ptr(mvp));
@@ -184,33 +190,3 @@ void PGR_renderer::drawSceneRadiosity(glm::mat4 mvp)
     // ###DBG###
 }
 
-/*
- * Computation form factor
- * @param glm::vec3 RecvPos - world-space position of this element
- * @param glm::vec3 ShootPos - world-space position of shooter
- * @param glm::vec3 RecvNormal - world-space normal of this element
- * @param glm::vec3 ShootNormal - world-space normal of shooter
- * @param glm::vec3 ShooterEnergy - energy from shooter residual texture
- * @param float ShootDArea - the delta area of the shooter
- * @param glm::vec3 RecvColor - the reflectivity of this element
- */
-glm::vec3 PGR_renderer::formFactor(glm::vec3 RecvPos, glm::vec3 ShootPos, glm::vec3 RecvNormal, glm::vec3 ShootNormal, glm::vec3 ShooterEnergy, float ShootDArea, glm::vec3 RecvColor)
-{
-  // a normalized vector from shooter to receiver
-  glm::vec3 r = ShootPos - RecvPos;
-  float distance2 = glm::dot(r, r);
-  r = glm::normalize(r);
-
-  // the angles of the receiver and the shooter from r
-  float cosi = glm::dot(RecvNormal, r);
-  float cosj = -glm::dot(ShootNormal, r);
-
-  // compute the disc approximation form factor
-  float Fij = max(cosi * cosj, (float)0) / (M_PI * distance2 + ShootDArea);
-
-  // Modulate shooter's energy by the receiver's reflectivity
-  // and the area of the shooter.
-  glm::vec3 delta = ShooterEnergy * RecvColor * ShootDArea * Fij;
-
-  return delta;     
-}

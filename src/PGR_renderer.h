@@ -11,12 +11,9 @@
 
 #include <iostream>
 #include "PGR_model.h"
+#include "PGR_radiosity.h"
 
 #include <glm/gtc/type_ptr.hpp>
-
-#ifndef M_PI
-    #define M_PI 3.14159265358979323846
-#endif
 
 using namespace std;
 
@@ -34,10 +31,11 @@ private:
     void createBuffers();
     bool divide();
     void printPatches(); //DBG method
-    glm::vec3 formFactor(glm::vec3, glm::vec3, glm::vec3, glm::vec3, glm::vec3, float, glm::vec3);
+
 
 private:
     PGR_model * model;
+    PGR_radiosity * radiosity;
     float maxArea;
     bool divided;
 };

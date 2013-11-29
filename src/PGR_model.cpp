@@ -6,7 +6,7 @@
  * Created on 16. listopad 2013, 17:12
  */
 #include "PGR_model.h"
-#include <iostream>
+//#include <iostream>
 #include <cstring>
 
 PGR_model::PGR_model()
@@ -29,7 +29,8 @@ PGR_model::PGR_model(const PGR_model& orig)
 
 PGR_model::~PGR_model()
 {
-
+    delete [] this->indices;
+    delete [] this->vertices;
 }
 
 
