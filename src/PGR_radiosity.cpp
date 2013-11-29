@@ -1,8 +1,9 @@
 /*
  * File:   PGR_radiosity.cpp
- * Author: martin
+ * Author: Martin Simon      <xsimon14@stud.fit.vutbr.cz>
+ *         Lukas Brzobohaty  <xbrzob06@stud.fit.vutbr.cz>
  *
- * Created on 29. listopad 2013, 10:10
+ * Created on 2013-11-29, 10:10
  */
 
 #include "PGR_radiosity.h"
@@ -48,10 +49,12 @@ void PGR_radiosity::computeRadiosity()
     /**
      * Compute form factors, set this->computedFactors = true
      * Compute radiosity, set this->computedRadiosity = true
+     *
+     * Note: Na form faktory nejspis nezbude misto - pokud spravne pocitan a na jeden faktor je treba 4 byty, tak dohromady pro vsechny se jedna pri milionu ploskach o 36 terabytu... doufam, ze jsem nekde udelal mega chybu a mluvime jen o MB...
      */
 }
 
-/*
+/**
  * Computation form factor
  * @param glm::vec3 RecvPos - world-space position of this element
  * @param glm::vec3 ShootPos - world-space position of shooter
@@ -85,19 +88,23 @@ glm::vec3 PGR_radiosity::formFactor(glm::vec3 RecvPos, glm::vec3 ShootPos, glm::
 void PGR_radiosity::computeRadiosityCL()
 {
     /* Prepare CL structures */
-    this->prepareCL();
-
-    if (!this->computedFactors)
+    if (this->prepareCL() != 0)
     {
-        //TODO begin scope to compute factors
+        this->releaseCL();
+        return;
     }
-    else
-    {
-        //TODO set factors to this->factorsCL
-    }
+    //
+    //    if (!this->computedFactors)
+    //    {
+    //        //TODO begin scope to compute factors
+    //    }
+    //    else
+    //    {
+    //        //TODO set factors to this->factorsCL
+    //    }
 
-    //TODO compute radiosity until this->model->getMaximalEnergy <= limit
-
+    /* Run OpenCL kernel that computes radiosity. It includes a loop */
+    this->runRadiosityKernelCL();
 
     //TODO read buffers from GPU and copy that back to this->model
 
@@ -105,12 +112,409 @@ void PGR_radiosity::computeRadiosityCL()
     this->releaseCL();
 }
 
-void PGR_radiosity::prepareCL()
+const char *PGR_radiosity::CLErrorString(cl_int _err)
 {
-    //TODO prepare OpenCL structures
+    switch (_err)
+    {
+    case CL_SUCCESS: return "Success!";
+    case CL_DEVICE_NOT_FOUND: return "Device not found.";
+    case CL_DEVICE_NOT_AVAILABLE: return "Device not available";
+    case CL_COMPILER_NOT_AVAILABLE: return "Compiler not available";
+    case CL_MEM_OBJECT_ALLOCATION_FAILURE: return "Memory object allocation failure";
+    case CL_OUT_OF_RESOURCES: return "Out of resources";
+    case CL_OUT_OF_HOST_MEMORY: return "Out of host memory";
+    case CL_PROFILING_INFO_NOT_AVAILABLE: return "Profiling information not available";
+    case CL_MEM_COPY_OVERLAP: return "Memory copy overlap";
+    case CL_IMAGE_FORMAT_MISMATCH: return "Image format mismatch";
+    case CL_IMAGE_FORMAT_NOT_SUPPORTED: return "Image format not supported";
+    case CL_BUILD_PROGRAM_FAILURE: return "Program build failure";
+    case CL_MAP_FAILURE: return "Map failure";
+    case CL_INVALID_VALUE: return "Invalid value";
+    case CL_INVALID_DEVICE_TYPE: return "Invalid device type";
+    case CL_INVALID_PLATFORM: return "Invalid platform";
+    case CL_INVALID_DEVICE: return "Invalid device";
+    case CL_INVALID_CONTEXT: return "Invalid context";
+    case CL_INVALID_QUEUE_PROPERTIES: return "Invalid queue properties";
+    case CL_INVALID_COMMAND_QUEUE: return "Invalid command queue";
+    case CL_INVALID_HOST_PTR: return "Invalid host pointer";
+    case CL_INVALID_MEM_OBJECT: return "Invalid memory object";
+    case CL_INVALID_IMAGE_FORMAT_DESCRIPTOR: return "Invalid image format descriptor";
+    case CL_INVALID_IMAGE_SIZE: return "Invalid image size";
+    case CL_INVALID_SAMPLER: return "Invalid sampler";
+    case CL_INVALID_BINARY: return "Invalid binary";
+    case CL_INVALID_BUILD_OPTIONS: return "Invalid build options";
+    case CL_INVALID_PROGRAM: return "Invalid program";
+    case CL_INVALID_PROGRAM_EXECUTABLE: return "Invalid program executable";
+    case CL_INVALID_KERNEL_NAME: return "Invalid kernel name";
+    case CL_INVALID_KERNEL_DEFINITION: return "Invalid kernel definition";
+    case CL_INVALID_KERNEL: return "Invalid kernel";
+    case CL_INVALID_ARG_INDEX: return "Invalid argument index";
+    case CL_INVALID_ARG_VALUE: return "Invalid argument value";
+    case CL_INVALID_ARG_SIZE: return "Invalid argument size";
+    case CL_INVALID_KERNEL_ARGS: return "Invalid kernel arguments";
+    case CL_INVALID_WORK_DIMENSION: return "Invalid work dimension";
+    case CL_INVALID_WORK_GROUP_SIZE: return "Invalid work group size";
+    case CL_INVALID_WORK_ITEM_SIZE: return "Invalid work item size";
+    case CL_INVALID_GLOBAL_OFFSET: return "Invalid global offset";
+    case CL_INVALID_EVENT_WAIT_LIST: return "Invalid event wait list";
+    case CL_INVALID_EVENT: return "Invalid event";
+    case CL_INVALID_OPERATION: return "Invalid operation";
+    case CL_INVALID_GL_OBJECT: return "Invalid OpenGL object";
+    case CL_INVALID_BUFFER_SIZE: return "Invalid buffer size";
+    case CL_INVALID_MIP_LEVEL: return "Invalid mip-map level";
+    default: return "Unknown";
+    }
+}
+
+void PGR_radiosity::CheckOpenCLError(cl_int _ciErr, const char *_sMsg, ...)
+{
+    char buffer[1024];
+
+    va_list arg;
+    va_start(arg, _sMsg);
+    vsprintf(buffer, _sMsg, arg);
+    va_end(arg);
+
+    if (_ciErr != CL_SUCCESS)
+    {
+        printf("ERROR: %s: (%i)%s\n", buffer, _ciErr, CLErrorString(_ciErr));
+    }
+}
+
+int PGR_radiosity::prepareCL()
+{
+    cl_int ciErr = CL_SUCCESS;
+
+    // Get Platform
+    cl_platform_id *cpPlatforms;
+    cl_uint cuiPlatformsCount;
+    ciErr = clGetPlatformIDs(0, NULL, &cuiPlatformsCount);
+    this->CheckOpenCLError(ciErr, "clGetPlatformIDs: cuiPlatformsNum=%i", cuiPlatformsCount);
+    cpPlatforms = (cl_platform_id*) malloc(cuiPlatformsCount * sizeof (cl_platform_id));
+    ciErr = clGetPlatformIDs(cuiPlatformsCount, cpPlatforms, NULL);
+    this->CheckOpenCLError(ciErr, "clGetPlatformIDs");
+
+    cl_platform_id platform = 0;
+
+    const unsigned int TMP_BUFFER_SIZE = 1024;
+    char sTmp[TMP_BUFFER_SIZE];
+
+    for (unsigned int f0 = 0; f0 < cuiPlatformsCount; f0++)
+    {
+        //bool shouldBrake = false;
+        ciErr = clGetPlatformInfo(cpPlatforms[f0], CL_PLATFORM_PROFILE, TMP_BUFFER_SIZE, sTmp, NULL);
+        this->CheckOpenCLError(ciErr, "clGetPlatformInfo: Id=%i: CL_PLATFORM_PROFILE=%s", f0, sTmp);
+        ciErr = clGetPlatformInfo(cpPlatforms[f0], CL_PLATFORM_VERSION, TMP_BUFFER_SIZE, sTmp, NULL);
+        this->CheckOpenCLError(ciErr, "clGetPlatformInfo: Id=%i: CL_PLATFORM_VERSION=%s", f0, sTmp);
+        ciErr = clGetPlatformInfo(cpPlatforms[f0], CL_PLATFORM_NAME, TMP_BUFFER_SIZE, sTmp, NULL);
+        this->CheckOpenCLError(ciErr, "clGetPlatformInfo: Id=%i: CL_PLATFORM_NAME=%s", f0, sTmp);
+        ciErr = clGetPlatformInfo(cpPlatforms[f0], CL_PLATFORM_VENDOR, TMP_BUFFER_SIZE, sTmp, NULL);
+        this->CheckOpenCLError(ciErr, "clGetPlatformInfo: Id=%i: CL_PLATFORM_VENDOR=%s", f0, sTmp);
+
+        //prioritize AMD and CUDA platforms
+
+        if ((strcmp(sTmp, "Advanced Micro Devices, Inc.") == 0) || (strcmp(sTmp, "NVIDIA Corporation") == 0))
+        {
+            platform = cpPlatforms[f0];
+        }
+
+        //prioritize Intel
+        /*if ((strcmp(sTmp, "Intel(R) Corporation") == 0)) {
+            platform = cpPlatforms[f0];
+        }*/
+
+        ciErr = clGetPlatformInfo(cpPlatforms[f0], CL_PLATFORM_EXTENSIONS, TMP_BUFFER_SIZE, sTmp, NULL);
+        this->CheckOpenCLError(ciErr, "clGetPlatformInfo: Id=%i: CL_PLATFORM_EXTENSIONS=%s", f0, sTmp);
+        printf("\n");
+    }
+
+    if (platform == 0)
+    { //no prioritized found
+        if (cuiPlatformsCount > 0)
+        {
+            platform = cpPlatforms[0];
+        }
+        else
+        {
+            cerr << "No device was found" << endl;
+            return -1;
+        }
+    }
+    // Get Devices
+    cl_uint cuiDevicesCount;
+    ciErr = clGetDeviceIDs(platform, CL_DEVICE_TYPE_ALL, 0, NULL, &cuiDevicesCount);
+    CheckOpenCLError(ciErr, "clGetDeviceIDs: cuiDevicesCount=%i", cuiDevicesCount);
+    cl_device_id *cdDevices = (cl_device_id*) malloc(cuiDevicesCount * sizeof (cl_device_id));
+    ciErr = clGetDeviceIDs(platform, CL_DEVICE_TYPE_ALL, cuiDevicesCount, cdDevices, NULL);
+    CheckOpenCLError(ciErr, "clGetDeviceIDs");
+
+    unsigned int deviceIndex = 0;
+
+    for (unsigned int f0 = 0; f0 < cuiDevicesCount; f0++)
+    {
+        cl_device_type cdtTmp;
+        size_t iDim[3];
+
+        ciErr = clGetDeviceInfo(cdDevices[f0], CL_DEVICE_TYPE, sizeof (cdtTmp), &cdtTmp, NULL);
+        CheckOpenCLError(ciErr, "clGetDeviceInfo: Id=%i: CL_DEVICE_TYPE=%s%s%s%s", f0, cdtTmp & CL_DEVICE_TYPE_CPU ? "CPU," : "",
+                         cdtTmp & CL_DEVICE_TYPE_GPU ? "GPU," : "",
+                         cdtTmp & CL_DEVICE_TYPE_ACCELERATOR ? "ACCELERATOR," : "",
+                         cdtTmp & CL_DEVICE_TYPE_DEFAULT ? "DEFAULT," : "");
+
+        if (cdtTmp & CL_DEVICE_TYPE_CPU)
+        { //prioritize gpu if both cpu and gpu are available
+            deviceIndex = f0;
+        }
+
+        cl_bool bTmp;
+        ciErr = clGetDeviceInfo(cdDevices[f0], CL_DEVICE_AVAILABLE, sizeof (bTmp), &bTmp, NULL);
+        CheckOpenCLError(ciErr, "clGetDeviceInfo: Id=%i: CL_DEVICE_AVAILABLE=%s", f0, bTmp ? "YES" : "NO");
+        ciErr = clGetDeviceInfo(cdDevices[f0], CL_DEVICE_NAME, TMP_BUFFER_SIZE, sTmp, NULL);
+        CheckOpenCLError(ciErr, "clGetDeviceInfo: Id=%i: CL_DEVICE_NAME=%s", f0, sTmp);
+        ciErr = clGetDeviceInfo(cdDevices[f0], CL_DEVICE_VENDOR, TMP_BUFFER_SIZE, sTmp, NULL);
+        CheckOpenCLError(ciErr, "clGetDeviceInfo: Id=%i: CL_DEVICE_VENDOR=%s", f0, sTmp);
+        ciErr = clGetDeviceInfo(cdDevices[f0], CL_DRIVER_VERSION, TMP_BUFFER_SIZE, sTmp, NULL);
+        CheckOpenCLError(ciErr, "clGetDeviceInfo: Id=%i: CL_DRIVER_VERSION=%s", f0, sTmp);
+        ciErr = clGetDeviceInfo(cdDevices[f0], CL_DEVICE_PROFILE, TMP_BUFFER_SIZE, sTmp, NULL);
+        CheckOpenCLError(ciErr, "clGetDeviceInfo: Id=%i: CL_DEVICE_PROFILE=%s", f0, sTmp);
+        ciErr = clGetDeviceInfo(cdDevices[f0], CL_DEVICE_VERSION, TMP_BUFFER_SIZE, sTmp, NULL);
+        CheckOpenCLError(ciErr, "clGetDeviceInfo: Id=%i: CL_DEVICE_VERSION=%s", f0, sTmp);
+        ciErr = clGetDeviceInfo(cdDevices[f0], CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof (iDim), iDim, NULL);
+        CheckOpenCLError(ciErr, "clGetDeviceInfo: Id=%i: CL_DEVICE_MAX_WORK_ITEM_SIZES=%ix%ix%i", f0, iDim[0], iDim[1], iDim[2]);
+        ciErr = clGetDeviceInfo(cdDevices[f0], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof (size_t), iDim, NULL);
+        CheckOpenCLError(ciErr, "clGetDeviceInfo: Id=%i: CL_DEVICE_MAX_WORK_GROUP_SIZE=%i", f0, iDim[0]);
+        ciErr = clGetDeviceInfo(cdDevices[f0], CL_DEVICE_EXTENSIONS, TMP_BUFFER_SIZE, sTmp, NULL);
+        CheckOpenCLError(ciErr, "clGetDeviceInfo: Id=%i: CL_DEVICE_EXTENSIONS=%s", f0, sTmp);
+        printf("\n");
+    }
+
+    cl_context_properties cps[3] = {
+        CL_CONTEXT_PLATFORM,
+        (cl_context_properties) platform,
+        0
+    };
+
+    /* Create context */
+    this->context = clCreateContext(cps, 1, &cdDevices[deviceIndex], NULL, NULL, &ciErr);
+    CheckOpenCLError(ciErr, "clCreateContext");
+
+    /* Create a command queue */
+    this->commandQueue = clCreateCommandQueue(this->context, cdDevices[deviceIndex],
+                                        CL_QUEUE_PROFILING_ENABLE | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &ciErr);
+    CheckOpenCLError(ciErr, "clCreateCommandQueue");
+
+
+    /* Allocate buffer o patches */
+    this->patchesCL = clCreateBuffer(this->context,
+                                     CL_MEM_READ_WRITE,
+                                     this->model->getIndicesCount() * sizeof (cl_float4),
+                                     0,
+                                     &ciErr);
+    CheckOpenCLError(ciErr, "CreateBuffer patchesCL");
+
+    cl_float4 * raw_patches = new cl_float4[this->model->getIndicesCount()];
+    this->model->getPatchesCL(raw_patches);
+    ciErr = clEnqueueWriteBuffer(this->commandQueue,
+                                 this->patchesCL,
+                                 CL_TRUE, //blocking write
+                                 0,
+                                 this->model->getIndicesCount() * sizeof (cl_float4),
+                                 raw_patches,
+                                 0,
+                                 0,
+                                 0);
+    CheckOpenCLError(ciErr, "Copy patches");
+
+    /* Allocate buffer of patches geometry */
+    this->patchesGeometryCL = clCreateBuffer(this->context,
+                                             CL_MEM_READ_ONLY,
+                                             this->model->getIndicesCount() * sizeof (cl_float16),
+                                             0,
+                                             &ciErr);
+    CheckOpenCLError(ciErr, "CreateBuffer patchesGeometryCL");
+
+    cl_float16 * raw_patchesGeometry = new cl_float16[this->model->getIndicesCount()];
+    this->model->getPatchesGeometryCL(raw_patchesGeometry);
+    ciErr = clEnqueueWriteBuffer(this->commandQueue,
+                                 this->patchesGeometryCL,
+                                 CL_TRUE, //blocking write
+                                 0,
+                                 this->model->getIndicesCount() * sizeof (cl_float16),
+                                 raw_patchesGeometry,
+                                 0,
+                                 0,
+                                 0);
+    CheckOpenCLError(ciErr, "Copy patches geometry");
+
+    /* Allocate buffer of indices */
+    this->indicesCL = clCreateBuffer(this->context,
+                                     CL_MEM_READ_WRITE,
+                                     this->model->getIndicesCount() * sizeof (cl_uchar),
+                                     0,
+                                     &ciErr);
+    CheckOpenCLError(ciErr, "CreateBuffer indicesCL");
+
+    //    factorsCL = clCreateBuffer(this->context,
+    //                               CL_MEM_READ_WRITE,
+    //                               this->model->getIndicesCount() * this->model->getIndicesCount() * sizeof (cl_float), //probably out of memory
+    //                               0,
+    //                               &ciErr);
+    //    CheckOpenCLError(ciErr, "CreateBuffer factorsCL");
+
+
+    /* Create and compile and openCL program */
+    char *cSourceCL = loadProgSource("kernels.cl");
+
+    this->program = clCreateProgramWithSource(this->context, 1, (const char **) &cSourceCL, NULL, &ciErr);
+    CheckOpenCLError(ciErr, "clCreateProgramWithSource");
+    free(cSourceCL);
+
+    ciErr = clBuildProgram(this->program, 0, NULL, NULL, NULL, NULL);
+    CheckOpenCLError(ciErr, "clBuildProgram");
+
+    cl_int logStatus;
+    char *buildLog = NULL;
+    size_t buildLogSize = 0;
+    logStatus = clGetProgramBuildInfo(this->program,
+                                      cdDevices[deviceIndex],
+                                      CL_PROGRAM_BUILD_LOG,
+                                      buildLogSize,
+                                      buildLog,
+                                      &buildLogSize);
+
+    CheckOpenCLError(logStatus, "clGetProgramBuildInfo.");
+
+    buildLog = (char*) malloc(buildLogSize);
+    if (buildLog == NULL)
+    {
+        printf("Failed to allocate host memory. (buildLog)");
+        return -1;
+    }
+    memset(buildLog, 0, buildLogSize);
+
+    logStatus = clGetProgramBuildInfo(this->program,
+                                      cdDevices[deviceIndex],
+                                      CL_PROGRAM_BUILD_LOG,
+                                      buildLogSize,
+                                      buildLog,
+                                      NULL);
+    CheckOpenCLError(logStatus, "clGetProgramBuildInfo.");
+    free(buildLog);
+
+    size_t tempKernelWorkGroupSize; //TODO choose sizes
+
+    /* Create kernels */
+    this->sortKernel = clCreateKernel(program, "sort_parallel", &ciErr);
+    CheckOpenCLError(ciErr, "clCreateKernel sort_parallel");
+    this->radiosityKernel = clCreateKernel(program, "radiosity", &ciErr);
+    CheckOpenCLError(ciErr, "clCreateKernel radiosity");
+
+
+    // Check group size against group size returned by kernel
+    ciErr = clGetKernelWorkGroupInfo(this->sortKernel,
+                                     cdDevices[deviceIndex],
+                                     CL_KERNEL_WORK_GROUP_SIZE,
+                                     sizeof (size_t),
+                                     &tempKernelWorkGroupSize,
+                                     0);
+    CheckOpenCLError(ciErr, "clGetKernelInfo");
+    //kernelWorkGroupSize = MIN(tempKernelWorkGroupSize, kernelWorkGroupSize);//TODO choose sizes
+
+    ciErr = clGetKernelWorkGroupInfo(this->radiosityKernel,
+                                     cdDevices[deviceIndex],
+                                     CL_KERNEL_WORK_GROUP_SIZE,
+                                     sizeof (size_t),
+                                     &tempKernelWorkGroupSize,
+                                     0);
+    CheckOpenCLError(ciErr, "clGetKernelInfo");
+    //kernelWorkGroupSize = MIN(tempKernelWorkGroupSize, kernelWorkGroupSize);//TODO choose sizes
+
+
+    //TODO rewrite!!!
+    //    if ((blockSizeX * blockSizeY) > kernelWorkGroupSize)
+    //    {
+    //        printf("Out of Resources!\n");
+    //        printf("Group Size specified: %i\n", blockSizeX * blockSizeY);
+    //        printf("Max Group Size supported on the kernel: %i\n", kernelWorkGroupSize);
+    //        printf("Falling back to %i.\n", kernelWorkGroupSize);
+    //
+    //        if (blockSizeX > kernelWorkGroupSize)
+    //        {
+    //            blockSizeX = kernelWorkGroupSize;
+    //            blockSizeY = 1;
+    //        }
+    //    }
+
+    free(cdDevices);
+
+    return 0;
+
+}
+
+char* PGR_radiosity::loadProgSource(const char* cFilename)
+{
+    // locals
+    FILE* pFileStream = NULL;
+    size_t szSourceLength;
+
+    pFileStream = fopen(cFilename, "rb");
+    if (pFileStream == 0)
+    {
+        return NULL;
+    }
+
+
+    // get the length of the source code
+    fseek(pFileStream, 0, SEEK_END);
+    szSourceLength = ftell(pFileStream);
+    fseek(pFileStream, 0, SEEK_SET);
+
+    // allocate a buffer for the source code string and read it in
+    char* cSourceString = (char *) malloc(szSourceLength + 1);
+    if (fread(cSourceString, szSourceLength, 1, pFileStream) != 1)
+    {
+        fclose(pFileStream);
+        free(cSourceString);
+        return 0;
+    }
+
+    // close the file and return the total length of the combined (preamble + source) string
+    fclose(pFileStream);
+    cSourceString[szSourceLength] = '\0';
+
+    return cSourceString;
+}
+
+void PGR_radiosity::runRadiosityKernelCL()
+{
+
 }
 
 void PGR_radiosity::releaseCL()
 {
-    //TODO release OpenCL structures
+    /* Releases OpenCL resources (Context, Memory etc.) */
+    cl_int status;
+
+    status = clReleaseKernel(this->sortKernel);
+    CheckOpenCLError(status, "clReleaseKernel sortKernel.");
+    status = clReleaseKernel(this->radiosityKernel);
+    CheckOpenCLError(status, "clReleaseKernel radiosityKernel.");
+
+    status = clReleaseMemObject(this->indicesCL);
+    CheckOpenCLError(status, "clReleaseMemObject indicesCL");
+    status = clReleaseMemObject(this->patchesCL);
+    CheckOpenCLError(status, "clReleaseMemObject patchesCL");
+    status = clReleaseMemObject(this->patchesGeometryCL);
+    CheckOpenCLError(status, "clReleaseMemObject patchesGeometryCL");
+    //status = clReleaseMemObject(this->factorsCL);
+    //CheckOpenCLError(status, "clReleaseMemObject factorsCL");
+
+    status = clReleaseProgram(this->program);
+    CheckOpenCLError(status, "clReleaseProgram.");
+
+    status = clReleaseCommandQueue(commandQueue);
+    CheckOpenCLError(status, "clReleaseCommandQueue.");
+
+    status = clReleaseContext(context);
+    CheckOpenCLError(status, "clReleaseContext.");
 }

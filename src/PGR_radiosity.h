@@ -1,8 +1,9 @@
 /*
  * File:   PGR_radiosity.h
- * Author: martin
+ * Author: Martin Simon      <xsimon14@stud.fit.vutbr.cz>
+ *         Lukas Brzobohaty  <xbrzob06@stud.fit.vutbr.cz>
  *
- * Created on 29. listopad 2013, 10:10
+ * Created on 2013-11-29, 10:10
  */
 
 #ifndef PGR_RADIOSITY_H
@@ -10,6 +11,8 @@
 
 #include "PGR_model.h"
 #include <glm/gtc/type_ptr.hpp>
+#include <CL/opencl.h>
+#include <stdarg.h>
 
 
 #define PGR_GPU 1
@@ -36,8 +39,13 @@ private:
     //TODO here should be more function used to compute radiosity on CPU
 
     void computeRadiosityCL();
-    void prepareCL();
+    int prepareCL();
     void releaseCL();
+    void runRadiosityKernelCL();
+
+    const char *CLErrorString(cl_int _err);
+    void CheckOpenCLError(cl_int _ciErr, const char *_sMsg, ...);
+    char* loadProgSource(const char* cFilename);
 
     /* Radiosity structures */
     /*struct factors;*/
@@ -45,6 +53,14 @@ private:
 
     /* OpenCL structures */
     /*struct factorsCL;*/
+    cl_context context;
+    cl_command_queue commandQueue;
+    cl_kernel radiosityKernel, sortKernel;
+    cl_mem factorsCL; // form factors
+    cl_mem indicesCL; // indices of N most energized items
+    cl_mem patchesCL; // struct of all patches
+    cl_mem patchesGeometryCL; // struct of all patches
+    cl_program program; // OpenCL program
 
     PGR_model * model;
     bool computedFactors;

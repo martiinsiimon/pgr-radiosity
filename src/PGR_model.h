@@ -16,6 +16,7 @@
 #include "PGR_patch.h"
 #include <vector>
 #include <iostream>
+#include <CL/cl.h>
 
 using namespace std;
 
@@ -40,7 +41,10 @@ public:
     int getPatchesCount();
 
     /* Fill given opencl memory object with patches */
-    int getPatchesCL(/* cl_mem * patches*/);
+    int getPatchesCL(cl_float4 *data);
+
+    /* Fill given opencl memory object with patches geometry */
+    int getPatchesGeometryCL(cl_float16 *data);
 
     /* Fill a list indices if N most energized patches. The index is in vector
      * patches */

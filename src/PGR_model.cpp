@@ -149,3 +149,15 @@ void PGR_model::divide()
 
     this->patches = tmpPatches;
 }
+
+int PGR_model::getPatchesCL(cl_float4 *data)
+{
+    //TODO WRITE FUNCTION!!!!
+    return 0;
+}
+
+int PGR_model::getPatchesGeometryCL(cl_float16 *data)
+{
+    //TODO WRITE FUNCTION!!!!
+    return 0;
+}
