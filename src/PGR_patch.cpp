@@ -24,6 +24,7 @@ PGR_patch::PGR_patch(const PGR_patch& orig)
     this->vertices[2] = orig.vertices[0];
     this->vertices[3] = orig.vertices[0];
     this->area = orig.area;
+    this->energy = orig.energy;
 }
 
 PGR_patch::PGR_patch(PGR_patch *orig)
@@ -33,7 +34,9 @@ PGR_patch::PGR_patch(PGR_patch *orig)
     this->vertices[2] = orig->vertices[0];
     this->vertices[3] = orig->vertices[0];
     this->area = orig->area;
+    this->energy = orig->energy;
 }
+
 PGR_patch::~PGR_patch()
 {
 }
@@ -53,12 +56,12 @@ void PGR_patch::setArea(float a)
     this->area = a;
 }
 
-void PGR_patch::setEnergy(double e)
+void PGR_patch::setEnergy(float e)
 {
     this->energy = e;
 }
 
-double PGR_patch::getEnergy()
+float PGR_patch::getEnergy()
 {
     return this->energy;
 }
@@ -177,6 +180,7 @@ void PGR_patch::divide(float area, vector<PGR_patch*> *result)
                          todo.back()->vertices[1],
                          todo.back()->vertices[2],
                          todo.back()->vertices[3]);
+        tmp->setEnergy(todo.back()->energy);
         delete todo.back();
         todo.pop_back();
 
@@ -248,7 +252,9 @@ void PGR_patch::divide(float area, vector<PGR_patch*> *result)
 
 
             tmp1->setVertices(a.vertices[0], a.vertices[1], a.vertices[2], a.vertices[3]);
+            tmp1->setEnergy(tmp->getEnergy());
             tmp2->setVertices(b.vertices[0], b.vertices[1], b.vertices[2], b.vertices[3]);
+            tmp2->setEnergy(tmp->getEnergy());
 
             delete tmp;
 

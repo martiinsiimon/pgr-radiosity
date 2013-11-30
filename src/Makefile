@@ -1,6 +1,6 @@
 FILES=main.cpp PGR_renderer.cpp PGR_model.cpp PGR_patch.cpp PGR_radiosity.cpp pgr.cpp
 OBJ=${FILES:.cpp=.o}
-CFLAGS_COMMON=-pipe -Wall -ggdb
+CFLAGS=-pipe -Wall -ggdb -g -O0
 
 
 EXE=radiosity
@@ -10,12 +10,12 @@ GCC=gcc
 
 ifeq ($(OS), Windows_NT)
     LIBS=-lopengl32 -lglew32 -lSDL -lOpenCL
-    FLAGS=$(CFLAGS_COMMON) -Wl,--enable-auto-import
+    FLAGS=$(CFLAGS) -Wl,--enable-auto-import
     RM=del
     DEPS=pgr.o
 else
     LIBS=-L/usr/lib `sdl-config --libs` -lGL -lGLEW -lOpenCL
-    FLAGS=$(CFLAGS_COMMON) `sdl-config --cflags` -I. -IGL -DUSE_GLEE
+    FLAGS=$(CFLAGS) `sdl-config --cflags` -I. -IGL -DUSE_GLEE
     RM=rm -f
     USE_GLEE=1
     DEPS=pgr.o GLee.o
@@ -35,8 +35,6 @@ run:
 clean:
 	$(RM) *.o $(EXE)
 
-
-
 %: %.cpp
 	$(CC) -o $@ $^ $(FLAGS) $(LIBS)
 
@@ -45,5 +43,10 @@ clean:
 
 #zavislosti
 pgr.o: pgr.cpp pgr.h
+
+PGR_model.o: PGR_model.cpp PGR_model.h PGR_patch.h model.h
+PGR_renderer.o: PGR_renderer.cpp PGR_renderer.h PGR_radiosity.h PGR_model.h pgr.h model.h 
+PGR_radiosity.o: PGR_radiosity.cpp PGR_radiosity.h PGR_model.h
+PGR_patch.o: PGR_patch.cpp PGR_patch.h model.h
 
 $(EXE): $(FILES) $(DEPS)

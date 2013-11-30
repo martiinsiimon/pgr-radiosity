@@ -10,7 +10,7 @@
 
 #include "PGR_renderer.h"
 #include "model.h"
-#include "sphere.h"
+//#include "sphere.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>

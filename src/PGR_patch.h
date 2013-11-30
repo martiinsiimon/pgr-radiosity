@@ -28,8 +28,8 @@ public:
     //void addVertex(Point p);
     void setVertices(Point p0, Point p1, Point p2, Point p3);
     void setArea(float a);
-    void setEnergy(double e);
-    double getEnergy();
+    void setEnergy(float e);
+    float getEnergy();
 
     void computeArea();
     float getShorterLength();

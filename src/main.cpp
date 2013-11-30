@@ -22,7 +22,7 @@ using namespace std;
 #define PGR_ROTATE_X 20.0f // Rotation about x-axis
 #define PGR_ROTATE_Y -25.0f // Rotation about y-axis
 #define PGR_CORE cpu //Radiosity computing unit {cpu,gpu}
-#define PGR_MAX_AREA 0.01f //Maximal area size of every patch
+#define PGR_MAX_AREA 0.1f //Maximal area size of every patch
 
 /* Program global variables - initialized to default values*/
 GLuint width = PGR_WINDOW_WIDTH;

@@ -46,6 +46,7 @@ private:
     const char *CLErrorString(cl_int _err);
     void CheckOpenCLError(cl_int _ciErr, const char *_sMsg, ...);
     char* loadProgSource(const char* cFilename);
+    int printTiming(cl_event event, const char* title);
 
     /* Radiosity structures */
     /*struct factors;*/
@@ -61,6 +62,8 @@ private:
     cl_mem patchesCL; // struct of all patches
     cl_mem patchesGeometryCL; // struct of all patches
     cl_program program; // OpenCL program
+    cl_float16 * raw_patchesGeometry;
+    cl_float4 * raw_patches;
 
     PGR_model * model;
     bool computedFactors;

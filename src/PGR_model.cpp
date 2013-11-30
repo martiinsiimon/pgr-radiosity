@@ -108,6 +108,11 @@ void PGR_model::deletePatches()
     this->patches.clear();
 }
 
+int PGR_model::getPatchesCount()
+{
+    return this->patches.size();
+}
+
 void PGR_model::divide()
 {
     if (this->maxArea <= 0.0)
@@ -152,12 +157,53 @@ void PGR_model::divide()
 
 int PGR_model::getPatchesCL(cl_float4 *data)
 {
-    //TODO WRITE FUNCTION!!!!
-    return 0;
+    int i;
+    for (i = 0; i < this->patches.size(); i++)
+    {
+        //energy
+        data[i].s0 = this->patches.at(i)->energy;
+
+        //color, all vertices are the same
+        data[i].s1 = this->patches.at(i)->vertices[0].color[0];
+        data[i].s2 = this->patches.at(i)->vertices[0].color[1];
+        data[i].s3 = this->patches.at(i)->vertices[0].color[2];
+    }
+
+    return i;
 }
 
 int PGR_model::getPatchesGeometryCL(cl_float16 *data)
 {
-    //TODO WRITE FUNCTION!!!!
-    return 0;
+    int i;
+    for (i = 0; i < this->patches.size(); i++)
+    {
+        //vertex 1
+        data[i].s[0] = this->patches.at(i)->vertices[0].position[0];
+        data[i].s[1] = this->patches.at(i)->vertices[0].position[1];
+        data[i].s[2] = this->patches.at(i)->vertices[0].position[2];
+
+        //vertex 2
+        data[i].s[3] = this->patches.at(i)->vertices[1].position[0];
+        data[i].s[4] = this->patches.at(i)->vertices[1].position[1];
+        data[i].s[5] = this->patches.at(i)->vertices[1].position[2];
+
+        //vertex 3
+        data[i].s[6] = this->patches.at(i)->vertices[2].position[0];
+        data[i].s[7] = this->patches.at(i)->vertices[2].position[1];
+        data[i].s[8] = this->patches.at(i)->vertices[2].position[2];
+
+        //vertex 4
+        data[i].s[9] = this->patches.at(i)->vertices[3].position[0];
+        data[i].s[10] = this->patches.at(i)->vertices[3].position[1];
+        data[i].s[11] = this->patches.at(i)->vertices[3].position[2];
+
+        //normal of patch - the same for all vertices
+        data[i].s[12] = this->patches.at(i)->vertices[0].normal[0];
+        data[i].s[13] = this->patches.at(i)->vertices[0].normal[1];
+        data[i].s[14] = this->patches.at(i)->vertices[0].normal[2];
+
+        //the last part is unused
+        data[i].s[15] = 0;
+    }
+    return i;
 }
