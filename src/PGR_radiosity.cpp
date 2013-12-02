@@ -50,6 +50,58 @@ void PGR_radiosity::computeRadiosity()
      *
      * Note: Na form faktory nejspis nezbude misto - pokud spravne pocitan a na jeden faktor je treba 4 byty, tak dohromady pro vsechny se jedna pri milionu ploskach o 36 terabytu... doufam, ze jsem nekde udelal mega chybu a mluvime jen o MB...
      */
+    
+    int *ids = new int [N];
+    int count = this->model->getIdsOfNMostEnergizedPatches(&ids, N);
+    
+    glm::vec3 delta;
+    
+    /*for(int i = 0; i < this->model->patches.size(); i++) 
+    {
+        float x, y, z;
+        
+        // center of patches
+        x = (this->model->patches[i]->vertices[0].position[0] + this->model->patches[i]->vertices[1].position[0] + this->model->patches[i]->vertices[2].position[0] + this->model->patches[i]->vertices[3].position[0]) / 4.0;
+        y = (this->model->patches[i]->vertices[0].position[1] + this->model->patches[i]->vertices[1].position[1] + this->model->patches[i]->vertices[2].position[1] + this->model->patches[i]->vertices[3].position[1]) / 4.0;
+        z = (this->model->patches[i]->vertices[0].position[2] + this->model->patches[i]->vertices[1].position[2] + this->model->patches[i]->vertices[2].position[2] + this->model->patches[i]->vertices[3].position[2]) / 4.0;
+        glm::vec3 ShootPos (x, y, z);
+
+        x = this->model->patches[i]->vertices[0].normal[0];
+        y = this->model->patches[i]->vertices[0].normal[1];
+        z = this->model->patches[i]->vertices[0].normal[2];
+        glm::vec3 ShootNormal (x, y, z);
+        
+        x = y = z = this->model->patches[i]->energy;
+        glm::vec3 ShooterEnergy (x, y, z);
+        
+        float ShootDArea = this->model->patches[i]->area;
+        
+        for(int j = 0; j < this->model->patches.size(); j++) {            
+            x = (this->model->patches[j]->vertices[0].position[0] + this->model->patches[j]->vertices[1].position[0] + this->model->patches[j]->vertices[2].position[0] + this->model->patches[j]->vertices[3].position[0]) / 4.0;
+            y = (this->model->patches[j]->vertices[0].position[1] + this->model->patches[j]->vertices[1].position[1] + this->model->patches[j]->vertices[2].position[1] + this->model->patches[j]->vertices[3].position[1]) / 4.0;
+            z = (this->model->patches[j]->vertices[0].position[2] + this->model->patches[j]->vertices[1].position[2] + this->model->patches[j]->vertices[2].position[2] + this->model->patches[j]->vertices[3].position[2]) / 4.0;
+            glm::vec3 RecvPos (x, y, z);
+
+            x = this->model->patches[j]->vertices[0].normal[0];
+            y = this->model->patches[j]->vertices[0].normal[1];
+            z = this->model->patches[j]->vertices[0].normal[2];
+            glm::vec3 RecvNormal (x, y, z);
+
+            x = this->model->patches[j]->vertices[0].color[0];
+            y = this->model->patches[j]->vertices[0].color[1];
+            z = this->model->patches[j]->vertices[0].color[2];
+            glm::vec3 RecvColor (x, y, z);
+
+            delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShooterEnergy, ShootDArea, RecvColor);
+      
+            for(int k = 0; k < count; k++)
+            {
+                glm::dot(this->model->patches[ids[k]], delta);
+            }            
+        }
+    }*/
+    //this->model->updateArrays();
+    
 }
 
 /**

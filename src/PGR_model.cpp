@@ -207,3 +207,40 @@ int PGR_model::getPatchesGeometryCL(cl_float16 *data)
     }
     return i;
 }
+
+int PGR_model::getIdsOfNMostEnergizedPatches(int **ids, int n)
+{
+    int count = 0;
+    
+    vector<PGR_patch*> tmpPatches = this->patches;
+    
+    for(int i = 0; i < n; i++, count++) 
+    {
+        double energy = 0;
+        int id = 0;
+        for(int j = 0; j < tmpPatches.size(); j++)
+        {
+            if(tmpPatches[j]->energy > energy)
+            {
+                energy = tmpPatches[j]->energy;
+                id = j;
+            }
+        }
+        
+        (*ids)[i] = id;
+        tmpPatches[id]->energy = 0;
+    }
+    
+    return count;
+}
+
+double PGR_model::getMaximalEnergy()
+{
+    double energy = 0;
+    for(int i = 0; i < this->patches.size(); i++)
+    {
+        energy = MAX(energy, this->patches[i]->energy);
+    }
+    
+    return energy;
+}

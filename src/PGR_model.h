@@ -48,7 +48,7 @@ public:
 
     /* Fill a list indices if N most energized patches. The index is in vector
      * patches */
-    int getIdsOfNMostEnergizedPatches(int **ids);
+    int getIdsOfNMostEnergizedPatches(int **ids, int n);
 
     /* Get the energy of the most energized patch. Used to decide to terminate
      * radiosity computation */

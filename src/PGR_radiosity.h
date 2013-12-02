@@ -13,12 +13,14 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <CL/opencl.h>
 #include <stdarg.h>
+#include <cstdio>
 
 
 #define PGR_GPU 1
 #define PGR_CPU 2
+#define N 10
 #ifndef M_PI
-#define M_PI 3.14159265358979323846
+    #define M_PI 3.14159265358979323846
 #endif
 
 using namespace std;

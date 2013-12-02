@@ -170,7 +170,7 @@ void PGR_renderer::drawSceneRadiosity(glm::mat4 mvp)
     glUseProgram(iProg);
 
     glUniformMatrix4fv(mvpUniform, 1, GL_FALSE, glm::value_ptr(mvp));
-
+    
     /* Draw room */
     /* Note: Here should be the second shader program, object to bottom from here should react to light */
     //glUseProgram(iProg);
