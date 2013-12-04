@@ -75,6 +75,7 @@ void PGR_model::appendModel(PGR_model* m)
                        m->patches[i]->vertices[i + 1],
                        m->patches[i]->vertices[i + 2],
                        m->patches[i]->vertices[i + 3]);
+        p->setEnergy(m->patches[i]->energy);
         this->patches.push_back(p);
     }
     this->updateArrays();
@@ -268,7 +269,7 @@ int PGR_model::getIdsOfNMostEnergizedPatches(int **ids, int n)
 {
     int count = 0;
 
-    vector<PGR_patch*> tmpPatches = this->patches;
+    vector<PGR_patch*> tmpPatches(this->patches);
 
     for(int i = 0; i < n; i++, count++)
     {
@@ -276,7 +277,14 @@ int PGR_model::getIdsOfNMostEnergizedPatches(int **ids, int n)
         int id = 0;
         for(int j = 0; j < tmpPatches.size(); j++)
         {
-            if(tmpPatches[j]->energy > energy)
+            bool in_array = false;
+            for(int k = 0; k < n; k++)
+            {
+                if((*ids)[k] == j) {
+                    in_array = true;
+                }
+            }
+            if(!in_array && tmpPatches[j]->energy > energy)
             {
                 energy = tmpPatches[j]->energy;
                 id = j;
@@ -284,7 +292,7 @@ int PGR_model::getIdsOfNMostEnergizedPatches(int **ids, int n)
         }
 
         (*ids)[i] = id;
-        tmpPatches[id]->energy = 0;
+        //tmpPatches[id]->energy = 0;
     }
 
     return count;
@@ -295,7 +303,10 @@ double PGR_model::getMaximalEnergy()
     double energy = 0;
     for(int i = 0; i < this->patches.size(); i++)
     {
-        energy = MAX(energy, this->patches[i]->energy);
+        if(this->patches[i]->energy > energy)
+        {
+            energy = this->patches[i]->energy;
+        }
     }
 
     return energy;
