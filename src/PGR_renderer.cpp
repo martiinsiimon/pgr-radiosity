@@ -31,7 +31,10 @@ glm::vec3 light_pos = glm::vec3(0, 2.5, 0);
 
 PGR_renderer::PGR_renderer()
 {
-    this->model = new PGR_model();
+    this->model = new PGR_model(C_ROOM);
+    PGR_model * light = new PGR_model(C_LIGHT);
+    this->model->appendModel(light);
+    delete light;
     this->maxArea = -1.0;
     this->divided = true;
 
@@ -170,7 +173,7 @@ void PGR_renderer::drawSceneRadiosity(glm::mat4 mvp)
     glUseProgram(iProg);
 
     glUniformMatrix4fv(mvpUniform, 1, GL_FALSE, glm::value_ptr(mvp));
-    
+
     /* Draw room */
     /* Note: Here should be the second shader program, object to bottom from here should react to light */
     //glUseProgram(iProg);

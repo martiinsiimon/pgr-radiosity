@@ -11,6 +11,11 @@
 #ifndef MODEL_H
 #define	MODEL_H
 
+#define C_ROOM 1
+#define C_LIGHT 2
+
+#define C_LIGHT_ENERGY 42.0f //don't know what's the correct ammount
+
 struct Point {
     float position[3];
     float color[3];
@@ -491,5 +496,34 @@ const unsigned int room[] = {
     75, 76, 77, 78,
     79, 80, 81, 82
 };
+
+
+const Point lightVe[] = {
+    {
+        {-0.5, 5.45, -0.5},
+        {1.0, 1.0, 1.0},
+        {0.0, -1.0, 0.0}
+    },
+    {
+        {-0.5, 5.45, 0.5},
+        {1.0, 1.0, 1.0},
+        {0.0, -1.0, 0.0}
+    },
+    {
+        {0.5, 5.45, 0.5},
+        {1.0, 1.0, 1.0},
+        {0.0, -1.0, 0.0}
+    },
+    {
+        {0.5, 5.45, -0.5},
+        {1.0, 1.0, 1.0},
+        {0.0, -1.0, 0.0}
+    }
+};
+
+const unsigned int lightIn[] = {
+    0, 1, 2, 3
+};
+
 #endif	/* PGR_MODEL_H */
 

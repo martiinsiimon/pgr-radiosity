@@ -24,8 +24,11 @@ using namespace std;
 class PGR_model {
 public:
     PGR_model();
+    PGR_model(int t);
     PGR_model(const PGR_model& orig);
     virtual ~PGR_model();
+
+    void appendModel(PGR_model *m);
 
     void updateArrays();
     void updatePatches();
@@ -57,6 +60,8 @@ public:
     vector<PGR_patch*> patches;
 private:
     void deletePatches();
+    void addLightEnergy(float e);
+
 
     Point *vertices;
     unsigned int verticesCount;

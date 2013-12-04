@@ -11,16 +11,47 @@
 
 PGR_model::PGR_model()
 {
-    this->indices = new unsigned int[(sizeof (room)) / sizeof (*room)];
-    memcpy(this->indices, room, sizeof (room));
-    this->indicesCount = sizeof (room) / sizeof (*room);
 
-    this->vertices = new Point[(sizeof (roomVertices)) / sizeof (*roomVertices)];
-    memcpy(this->vertices, roomVertices, sizeof (roomVertices));
-    this->verticesCount = sizeof (roomVertices) / sizeof (*roomVertices);
+}
+
+PGR_model::PGR_model(int t)
+{
+    if (t == C_ROOM)
+    {
+        this->indices = new unsigned int[(sizeof (room)) / sizeof (*room)];
+        memcpy(this->indices, room, sizeof (room));
+        this->indicesCount = sizeof (room) / sizeof (*room);
+
+        this->vertices = new Point[(sizeof (roomVertices)) / sizeof (*roomVertices)];
+        memcpy(this->vertices, roomVertices, sizeof (roomVertices));
+        this->verticesCount = sizeof (roomVertices) / sizeof (*roomVertices);
+    }
+    else if (t == C_LIGHT)
+    {
+        this->indices = new unsigned int[(sizeof (lightIn)) / sizeof (*lightIn)];
+        memcpy(this->indices, lightIn, sizeof (lightIn));
+        this->indicesCount = sizeof (lightIn) / sizeof (*lightIn);
+
+        this->vertices = new Point[(sizeof (lightVe)) / sizeof (*lightVe)];
+        memcpy(this->vertices, lightVe, sizeof (lightVe));
+        this->verticesCount = sizeof (lightVe) / sizeof (*lightVe);
+    }
+    else
+    {
+        this->indices = NULL;
+        this->vertices = NULL;
+
+        this->indicesCount = 0;
+        this->verticesCount = 0;
+    }
 
     this->maxArea = -1.0;
     this->updatePatches();
+
+    if (t == C_LIGHT)
+    {
+        this->addLightEnergy(C_LIGHT_ENERGY);
+    }
 }
 
 PGR_model::PGR_model(const PGR_model& orig)
@@ -31,6 +62,31 @@ PGR_model::~PGR_model()
 {
     delete [] this->indices;
     delete [] this->vertices;
+
+    this->deletePatches();
+}
+
+void PGR_model::appendModel(PGR_model* m)
+{
+    for (int i = 0; i < m->patches.size(); i++)
+    {
+        cout << i << endl;
+        PGR_patch * p = new PGR_patch();
+        p->setVertices(m->patches[i]->vertices[i],
+                       m->patches[i]->vertices[i + 1],
+                       m->patches[i]->vertices[i + 2],
+                       m->patches[i]->vertices[i + 3]);
+        this->patches.push_back(p);
+    }
+    this->updateArrays();
+}
+
+void PGR_model::addLightEnergy(float e)
+{
+    for (int i = 0; i < this->patches.size(); i++)
+    {
+        this->patches.at(i)->setEnergy(e);
+    }
 }
 
 
@@ -211,10 +267,10 @@ int PGR_model::getPatchesGeometryCL(cl_float16 *data)
 int PGR_model::getIdsOfNMostEnergizedPatches(int **ids, int n)
 {
     int count = 0;
-    
+
     vector<PGR_patch*> tmpPatches = this->patches;
-    
-    for(int i = 0; i < n; i++, count++) 
+
+    for(int i = 0; i < n; i++, count++)
     {
         double energy = 0;
         int id = 0;
@@ -226,11 +282,11 @@ int PGR_model::getIdsOfNMostEnergizedPatches(int **ids, int n)
                 id = j;
             }
         }
-        
+
         (*ids)[i] = id;
         tmpPatches[id]->energy = 0;
     }
-    
+
     return count;
 }
 
@@ -241,6 +297,6 @@ double PGR_model::getMaximalEnergy()
     {
         energy = MAX(energy, this->patches[i]->energy);
     }
-    
+
     return energy;
 }
