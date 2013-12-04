@@ -37,7 +37,7 @@ public:
 
 private:
     void computeRadiosity();
-    glm::vec3 formFactor(glm::vec3, glm::vec3, glm::vec3, glm::vec3, glm::vec3, float, glm::vec3);
+    double formFactor(glm::vec3, glm::vec3, glm::vec3, glm::vec3, glm::vec3, float, glm::vec3);
     //TODO here should be more function used to compute radiosity on CPU
 
     void computeRadiosityCL();

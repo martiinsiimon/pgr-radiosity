@@ -54,8 +54,6 @@ void PGR_radiosity::computeRadiosity()
     int *ids = new int [N];
     int count = this->model->getIdsOfNMostEnergizedPatches(&ids, N);
     
-    glm::vec3 delta;
-    
     for(int i = 0; i < this->model->patches.size(); i++) 
     {
         float x, y, z;
@@ -95,16 +93,14 @@ void PGR_radiosity::computeRadiosity()
             z = this->model->patches[j]->vertices[0].color[2];
             glm::vec3 RecvColor (x, y, z);
 
-            delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShooterEnergy, ShootDArea, RecvColor);
-            if(delta.x > 0 || delta.y > 0 || delta.z > 0)
-                cout << "x: " << delta.x << "; y: " << delta.y << "; z: " << delta.z << endl;
+            double delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShooterEnergy, ShootDArea, RecvColor);
             
             for(int k = 0; k < count; k++)
             {
-                ResultColor.x += this->model->patches[ids[k]]->vertices[0].color[0] * delta.x;
-                ResultColor.y += this->model->patches[ids[k]]->vertices[0].color[1] * delta.y;
-                ResultColor.z += this->model->patches[ids[k]]->vertices[0].color[2] * delta.z;
-                ResultEnergy += this->model->patches[ids[k]]->energy * delta.x;
+                ResultColor.x += this->model->patches[ids[k]]->vertices[0].color[0] * delta;
+                ResultColor.y += this->model->patches[ids[k]]->vertices[0].color[1] * delta;
+                ResultColor.z += this->model->patches[ids[k]]->vertices[0].color[2] * delta;
+                ResultEnergy += this->model->patches[ids[k]]->energy * delta;
             }            
         }
         
@@ -137,25 +133,27 @@ void PGR_radiosity::computeRadiosity()
  * @param float ShootDArea - the delta area of the shooter
  * @param glm::vec3 RecvColor - the reflectivity of this element
  */
-glm::vec3 PGR_radiosity::formFactor(glm::vec3 RecvPos, glm::vec3 ShootPos, glm::vec3 RecvNormal, glm::vec3 ShootNormal, glm::vec3 ShooterEnergy, float ShootDArea, glm::vec3 RecvColor)
+double PGR_radiosity::formFactor(glm::vec3 RecvPos, glm::vec3 ShootPos, glm::vec3 RecvNormal, glm::vec3 ShootNormal, glm::vec3 ShooterEnergy, float ShootDArea, glm::vec3 RecvColor)
 {
     // a normalized vector from shooter to receiver
     glm::vec3 r = ShootPos - RecvPos;
-    float distance2 = glm::dot(r, r);
+    double distance2 = glm::dot(r, r);
     r = glm::normalize(r);
 
     // the angles of the receiver and the shooter from r
-    float cosi = glm::dot(RecvNormal, r);
-    float cosj = -glm::dot(ShootNormal, r);
+    double cosi = glm::dot(RecvNormal, r);
+    double cosj = -glm::dot(ShootNormal, r);
 
     // compute the disc approximation form factor
-    float Fij = max(cosi * cosj, (float) 0) / (M_PI * distance2 + ShootDArea);
+    double Fij = (max(cosi * cosj, (double) 0) / (M_PI * distance2)) * ShootDArea;
+    
+    
 
     // Modulate shooter's energy by the receiver's reflectivity
     // and the area of the shooter.
-    glm::vec3 delta = ShooterEnergy * RecvColor * ShootDArea * Fij;
+    //glm::vec3 delta = ShooterEnergy * RecvColor * ShootDArea * Fij;
 
-    return delta;
+    return Fij;
 }
 
 void PGR_radiosity::computeRadiosityCL()
