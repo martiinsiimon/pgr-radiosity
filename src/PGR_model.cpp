@@ -70,7 +70,6 @@ void PGR_model::appendModel(PGR_model* m)
 {
     for (int i = 0; i < m->patches.size(); i++)
     {
-        cout << i << endl;
         PGR_patch * p = new PGR_patch();
         p->setVertices(m->patches[i]->vertices[i],
                        m->patches[i]->vertices[i + 1],
@@ -81,7 +80,7 @@ void PGR_model::appendModel(PGR_model* m)
     this->updateArrays();
 }
 
-void PGR_model::addLightEnergy(float e)
+void PGR_model::addLightEnergy(double e)
 {
     for (int i = 0; i < this->patches.size(); i++)
     {
@@ -189,6 +188,7 @@ void PGR_model::divide()
                                 vec[n]->vertices[1],
                                 vec[n]->vertices[2],
                                 vec[n]->vertices[3]);
+                np->setEnergy(vec[n]->getEnergy());
                 tmpPatches.push_back(np);
                 delete vec[n];
             }
@@ -201,6 +201,7 @@ void PGR_model::divide()
                             this->patches[i]->vertices[1],
                             this->patches[i]->vertices[2],
                             this->patches[i]->vertices[3]);
+            np->setEnergy(this->patches[i]->getEnergy());
             tmpPatches.push_back(np);
         }
     }

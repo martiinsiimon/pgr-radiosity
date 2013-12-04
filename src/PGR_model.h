@@ -60,7 +60,7 @@ public:
     vector<PGR_patch*> patches;
 private:
     void deletePatches();
-    void addLightEnergy(float e);
+    void addLightEnergy(double e);
 
 
     Point *vertices;

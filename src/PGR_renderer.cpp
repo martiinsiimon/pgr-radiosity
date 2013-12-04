@@ -35,6 +35,7 @@ PGR_renderer::PGR_renderer()
     PGR_model * light = new PGR_model(C_LIGHT);
     this->model->appendModel(light);
     delete light;
+    //cout << this->model->getMaximalEnergy() << endl;
     this->maxArea = -1.0;
     this->divided = true;
 

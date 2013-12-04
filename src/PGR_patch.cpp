@@ -56,12 +56,12 @@ void PGR_patch::setArea(float a)
     this->area = a;
 }
 
-void PGR_patch::setEnergy(float e)
+void PGR_patch::setEnergy(double e)
 {
     this->energy = e;
 }
 
-float PGR_patch::getEnergy()
+double PGR_patch::getEnergy()
 {
     return this->energy;
 }
@@ -172,6 +172,7 @@ void PGR_patch::divide(float area, vector<PGR_patch*> *result)
     int c1, c2;
     PGR_patch a, b;
     p->setVertices(this->vertices[0], this->vertices[1], this->vertices[2], this->vertices[3]);
+    p->setEnergy(this->getEnergy());
     todo.push_back(p);
     while (!todo.empty())
     {
