@@ -6,5 +6,3 @@ Note: Choose whatever you want and write a name next to it. The documentation sh
    * radiosity computed via OpenCL (implementation)
    * do some experiments to reach up the best paralelism/performance
  * documentation
-
- * add light (some patches with initial energy)

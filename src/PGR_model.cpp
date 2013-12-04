@@ -89,7 +89,6 @@ void PGR_model::addLightEnergy(float e)
     }
 }
 
-
 unsigned int* PGR_model::getIndices()
 {
     return this->indices;
