@@ -125,7 +125,14 @@ void PGR_radiosity::computeRadiosity()
 double PGR_radiosity::formFactor(glm::vec3 RecvPos, glm::vec3 ShootPos, glm::vec3 RecvNormal, glm::vec3 ShootNormal, glm::vec3 ShooterEnergy, float ShootDArea, glm::vec3 RecvColor)
 {
     // a normalized vector from shooter to receiver
+
+    if (ShootPos == RecvPos)
+    {
+        return 0.0;
+    }
+
     glm::vec3 r = ShootPos - RecvPos;
+
     double distance2 = glm::dot(r, r);
     r = glm::normalize(r);
 
@@ -133,16 +140,8 @@ double PGR_radiosity::formFactor(glm::vec3 RecvPos, glm::vec3 ShootPos, glm::vec
     double cosi = glm::dot(RecvNormal, r);
     double cosj = -glm::dot(ShootNormal, r);
 
-    // compute the disc approximation form factor
-    double Fij = (max(cosi * cosj, (double) 0) / (M_PI * distance2)) * ShootDArea;
-
-
-
-    // Modulate shooter's energy by the receiver's reflectivity
-    // and the area of the shooter.
-    //glm::vec3 delta = ShooterEnergy * RecvColor * ShootDArea * Fij;
-
-    return Fij;
+    // retrun computed disc approximation form factor
+    return (max(cosi * cosj, (double) 0) / (M_PI * distance2)) * ShootDArea;
 }
 
 void PGR_radiosity::computeRadiosityCL()
