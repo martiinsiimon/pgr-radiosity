@@ -53,12 +53,7 @@ private:
     char* loadProgSource(const char* cFilename);
     int printTiming(cl_event event, const char* title);
 
-    /* Radiosity structures */
-    /*struct factors;*/
-
-
     /* OpenCL structures */
-    /*struct factorsCL;*/
     cl_context context;
     cl_command_queue queue;
     cl_kernel radiosityKernel; //, sortKernel;
@@ -76,7 +71,6 @@ private:
 
 
     PGR_model * model;
-    //bool computedFactors;
     bool computedRadiosity;
     int core;
 };

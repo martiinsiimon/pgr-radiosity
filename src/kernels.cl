@@ -21,7 +21,7 @@ double formFactor(float4 RecvPos, float4 ShootPos, float4 RecvNormal, float4 Sho
 
     float4 r = ShootPos - RecvPos;
 
-    float distance2 = distance(ShootPos, RecvPos);//dot(r, r);
+    float distance2 = dot(r, r);
     r = normalize(r);
 
     // the angles of the receiver and the shooter from r
@@ -38,54 +38,59 @@ double formFactor(float4 RecvPos, float4 ShootPos, float4 RecvNormal, float4 Sho
  */
 __kernel void radiosity(__global float16* patchesGeo, __global float4* patchesInfo, uint patchesCount, __global uint* indices, uint indicesCount)
 {
-    int emitor = get_global_id(0); //position in indices array
+    int i = get_global_id(0); //position in indices array
 
-    for (unsigned int i = 0; i < indicesCount; i++)
-    {
-        float16 lightGeo = patchesGeo[indices[i]];
-        float4 lightInfo = patchesInfo[indices[i]];
+    float16 lightGeo = patchesGeo[indices[i]];
+    float4 lightInfo = patchesInfo[indices[i]];
 
-        float x, y, z;
+    float x, y, z;
 
-        // center of patches
-        x = (lightGeo.s0 + lightGeo.s3 + lightGeo.s6 + lightGeo.s9) / 4.0;
-        y = (lightGeo.s1 + lightGeo.s4 + lightGeo.s7 + lightGeo.sA) / 4.0;
-        z = (lightGeo.s2 + lightGeo.s5 + lightGeo.s8 + lightGeo.sB) / 4.0;
+    /* Center of light patch */
+    x = (lightGeo.s0 + lightGeo.s3 + lightGeo.s6 + lightGeo.s9) / 4.0;
+    y = (lightGeo.s1 + lightGeo.s4 + lightGeo.s7 + lightGeo.sA) / 4.0;
+    z = (lightGeo.s2 + lightGeo.s5 + lightGeo.s8 + lightGeo.sB) / 4.0;
+    float4 ShootPos = {x,y,z,0};
 
-        float4 ShootPos = {x,y,z,0};
+    /* Normal of light patch */
+    x = lightGeo.sC;
+    y = lightGeo.sD;
+    z = lightGeo.sE;
+    float4 ShootNormal = {x,y,z,0};
 
-        x = lightGeo.sC;
-        y = lightGeo.sD;
-        z = lightGeo.sE;
+    /* Area of light patch */
+    float ShootDArea = lightGeo.sF;
 
-        float4 ShootNormal = {x,y,z,0};
+    for(int j = 0; j < patchesCount; j++) {
 
-        float ShootDArea = lightGeo.sF;
+        float16 patchGeo = patchesGeo[j];
+        float4 patchInfo = patchesInfo[j];
 
-        for(int j = 0; j < patchesCount; j++) {
+        /* Center of patch */
+        x = (patchGeo.s0 + patchGeo.s3 + patchGeo.s6 + patchGeo.s9) / 4.0;
+        y = (patchGeo.s1 + patchGeo.s4 + patchGeo.s7 + patchGeo.sA) / 4.0;
+        z = (patchGeo.s2 + patchGeo.s5 + patchGeo.s8 + patchGeo.sB) / 4.0;
+        float4 RecvPos = {x,y,z,0};
 
-            float16 patchGeo = patchesGeo[j];
-            float4 patchInfo = patchesInfo[j];
+        /* Normal of patch */
+        x = patchGeo.sC;
+        y = patchGeo.sD;
+        z = patchGeo.sE;
+        float4 RecvNormal = {x,y,z,0};
 
-            x = (patchGeo.s0 + patchGeo.s3 + patchGeo.s6 + patchGeo.s9) / 4.0;
-            y = (patchGeo.s1 + patchGeo.s4 + patchGeo.s7 + patchGeo.sA) / 4.0;
-            z = (patchGeo.s2 + patchGeo.s5 + patchGeo.s8 + patchGeo.sB) / 4.0;
-            float4 RecvPos = {x,y,z,0};
+        /* Compute form factor */
+        double delta = formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
 
-            x = patchGeo.sC;
-            y = patchGeo.sD;
-            z = patchGeo.sE;
-            float4 RecvNormal = {x,y,z,0};
+        /* Distribute energy */
+        patchInfo.s0 += lightInfo.s0 * 0.5 * delta;
 
-            double delta = formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
-
-            patchInfo.s0 += lightInfo.s0 * 0.5 * delta;
-            patchInfo.s1 += lightInfo.s1 * 0.5 * delta;
-            patchInfo.s2 += lightInfo.s2 * 0.5 * delta;
-            patchInfo.s3 += lightInfo.s3 * 0.5 * delta;
-        }
-        lightInfo.s0 = 0;
+        /* Distribute color */
+        patchInfo.s1 += lightInfo.s1 * 0.5 * delta;
+        patchInfo.s2 += lightInfo.s2 * 0.5 * delta;
+        patchInfo.s3 += lightInfo.s3 * 0.5 * delta;
     }
+
+    /* Erase energy */
+    lightInfo.s0 = 0;
 }
 
 

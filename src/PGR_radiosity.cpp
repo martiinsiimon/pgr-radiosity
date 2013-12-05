@@ -52,7 +52,6 @@ PGR_radiosity::PGR_radiosity()
 PGR_radiosity::PGR_radiosity(PGR_model * m, int c)
 {
     this->model = m;
-    //this->computedFactors = false;
     this->computedRadiosity = false;
     this->core = c;
     cout << "Radiosity via " << ((c == PGR_CPU) ? "CPU" : "GPU") << endl;
@@ -98,9 +97,6 @@ void PGR_radiosity::compute()
 void PGR_radiosity::computeRadiosity()
 {
     /**
-     * Compute form factors, set this->computedFactors = true
-     * Compute radiosity, set this->computedRadiosity = true
-     *
      * Note: Na form faktory nejspis nezbude misto - pokud spravne pocitan a na jeden faktor je treba 4 byty, tak dohromady pro vsechny se jedna pri milionu ploskach o 36 terabytu... doufam, ze jsem nekde udelal mega chybu a mluvime jen o MB...
      */
 
@@ -123,7 +119,6 @@ void PGR_radiosity::computeRadiosity()
         glm::vec3 ShootNormal (x, y, z);
 
         float ShootDArea = this->model->patches[ids[i]]->area;
-
         for(int j = 0; j < this->model->patches.size(); j++) {
             x = (this->model->patches[j]->vertices[0].position[0] + this->model->patches[j]->vertices[1].position[0] + this->model->patches[j]->vertices[2].position[0] + this->model->patches[j]->vertices[3].position[0]) / 4.0;
             y = (this->model->patches[j]->vertices[0].position[1] + this->model->patches[j]->vertices[1].position[1] + this->model->patches[j]->vertices[2].position[1] + this->model->patches[j]->vertices[3].position[1]) / 4.0;
@@ -206,6 +201,8 @@ void PGR_radiosity::computeRadiosityCL()
     /* Run OpenCL kernel that computes radiosity. It includes a loop */
     this->runRadiosityKernelCL();
 
+    /* Events */
+    cl_event event_bufferPatchesInfo, event_bufferPatchesGeo;
 
     /* Read buffers from gpu memory */
     int status = clEnqueueReadBuffer(this->queue,
@@ -216,8 +213,12 @@ void PGR_radiosity::computeRadiosityCL()
                                      this->raw_patchesInfo,
                                      0,
                                      0,
-                                     0);
+                                     &event_bufferPatchesInfo);
     CheckOpenCLError(status, "read patches.");
+
+    /* Wait until the memory is readed */
+    status = clWaitForEvents(1, &event_bufferPatchesInfo);
+    CheckOpenCLError(status, "clWaitForEvents readMemory.");
 
     status = clEnqueueReadBuffer(this->queue,
                                  this->patchesGeoCL,
@@ -227,10 +228,18 @@ void PGR_radiosity::computeRadiosityCL()
                                  this->raw_patchesGeo,
                                  0,
                                  0,
-                                 0);
+                                 &event_bufferPatchesGeo);
     CheckOpenCLError(status, "read patchesGeometry.");
 
-    //TODO decode opencl memory object into our patches
+    /* Wait until the memory is readed */
+    status = clWaitForEvents(1, &event_bufferPatchesGeo);
+    CheckOpenCLError(status, "clWaitForEvents readMemory.");
+
+    /* Decode opencl memory objects */
+    this->model->decodePatchesCL(this->raw_patchesInfo, this->model->getPatchesCount());
+    this->model->decodePatchesGeometryCL(this->raw_patchesGeo, this->model->getPatchesCount());
+
+    this->model->updateArrays();
 
     /* Release CL structures */
     this->releaseCL();
@@ -645,10 +654,10 @@ void PGR_radiosity::runRadiosityKernelCL()
     status = clSetKernelArg(this->radiosityKernel, 4, sizeof (cl_uint), &indicesCount);
     CheckOpenCLError(status, "clSetKernelArg. (indicesCount)");
 
-    size_t globalThreads[] = {this->workGroupSize};
-    size_t localThreads[] = {this->workGroupSize};
+    size_t globalThreads[] = {indicesCount};
+    size_t localThreads[] = {indicesCount};
 
-
+    //TODO add cycle while getMaxEnergy is bigger than limit
     //while ()
     status = clEnqueueNDRangeKernel(this->queue,
                                     this->radiosityKernel,
@@ -665,57 +674,17 @@ void PGR_radiosity::runRadiosityKernelCL()
     status = clWaitForEvents(1, &event_radiosity);
     CheckOpenCLError(status, "clWaitForEvents radiosityKernel.");
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    // mean-shift
+    //TODO read patchesCL from gpu
+    //decode it
+    //determine maximal energy
 
-    //    /* patches buffer */
-    //    status = clSetKernelArg(sortKernel,
-    //                            0,
-    //                            sizeof (cl_mem),
-    //                            &this->patchesCL);
-    //    CheckOpenCLError(status, "clSetKernelArg. (patchesCL)");
-    //
-    //    /* indices buffer */
-    //    status = clSetKernelArg(sortKernel,
-    //                            1,
-    //                            sizeof (cl_mem),
-    //                            &this->indicesCL);
-    //
-    //    CheckOpenCLError(status, "clSetKernelArg. (indicesCL)");
-    //
-    //    /* count of patches */
-    //    status = clSetKernelArg(sortKernel,
-    //                            2,
-    //                            sizeof (cl_uint),
-    //                            &patchesCount);
-    //
-    //    CheckOpenCLError(status, "clSetKernelArg. (count)");
+    //OR
 
+    //add sortKernel before the actual kernel
+    //the sort kernel should sort indices parallel to avoid memory copies
+    //this is better
 
-    //the global number of threads in each dimension has to be divisible
-    // by the local dimension numbers
-    //    size_t globalThreadsSort[] = {
-    //        patchesCount //TODO fix it!!
-    //    };
-    //    //size_t localThreadsMeanshift[] = {width, 1};
-    //
-    //    status = clEnqueueNDRangeKernel(commandQueue, //TODO is this correct???
-    //                                    sortKernel,
-    //                                    1, //1D
-    //                                    NULL, //offset
-    //                                    globalThreadsSort,
-    //                                    //localThreadsMeanshift,
-    //                                    NULL,
-    //                                    0,
-    //                                    NULL,
-    //                                    &event_sort);
-    //
-    //    CheckOpenCLError(status, "clEnqueueNDRangeKernel sortKernel.");
-    //
-    //
-    //    status = clWaitForEvents(1, &event_sort);
-    //    CheckOpenCLError(status, "clWaitForEvents meanshift.");
-    //    cout << "test" << endl;
+    //end while
 
 }
 

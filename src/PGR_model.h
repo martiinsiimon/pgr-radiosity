@@ -58,6 +58,9 @@ public:
      * radiosity computation */
     double getMaximalEnergy();
 
+    void decodePatchesGeometryCL(cl_float16 *data, uint size);
+    void decodePatchesCL(cl_float4 *data, uint size);
+
     vector<PGR_patch*> patches;
 private:
     void deletePatches();
