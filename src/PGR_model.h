@@ -61,7 +61,6 @@ public:
 private:
     void deletePatches();
     void addLightEnergy(double e);
-    bool isInArray(vector<int> *ids, int i);
 
     Point *vertices;
     unsigned int verticesCount;

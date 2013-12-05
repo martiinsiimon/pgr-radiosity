@@ -266,16 +266,6 @@ int PGR_model::getPatchesGeometryCL(cl_float16 *data)
     return i;
 }
 
-bool PGR_model::isInArray(vector<int> *ids, int i)
-{
-    for (int n = 0; n < ids->size(); n++)
-    {
-        if (ids->at(n) == i)
-            return true;
-    }
-    return false;
-}
-
 int PGR_model::getIdsOfNMostEnergizedPatches(vector<int> *ids, int n)
 {
     int count = 0; //real count
