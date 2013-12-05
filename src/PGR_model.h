@@ -51,7 +51,7 @@ public:
 
     /* Fill a list indices if N most energized patches. The index is in vector
      * patches */
-    int getIdsOfNMostEnergizedPatches(int **ids, int n);
+    int getIdsOfNMostEnergizedPatches(vector<int> *ids, int n);
 
     /* Get the energy of the most energized patch. Used to decide to terminate
      * radiosity computation */
@@ -61,7 +61,7 @@ public:
 private:
     void deletePatches();
     void addLightEnergy(double e);
-
+    bool isInArray(vector<int> *ids, int i);
 
     Point *vertices;
     unsigned int verticesCount;

@@ -50,14 +50,15 @@ void PGR_radiosity::computeRadiosity()
      *
      * Note: Na form faktory nejspis nezbude misto - pokud spravne pocitan a na jeden faktor je treba 4 byty, tak dohromady pro vsechny se jedna pri milionu ploskach o 36 terabytu... doufam, ze jsem nekde udelal mega chybu a mluvime jen o MB...
      */
-    
-    int *ids = new int [N];
+
+    //int *ids = new int [N];
+    vector<int> ids;
     int count = this->model->getIdsOfNMostEnergizedPatches(&ids, N);
-    
-    for(int i = 0; i < N; i++) 
+
+    for(int i = 0; i < N; i++)
     {
         double x, y, z;
-        
+
         // center of patches
         x = (this->model->patches[ids[i]]->vertices[0].position[0] + this->model->patches[ids[i]]->vertices[1].position[0] + this->model->patches[ids[i]]->vertices[2].position[0] + this->model->patches[ids[i]]->vertices[3].position[0]) / 4.0;
         y = (this->model->patches[ids[i]]->vertices[0].position[1] + this->model->patches[ids[i]]->vertices[1].position[1] + this->model->patches[ids[i]]->vertices[2].position[1] + this->model->patches[ids[i]]->vertices[3].position[1]) / 4.0;
@@ -68,13 +69,13 @@ void PGR_radiosity::computeRadiosity()
         y = this->model->patches[ids[i]]->vertices[0].normal[1];
         z = this->model->patches[ids[i]]->vertices[0].normal[2];
         glm::vec3 ShootNormal (x, y, z);
-        
+
         x = y = z = this->model->patches[ids[i]]->energy;
         glm::vec3 ShooterEnergy (x, y, z);
-        
+
         float ShootDArea = this->model->patches[ids[i]]->area;
-        
-        for(int j = 0; j < this->model->patches.size(); j++) {            
+
+        for(int j = 0; j < this->model->patches.size(); j++) {
             x = (this->model->patches[j]->vertices[0].position[0] + this->model->patches[j]->vertices[1].position[0] + this->model->patches[j]->vertices[2].position[0] + this->model->patches[j]->vertices[3].position[0]) / 4.0;
             y = (this->model->patches[j]->vertices[0].position[1] + this->model->patches[j]->vertices[1].position[1] + this->model->patches[j]->vertices[2].position[1] + this->model->patches[j]->vertices[3].position[1]) / 4.0;
             z = (this->model->patches[j]->vertices[0].position[2] + this->model->patches[j]->vertices[1].position[2] + this->model->patches[j]->vertices[2].position[2] + this->model->patches[j]->vertices[3].position[2]) / 4.0;
@@ -91,24 +92,24 @@ void PGR_radiosity::computeRadiosity()
             glm::vec3 RecvColor (x, y, z);
 
             double delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShooterEnergy, ShootDArea, RecvColor);
-            
-            this->model->patches[j]->vertices[0].color[0] = 
-            this->model->patches[j]->vertices[1].color[0] = 
-            this->model->patches[j]->vertices[2].color[0] = 
+
+            this->model->patches[j]->vertices[0].color[0] =
+            this->model->patches[j]->vertices[1].color[0] =
+            this->model->patches[j]->vertices[2].color[0] =
             this->model->patches[j]->vertices[3].color[0] += this->model->patches[ids[i]]->vertices[0].color[0] * delta;
-            this->model->patches[j]->vertices[0].color[1] = 
-            this->model->patches[j]->vertices[1].color[1] = 
-            this->model->patches[j]->vertices[2].color[1] = 
+            this->model->patches[j]->vertices[0].color[1] =
+            this->model->patches[j]->vertices[1].color[1] =
+            this->model->patches[j]->vertices[2].color[1] =
             this->model->patches[j]->vertices[3].color[1] += this->model->patches[ids[i]]->vertices[0].color[1] * delta;
-            this->model->patches[j]->vertices[0].color[2] = 
-            this->model->patches[j]->vertices[1].color[2] = 
-            this->model->patches[j]->vertices[2].color[2] = 
+            this->model->patches[j]->vertices[0].color[2] =
+            this->model->patches[j]->vertices[1].color[2] =
+            this->model->patches[j]->vertices[2].color[2] =
             this->model->patches[j]->vertices[3].color[2] += this->model->patches[ids[i]]->vertices[0].color[2] * delta;
             this->model->patches[j]->energy += this->model->patches[ids[i]]->energy * delta;
         }
     }
-    
-    this->model->updateArrays();    
+
+    this->model->updateArrays();
 }
 
 /**
@@ -134,8 +135,8 @@ double PGR_radiosity::formFactor(glm::vec3 RecvPos, glm::vec3 ShootPos, glm::vec
 
     // compute the disc approximation form factor
     double Fij = (max(cosi * cosj, (double) 0) / (M_PI * distance2)) * ShootDArea;
-    
-    
+
+
 
     // Modulate shooter's energy by the receiver's reflectivity
     // and the area of the shooter.

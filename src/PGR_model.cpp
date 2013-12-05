@@ -8,6 +8,7 @@
 #include "PGR_model.h"
 //#include <iostream>
 #include <cstring>
+#include <list>
 
 PGR_model::PGR_model()
 {
@@ -265,34 +266,51 @@ int PGR_model::getPatchesGeometryCL(cl_float16 *data)
     return i;
 }
 
-int PGR_model::getIdsOfNMostEnergizedPatches(int **ids, int n)
+bool PGR_model::isInArray(vector<int> *ids, int i)
 {
-    int count = 0;
-
-    vector<PGR_patch*> tmpPatches(this->patches);
-
-    for(int i = 0; i < n; i++, count++)
+    for (int n = 0; n < ids->size(); n++)
     {
-        double energy = 0;
-        int id = 0;
-        for(int j = 0; j < tmpPatches.size(); j++)
+        if (ids->at(n) == i)
+            return true;
+    }
+    return false;
+}
+
+int PGR_model::getIdsOfNMostEnergizedPatches(vector<int> *ids, int n)
+{
+    int count = 0; //real count
+    int pos = 0; //position of maximal energy
+    int maxPos = this->patches.size(); //sentinel
+    double max = 0.0; //maximal energy
+    double lastMax = 10000000.0f; //last maximal energy
+
+
+    for (int i = 0; i < n; i++, count++)
+    {
+        max = 0.0;
+        int j;
+        for (j = 0; j < maxPos; j++)
         {
-            bool in_array = false;
-            for(int k = 0; k < n; k++)
+            if (this->patches.at(j)->energy >= max && this->patches.at(j)->energy < lastMax)
             {
-                if((*ids)[k] == j) {
-                    in_array = true;
-                }
-            }
-            if(!in_array && tmpPatches[j]->energy > energy)
-            {
-                energy = tmpPatches[j]->energy;
-                id = j;
+                pos = j;
+                max = this->patches.at(j)->energy;
             }
         }
 
-        (*ids)[i] = id;
-        //tmpPatches[id]->energy = 0;
+        if (max == 0.0)
+        {
+            if (j == this->patches.size() - 1)
+            {
+                break;
+            }
+            lastMax = this->patches.at(ids->at(i - 1))->energy;
+            maxPos = this->patches.size();
+            continue;
+        }
+
+        ids->push_back(pos);
+        maxPos = pos;
     }
 
     return count;
