@@ -151,6 +151,7 @@ void PGR_model::updatePatches()
                        this->vertices[i + 1],
                        this->vertices[i + 2],
                        this->vertices[i + 3]);
+        p->setEnergy(0);
         this->patches.push_back(p);
     }
 }
@@ -272,10 +273,11 @@ int PGR_model::getIdsOfNMostEnergizedPatches(vector<int> *ids, int n)
     int pos = 0; //position of maximal energy
     int maxPos = this->patches.size(); //sentinel
     double max = 0.0; //maximal energy
-    double lastMax = 10000000.0f; //last maximal energy
+    double lastMax = 10000000.0; //last maximal energy
+    double lastMaxOld = lastMax;
 
 
-    for (int i = 0; i < n; i++, count++)
+    for (int i = 0; i < n; i++)
     {
         max = 0.0;
         int j;
@@ -294,15 +296,17 @@ int PGR_model::getIdsOfNMostEnergizedPatches(vector<int> *ids, int n)
             {
                 break;
             }
-            lastMax = this->patches.at(ids->at(i - 1))->energy;
+
+            lastMax = lastMaxOld;
             maxPos = this->patches.size();
             continue;
         }
 
         ids->push_back(pos);
+        count++;
         maxPos = pos;
+        lastMaxOld = max;
     }
-
     return count;
 }
 

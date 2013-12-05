@@ -55,7 +55,7 @@ void PGR_radiosity::computeRadiosity()
     vector<int> ids;
     int count = this->model->getIdsOfNMostEnergizedPatches(&ids, N);
 
-    for(int i = 0; i < N; i++)
+    for (int i = 0; i < count; i++)
     {
         double x, y, z;
 
