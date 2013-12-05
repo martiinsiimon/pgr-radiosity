@@ -54,28 +54,25 @@ void PGR_radiosity::computeRadiosity()
     int *ids = new int [N];
     int count = this->model->getIdsOfNMostEnergizedPatches(&ids, N);
     
-    for(int i = 0; i < this->model->patches.size(); i++) 
+    for(int i = 0; i < N; i++) 
     {
-        float x, y, z;
+        double x, y, z;
         
         // center of patches
-        x = (this->model->patches[i]->vertices[0].position[0] + this->model->patches[i]->vertices[1].position[0] + this->model->patches[i]->vertices[2].position[0] + this->model->patches[i]->vertices[3].position[0]) / 4.0;
-        y = (this->model->patches[i]->vertices[0].position[1] + this->model->patches[i]->vertices[1].position[1] + this->model->patches[i]->vertices[2].position[1] + this->model->patches[i]->vertices[3].position[1]) / 4.0;
-        z = (this->model->patches[i]->vertices[0].position[2] + this->model->patches[i]->vertices[1].position[2] + this->model->patches[i]->vertices[2].position[2] + this->model->patches[i]->vertices[3].position[2]) / 4.0;
+        x = (this->model->patches[ids[i]]->vertices[0].position[0] + this->model->patches[ids[i]]->vertices[1].position[0] + this->model->patches[ids[i]]->vertices[2].position[0] + this->model->patches[ids[i]]->vertices[3].position[0]) / 4.0;
+        y = (this->model->patches[ids[i]]->vertices[0].position[1] + this->model->patches[ids[i]]->vertices[1].position[1] + this->model->patches[ids[i]]->vertices[2].position[1] + this->model->patches[ids[i]]->vertices[3].position[1]) / 4.0;
+        z = (this->model->patches[ids[i]]->vertices[0].position[2] + this->model->patches[ids[i]]->vertices[1].position[2] + this->model->patches[ids[i]]->vertices[2].position[2] + this->model->patches[ids[i]]->vertices[3].position[2]) / 4.0;
         glm::vec3 ShootPos (x, y, z);
 
-        x = this->model->patches[i]->vertices[0].normal[0];
-        y = this->model->patches[i]->vertices[0].normal[1];
-        z = this->model->patches[i]->vertices[0].normal[2];
+        x = this->model->patches[ids[i]]->vertices[0].normal[0];
+        y = this->model->patches[ids[i]]->vertices[0].normal[1];
+        z = this->model->patches[ids[i]]->vertices[0].normal[2];
         glm::vec3 ShootNormal (x, y, z);
         
-        x = y = z = this->model->patches[i]->energy;
+        x = y = z = this->model->patches[ids[i]]->energy;
         glm::vec3 ShooterEnergy (x, y, z);
         
-        float ShootDArea = this->model->patches[i]->area;
-        
-        glm::vec3 ResultColor (0, 0, 0);
-        double ResultEnergy = 0;
+        float ShootDArea = this->model->patches[ids[i]]->area;
         
         for(int j = 0; j < this->model->patches.size(); j++) {            
             x = (this->model->patches[j]->vertices[0].position[0] + this->model->patches[j]->vertices[1].position[0] + this->model->patches[j]->vertices[2].position[0] + this->model->patches[j]->vertices[3].position[0]) / 4.0;
@@ -95,29 +92,20 @@ void PGR_radiosity::computeRadiosity()
 
             double delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShooterEnergy, ShootDArea, RecvColor);
             
-            for(int k = 0; k < count; k++)
-            {
-                ResultColor.x += this->model->patches[ids[k]]->vertices[0].color[0] * delta;
-                ResultColor.y += this->model->patches[ids[k]]->vertices[0].color[1] * delta;
-                ResultColor.z += this->model->patches[ids[k]]->vertices[0].color[2] * delta;
-                ResultEnergy += this->model->patches[ids[k]]->energy * delta;
-            }            
+            this->model->patches[j]->vertices[0].color[0] = 
+            this->model->patches[j]->vertices[1].color[0] = 
+            this->model->patches[j]->vertices[2].color[0] = 
+            this->model->patches[j]->vertices[3].color[0] += this->model->patches[ids[i]]->vertices[0].color[0] * delta;
+            this->model->patches[j]->vertices[0].color[1] = 
+            this->model->patches[j]->vertices[1].color[1] = 
+            this->model->patches[j]->vertices[2].color[1] = 
+            this->model->patches[j]->vertices[3].color[1] += this->model->patches[ids[i]]->vertices[0].color[1] * delta;
+            this->model->patches[j]->vertices[0].color[2] = 
+            this->model->patches[j]->vertices[1].color[2] = 
+            this->model->patches[j]->vertices[2].color[2] = 
+            this->model->patches[j]->vertices[3].color[2] += this->model->patches[ids[i]]->vertices[0].color[2] * delta;
+            this->model->patches[j]->energy += this->model->patches[ids[i]]->energy * delta;
         }
-        
-        this->model->patches[i]->vertices[0].color[0] = 
-        this->model->patches[i]->vertices[1].color[0] = 
-        this->model->patches[i]->vertices[2].color[0] = 
-        this->model->patches[i]->vertices[3].color[0] = ResultColor.x;
-        this->model->patches[i]->vertices[0].color[1] = 
-        this->model->patches[i]->vertices[1].color[1] = 
-        this->model->patches[i]->vertices[2].color[1] = 
-        this->model->patches[i]->vertices[3].color[1] = ResultColor.y;
-        this->model->patches[i]->vertices[0].color[2] = 
-        this->model->patches[i]->vertices[1].color[2] = 
-        this->model->patches[i]->vertices[2].color[2] = 
-        this->model->patches[i]->vertices[3].color[2] = ResultColor.z;
-        
-        this->model->patches[i]->energy = ResultEnergy;
     }
     
     this->model->updateArrays();    
