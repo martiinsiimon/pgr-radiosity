@@ -19,7 +19,7 @@
 #define PGR_GPU 1
 #define PGR_CPU 2
 #define N 10
-#define LIMIT 100
+#define LIMIT 0.5
 #ifndef M_PI
     #define M_PI 3.14159265358979323846
 #endif

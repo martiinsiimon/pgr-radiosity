@@ -79,12 +79,12 @@ __kernel void radiosity(__global float16* patchesGeo, __global float4* patchesIn
 
             double delta = formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
 
-            patchInfo.s0 += lightInfo.s0 * delta;
-            patchInfo.s1 += lightInfo.s1 * delta;
-            patchInfo.s2 += lightInfo.s2 * delta;
-            patchInfo.s3 += lightInfo.s3 * delta;
-
+            patchInfo.s0 += lightInfo.s0 * 0.5 * delta;
+            patchInfo.s1 += lightInfo.s1 * 0.5 * delta;
+            patchInfo.s2 += lightInfo.s2 * 0.5 * delta;
+            patchInfo.s3 += lightInfo.s3 * 0.5 * delta;
         }
+        lightInfo.s0 = 0;
     }
 }
 

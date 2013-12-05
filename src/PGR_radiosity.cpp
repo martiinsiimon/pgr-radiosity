@@ -34,7 +34,7 @@ void PGR_radiosity::compute()
 {
     if (this->core == PGR_CPU)
     {
-        while(this->model->getMaximalEnergy() < LIMIT)
+        while (this->model->getMaximalEnergy() > LIMIT)
         {
             this->computeRadiosity();
         }
@@ -73,6 +73,8 @@ void PGR_radiosity::computeRadiosity()
         z = this->model->patches[ids[i]]->vertices[0].normal[2];
         glm::vec3 ShootNormal (x, y, z);
 
+        double test = 0;
+
         float ShootDArea = this->model->patches[ids[i]]->area;
 
         for(int j = 0; j < this->model->patches.size(); j++) {
@@ -99,9 +101,14 @@ void PGR_radiosity::computeRadiosity()
             this->model->patches[j]->vertices[0].color[2] =
             this->model->patches[j]->vertices[1].color[2] =
             this->model->patches[j]->vertices[2].color[2] =
-            this->model->patches[j]->vertices[3].color[2] += this->model->patches[ids[i]]->vertices[0].color[2] * delta;
-            this->model->patches[j]->energy += this->model->patches[ids[i]]->energy * delta;
+                this->model->patches[j]->vertices[3].color[2] += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;
+            this->model->patches[j]->energy += this->model->patches[ids[i]]->energy * 0.5 * delta;
+
+            test += delta;
+
         }
+        //cout << "test: " << test << endl;
+        this->model->patches[ids[i]]->energy = 0;
     }
 
     this->model->updateArrays();
@@ -130,6 +137,8 @@ double PGR_radiosity::formFactor(glm::vec3 RecvPos, glm::vec3 ShootPos, glm::vec
 
     double distance2 = glm::dot(r, r);
     r = glm::normalize(r);
+    RecvNormal = glm::normalize(RecvNormal);
+    ShootNormal = glm::normalize(ShootNormal);
 
     // the angles of the receiver and the shooter from r
     double cosi = glm::dot(RecvNormal, r);
