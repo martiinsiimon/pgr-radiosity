@@ -19,6 +19,7 @@
 #define PGR_GPU 1
 #define PGR_CPU 2
 #define N 10
+#define LIMIT 100
 #ifndef M_PI
     #define M_PI 3.14159265358979323846
 #endif
@@ -37,7 +38,8 @@ public:
 
 private:
     void computeRadiosity();
-    double formFactor(glm::vec3, glm::vec3, glm::vec3, glm::vec3, glm::vec3, float, glm::vec3);
+    double formFactor(glm::vec3, glm::vec3, glm::vec3, glm::vec3, float);
+    bool visible();
     //TODO here should be more function used to compute radiosity on CPU
 
     void computeRadiosityCL();

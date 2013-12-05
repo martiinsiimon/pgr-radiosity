@@ -34,7 +34,10 @@ void PGR_radiosity::compute()
 {
     if (this->core == PGR_CPU)
     {
-        this->computeRadiosity();
+        while(this->model->getMaximalEnergy() < LIMIT)
+        {
+            this->computeRadiosity();
+        }
     }
     else
     {
@@ -70,9 +73,6 @@ void PGR_radiosity::computeRadiosity()
         z = this->model->patches[ids[i]]->vertices[0].normal[2];
         glm::vec3 ShootNormal (x, y, z);
 
-        x = y = z = this->model->patches[ids[i]]->energy;
-        glm::vec3 ShooterEnergy (x, y, z);
-
         float ShootDArea = this->model->patches[ids[i]]->area;
 
         for(int j = 0; j < this->model->patches.size(); j++) {
@@ -86,12 +86,7 @@ void PGR_radiosity::computeRadiosity()
             z = this->model->patches[j]->vertices[0].normal[2];
             glm::vec3 RecvNormal (x, y, z);
 
-            x = this->model->patches[j]->vertices[0].color[0];
-            y = this->model->patches[j]->vertices[0].color[1];
-            z = this->model->patches[j]->vertices[0].color[2];
-            glm::vec3 RecvColor (x, y, z);
-
-            double delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShooterEnergy, ShootDArea, RecvColor);
+            double delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
 
             this->model->patches[j]->vertices[0].color[0] =
             this->model->patches[j]->vertices[1].color[0] =
@@ -122,11 +117,11 @@ void PGR_radiosity::computeRadiosity()
  * @param float ShootDArea - the delta area of the shooter
  * @param glm::vec3 RecvColor - the reflectivity of this element
  */
-double PGR_radiosity::formFactor(glm::vec3 RecvPos, glm::vec3 ShootPos, glm::vec3 RecvNormal, glm::vec3 ShootNormal, glm::vec3 ShooterEnergy, float ShootDArea, glm::vec3 RecvColor)
+double PGR_radiosity::formFactor(glm::vec3 RecvPos, glm::vec3 ShootPos, glm::vec3 RecvNormal, glm::vec3 ShootNormal, float ShootDArea)
 {
     // a normalized vector from shooter to receiver
 
-    if (ShootPos == RecvPos)
+    if (ShootPos == RecvPos || visible() == false)
     {
         return 0.0;
     }
@@ -142,6 +137,11 @@ double PGR_radiosity::formFactor(glm::vec3 RecvPos, glm::vec3 ShootPos, glm::vec
 
     // retrun computed disc approximation form factor
     return (max(cosi * cosj, (double) 0) / (M_PI * distance2)) * ShootDArea;
+}
+
+bool PGR_radiosity::visible()
+{
+    return true;
 }
 
 void PGR_radiosity::computeRadiosityCL()
