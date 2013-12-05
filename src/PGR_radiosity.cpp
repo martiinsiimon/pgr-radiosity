@@ -54,7 +54,6 @@ void PGR_radiosity::computeRadiosity()
      * Note: Na form faktory nejspis nezbude misto - pokud spravne pocitan a na jeden faktor je treba 4 byty, tak dohromady pro vsechny se jedna pri milionu ploskach o 36 terabytu... doufam, ze jsem nekde udelal mega chybu a mluvime jen o MB...
      */
 
-    //int *ids = new int [N];
     vector<uint> ids;
     int count = this->model->getIdsOfNMostEnergizedPatches(&ids, N);
 
@@ -72,8 +71,6 @@ void PGR_radiosity::computeRadiosity()
         y = this->model->patches[ids[i]]->vertices[0].normal[1];
         z = this->model->patches[ids[i]]->vertices[0].normal[2];
         glm::vec3 ShootNormal (x, y, z);
-
-        double test = 0;
 
         float ShootDArea = this->model->patches[ids[i]]->area;
 
@@ -93,21 +90,17 @@ void PGR_radiosity::computeRadiosity()
             this->model->patches[j]->vertices[0].color[0] =
             this->model->patches[j]->vertices[1].color[0] =
             this->model->patches[j]->vertices[2].color[0] =
-            this->model->patches[j]->vertices[3].color[0] += this->model->patches[ids[i]]->vertices[0].color[0] * delta;
+                this->model->patches[j]->vertices[3].color[0] += this->model->patches[ids[i]]->vertices[0].color[0] * 0.5 * delta;
             this->model->patches[j]->vertices[0].color[1] =
             this->model->patches[j]->vertices[1].color[1] =
             this->model->patches[j]->vertices[2].color[1] =
-            this->model->patches[j]->vertices[3].color[1] += this->model->patches[ids[i]]->vertices[0].color[1] * delta;
+                this->model->patches[j]->vertices[3].color[1] += this->model->patches[ids[i]]->vertices[0].color[1] * 0.5 * delta;
             this->model->patches[j]->vertices[0].color[2] =
             this->model->patches[j]->vertices[1].color[2] =
             this->model->patches[j]->vertices[2].color[2] =
                 this->model->patches[j]->vertices[3].color[2] += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;
             this->model->patches[j]->energy += this->model->patches[ids[i]]->energy * 0.5 * delta;
-
-            test += delta;
-
         }
-        //cout << "test: " << test << endl;
         this->model->patches[ids[i]]->energy = 0;
     }
 
