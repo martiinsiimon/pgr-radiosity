@@ -165,11 +165,8 @@ void PGR_renderer::drawSceneDefault(glm::mat4 mvp)
  */
 void PGR_renderer::drawSceneRadiosity(glm::mat4 mvp)
 {
-    /* If there's something to divide */
-    if (this->divide())
-        this->createBuffers();
-
     this->radiosity->compute();
+    this->createBuffers();
 
     glUseProgram(iProg);
 
