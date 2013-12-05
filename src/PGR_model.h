@@ -49,9 +49,10 @@ public:
     /* Fill given opencl memory object with patches geometry */
     int getPatchesGeometryCL(cl_float16 *data);
 
-    /* Fill a list indices if N most energized patches. The index is in vector
+    /* Fill a vector of indices of N most energized patches. The index is in vector
      * patches */
-    int getIdsOfNMostEnergizedPatches(vector<int> *ids, int n);
+    int getIdsOfNMostEnergizedPatches(vector<uint> *ids, int n);
+    cl_uint getIdsOfNMostEnergizedPatchesCL(cl_uint *indices, int n);
 
     /* Get the energy of the most energized patch. Used to decide to terminate
      * radiosity computation */

@@ -52,7 +52,7 @@ void PGR_radiosity::computeRadiosity()
      */
 
     //int *ids = new int [N];
-    vector<int> ids;
+    vector<uint> ids;
     int count = this->model->getIdsOfNMostEnergizedPatches(&ids, N);
 
     for (int i = 0; i < count; i++)
@@ -153,20 +153,34 @@ void PGR_radiosity::computeRadiosityCL()
         this->releaseCL();
         return;
     }
-    //
-    //    if (!this->computedFactors)
-    //    {
-    //        //TODO begin scope to compute factors
-    //    }
-    //    else
-    //    {
-    //        //TODO set factors to this->factorsCL
-    //    }
 
     /* Run OpenCL kernel that computes radiosity. It includes a loop */
     this->runRadiosityKernelCL();
 
-    //TODO read buffers from GPU and copy that back to this->model
+    // this->raw_patches = new cl_float4[this->model->getIndicesCount()];
+    //this->model->getPatchesCL(this->raw_patches);
+    int status = clEnqueueReadBuffer(this->commandQueue,
+                                     this->patchesCL,
+                                     CL_TRUE, //blocking write
+                                     0,
+                                     this->model->getIndicesCount() * sizeof (cl_float4),
+                                     this->raw_patches,
+                                     0,
+                                     0,
+                                     0);
+    CheckOpenCLError(status, "read patches.");
+
+    status = clEnqueueReadBuffer(this->commandQueue,
+                                     this->patchesGeometryCL,
+                                     CL_TRUE, //blocking write
+                                     0,
+                                     this->model->getIndicesCount() * sizeof (cl_float4),
+                                     this->raw_patchesGeometry,
+                                     0,
+                                     0,
+                                     0);
+    CheckOpenCLError(status, "read patchesGeometry.");
+
 
     /* Release CL structures */
     this->releaseCL();
@@ -370,14 +384,14 @@ int PGR_radiosity::prepareCL()
                                      &ciErr);
     CheckOpenCLError(ciErr, "CreateBuffer patchesCL");
 
-    raw_patches = new cl_float4[this->model->getIndicesCount()];
-    this->model->getPatchesCL(raw_patches);
+    this->raw_patches = new cl_float4[this->model->getIndicesCount()];
+    this->model->getPatchesCL(this->raw_patches);
     ciErr = clEnqueueWriteBuffer(this->commandQueue,
                                  this->patchesCL,
                                  CL_TRUE, //blocking write
                                  0,
                                  this->model->getIndicesCount() * sizeof (cl_float4),
-                                 raw_patches,
+                                 this->raw_patches,
                                  0,
                                  0,
                                  0);
@@ -392,14 +406,14 @@ int PGR_radiosity::prepareCL()
                                              &ciErr);
     CheckOpenCLError(ciErr, "CreateBuffer patchesGeometryCL");
 
-    raw_patchesGeometry = new cl_float16[this->model->getIndicesCount()];
+    this->raw_patchesGeometry = new cl_float16[this->model->getIndicesCount()];
     this->model->getPatchesGeometryCL(raw_patchesGeometry);
     ciErr = clEnqueueWriteBuffer(this->commandQueue,
                                  this->patchesGeometryCL,
                                  CL_TRUE, //blocking write
                                  0,
                                  this->model->getIndicesCount() * sizeof (cl_float16),
-                                 raw_patchesGeometry,
+                                 this->raw_patchesGeometry,
                                  0,
                                  0,
                                  0);
@@ -413,14 +427,6 @@ int PGR_radiosity::prepareCL()
                                      0,
                                      &ciErr);
     CheckOpenCLError(ciErr, "CreateBuffer indicesCL");
-
-    //    factorsCL = clCreateBuffer(this->context,
-    //                               CL_MEM_READ_WRITE,
-    //                               this->model->getIndicesCount() * this->model->getIndicesCount() * sizeof (cl_float), //probably out of memory
-    //                               0,
-    //                               &ciErr);
-    //    CheckOpenCLError(ciErr, "CreateBuffer factorsCL");
-
 
     /* Create and compile and openCL program */
     char *cSourceCL = loadProgSource("kernels.cl");
@@ -464,24 +470,14 @@ int PGR_radiosity::prepareCL()
     size_t tempKernelWorkGroupSize; //TODO choose sizes
 
     /* Create kernels */
-    this->sortKernel = clCreateKernel(program, "sort_parallel", &ciErr);
-    CheckOpenCLError(ciErr, "clCreateKernel sort_parallel");
+    //    this->sortKernel = clCreateKernel(program, "sort_parallel", &ciErr);
+    //    CheckOpenCLError(ciErr, "clCreateKernel sort_parallel");
     this->radiosityKernel = clCreateKernel(program, "radiosity", &ciErr);
     CheckOpenCLError(ciErr, "clCreateKernel radiosity");
 
 
-
-    // Check group size against group size returned by kernel
-    ciErr = clGetKernelWorkGroupInfo(this->sortKernel,
-                                     cdDevices[deviceIndex],
-                                     CL_KERNEL_WORK_GROUP_SIZE,
-                                     sizeof (size_t),
-                                     &tempKernelWorkGroupSize,
-                                     0);
-    CheckOpenCLError(ciErr, "clGetKernelInfo");
-    //kernelWorkGroupSize = MIN(tempKernelWorkGroupSize, kernelWorkGroupSize);//TODO choose sizes
-    cout << "DBG: maxWorkGroupSize = " << tempKernelWorkGroupSize << endl;
-
+    this->maxWorkGroupSize = 1024;
+    this->workGroupSize = 1024;
 
     ciErr = clGetKernelWorkGroupInfo(this->radiosityKernel,
                                      cdDevices[deviceIndex],
@@ -490,23 +486,17 @@ int PGR_radiosity::prepareCL()
                                      &tempKernelWorkGroupSize,
                                      0);
     CheckOpenCLError(ciErr, "clGetKernelInfo");
-    //kernelWorkGroupSize = MIN(tempKernelWorkGroupSize, kernelWorkGroupSize);//TODO choose sizes
-    cout << "DBG: maxWorkGroupSize = " << tempKernelWorkGroupSize << endl;
+    this->maxWorkGroupSize = MIN(tempKernelWorkGroupSize, this->maxWorkGroupSize);
 
-    //TODO rewrite!!!
-    //    if ((blockSizeX * blockSizeY) > kernelWorkGroupSize)
-    //    {
-    //        printf("Out of Resources!\n");
-    //        printf("Group Size specified: %i\n", blockSizeX * blockSizeY);
-    //        printf("Max Group Size supported on the kernel: %i\n", kernelWorkGroupSize);
-    //        printf("Falling back to %i.\n", kernelWorkGroupSize);
-    //
-    //        if (blockSizeX > kernelWorkGroupSize)
-    //        {
-    //            blockSizeX = kernelWorkGroupSize;
-    //            blockSizeY = 1;
-    //        }
-    //    }
+    if (this->workGroupSize > this->maxWorkGroupSize)
+    {
+        cout << "Out of Resources!" << endl;
+        cout << "Group Size specified: " << this->workGroupSize << endl;
+        cout << "Max Group Size supported on the kernel: " << this->maxWorkGroupSize << endl;
+        cout << "Falling back to " << this->maxWorkGroupSize << endl;
+
+        this->workGroupSize = this->maxWorkGroupSize;
+    }
 
     free(cdDevices);
 
@@ -579,198 +569,88 @@ int PGR_radiosity::printTiming(cl_event event, const char* title)
 void PGR_radiosity::runRadiosityKernelCL()
 {
     int status;
-    cl_event event_result, event_sort, event_peaks;
+    cl_event event_result, event_sort;
+
+    /* Setup arguments to the kernel */
+    status = clSetKernelArg(this->radiosityKernel, 0, sizeof (cl_mem), &this->patchesGeometryCL);
+    CheckOpenCLError(status, "clSetKernelArg. (patchesCL)");
+
+    status = clSetKernelArg(this->radiosityKernel, 1, sizeof (cl_mem), &this->patchesCL);
+    CheckOpenCLError(status, "clSetKernelArg. (patchesCL)");
 
     cl_uint patchesCount = (uint)this->model->getPatchesCount();
-    /* Setup arguments to the kernel */
+    status = clSetKernelArg(this->radiosityKernel, 2, sizeof (cl_uint), &patchesCount);
+    CheckOpenCLError(status, "clSetKernelArg. (patchesCount)");
+
+    raw_indices = new cl_uint[this->workGroupSize];
+    cl_uint indicesCount = this->model->getIdsOfNMostEnergizedPatchesCL(raw_indices, this->workGroupSize);
+    status = clEnqueueWriteBuffer(this->commandQueue,
+                                  this->indicesCL,
+                                  CL_TRUE, //blocking write
+                                  0,
+                                  indicesCount * sizeof (cl_uint),
+                                  raw_indices,
+                                  0,
+                                  0,
+                                  0);
+    CheckOpenCLError(status, "Copy patches geometry");
+    status = clSetKernelArg(this->radiosityKernel, 3, sizeof (cl_mem), &this->indicesCL);
+    CheckOpenCLError(status, "clSetKernelArg. (indicesCL)");
+
+    status = clSetKernelArg(this->radiosityKernel, 4, sizeof (cl_uint), &indicesCount);
+    CheckOpenCLError(status, "clSetKernelArg. (indicesCount)");
 
     //////////////////////////////////////////////////////////////////////////////////////////////////
     // mean-shift
 
-    /* patches buffer */
-    status = clSetKernelArg(sortKernel,
-                            0,
-                            sizeof (cl_mem),
-                            &this->patchesCL);
-    CheckOpenCLError(status, "clSetKernelArg. (patchesCL)");
-
-    /* indices buffer */
-    status = clSetKernelArg(sortKernel,
-                            1,
-                            sizeof (cl_mem),
-                            &this->indicesCL);
-
-    CheckOpenCLError(status, "clSetKernelArg. (indicesCL)");
-
-    /* count of patches */
-    status = clSetKernelArg(sortKernel,
-                            2,
-                            sizeof (cl_uint),
-                            &patchesCount);
-
-    CheckOpenCLError(status, "clSetKernelArg. (count)");
+    //    /* patches buffer */
+    //    status = clSetKernelArg(sortKernel,
+    //                            0,
+    //                            sizeof (cl_mem),
+    //                            &this->patchesCL);
+    //    CheckOpenCLError(status, "clSetKernelArg. (patchesCL)");
+    //
+    //    /* indices buffer */
+    //    status = clSetKernelArg(sortKernel,
+    //                            1,
+    //                            sizeof (cl_mem),
+    //                            &this->indicesCL);
+    //
+    //    CheckOpenCLError(status, "clSetKernelArg. (indicesCL)");
+    //
+    //    /* count of patches */
+    //    status = clSetKernelArg(sortKernel,
+    //                            2,
+    //                            sizeof (cl_uint),
+    //                            &patchesCount);
+    //
+    //    CheckOpenCLError(status, "clSetKernelArg. (count)");
 
 
     //the global number of threads in each dimension has to be divisible
     // by the local dimension numbers
-    size_t globalThreadsSort[] = {
-        patchesCount //TODO fix it!!
-    };
-    //size_t localThreadsMeanshift[] = {width, 1};
-
-    status = clEnqueueNDRangeKernel(commandQueue, //TODO is this correct???
-                                    sortKernel,
-                                    1, //1D
-                                    NULL, //offset
-                                    globalThreadsSort,
-                                    //localThreadsMeanshift,
-                                    NULL,
-                                    0,
-                                    NULL,
-                                    &event_sort);
-
-    CheckOpenCLError(status, "clEnqueueNDRangeKernel sortKernel.");
-
-
-    status = clWaitForEvents(1, &event_sort);
-    CheckOpenCLError(status, "clWaitForEvents meanshift.");
-    cout << "test" << endl;
-
-    //    //////////////////////////////////////////////////////////////////////////////////////////////////
-    //    // PEAKS KERNEL
-    //    /* input buffer peaks*/
-    //    status = clSetKernelArg(meanshiftPeaksKernel,
-    //                            0,
-    //                            sizeof (cl_mem),
-    //                            &d_peaksBuffer);
-    //    CheckOpenCLError(status, "clSetKernelArg. (peaksBuffer)");
+    //    size_t globalThreadsSort[] = {
+    //        patchesCount //TODO fix it!!
+    //    };
+    //    //size_t localThreadsMeanshift[] = {width, 1};
     //
-    //    /* image width */
-    //    status = clSetKernelArg(meanshiftPeaksKernel,
-    //                            1,
-    //                            sizeof (cl_uint),
-    //                            &width);
-    //
-    //    CheckOpenCLError(status, "clSetKernelArg. (width)");
-    //
-    //    /* image height */
-    //    status = clSetKernelArg(meanshiftPeaksKernel,
-    //                            2,
-    //                            sizeof (cl_uint),
-    //                            &height);
-    //
-    //    CheckOpenCLError(status, "clSetKernelArg. (height)");
-    //
-    //    cl_event wait_events[] = {event_meanshift};
-    //
-    //
-    //
-    //    status = clEnqueueNDRangeKernel(commandQueue,
-    //                                    meanshiftPeaksKernel,
-    //                                    2,
+    //    status = clEnqueueNDRangeKernel(commandQueue, //TODO is this correct???
+    //                                    sortKernel,
+    //                                    1, //1D
     //                                    NULL, //offset
-    //                                    globalThreadsMeanshift,
+    //                                    globalThreadsSort,
     //                                    //localThreadsMeanshift,
     //                                    NULL,
-    //                                    1,
-    //                                    wait_events,
-    //                                    &event_peaks);
-    //
-    //    status = clWaitForEvents(1, &event_peaks);
-    //    CheckOpenCLError(status, "clWaitForEvents peaks boost.");
-    //
-    //    //////////////////////////////////////////////////////////////////////////////////////////////////
-    //    // RESULT KERNEL
-    //    /* input buffer X*/
-    //    status = clSetKernelArg(meanshiftResultKernel,
-    //                            0,
-    //                            sizeof (cl_mem),
-    //                            &d_countsBuffer);
-    //    CheckOpenCLError(status, "clSetKernelArg. (countsBuffer)");
-    //
-    //
-    //    /* input buffer Y*/
-    //    status = clSetKernelArg(meanshiftResultKernel,
-    //                            1,
-    //                            sizeof (cl_mem),
-    //                            &d_peaksBuffer);
-    //    CheckOpenCLError(status, "clSetKernelArg. (peaksBuffer)");
-    //
-    //    /* output buffer */
-    //    status = clSetKernelArg(meanshiftResultKernel,
-    //                            2,
-    //                            sizeof (cl_mem),
-    //                            &d_outputImageBuffer);
-    //
-    //    CheckOpenCLError(status, "clSetKernelArg. (outputImage)");
-    //
-    //    /* image width */
-    //    status = clSetKernelArg(meanshiftResultKernel,
-    //                            3,
-    //                            sizeof (cl_uint),
-    //                            &width);
-    //
-    //    CheckOpenCLError(status, "clSetKernelArg. (width)");
-    //
-    //    /* image height */
-    //    status = clSetKernelArg(meanshiftResultKernel,
-    //                            4,
-    //                            sizeof (cl_uint),
-    //                            &height);
-    //
-    //    CheckOpenCLError(status, "clSetKernelArg. (height)");
-    //
-    //
-    //    //the global number of threads in each dimension has to be divisible
-    //    // by the local dimension numbers
-    //    //size_t globalThreadsResult[] = {
-    //    //    ((width + blockSizeX - 1) / blockSizeX) * blockSizeX,
-    //    //    ((height + blockSizeY - 1) / blockSizeY) * blockSizeY
-    //    //};
-    //
-    //    //size_t localThreadsResult[] = {blockSizeX, blockSizeY};
-    //
-    //    cl_event wait_events_res[] = {event_peaks};
-    //
-    //    size_t globalThreadsResult[] = {
-    //        width,
-    //        height
-    //    };
-    //    //size_t localThreadsResult[] = {width, 1};
-    //
-    //    status = clEnqueueNDRangeKernel(commandQueue,
-    //                                    meanshiftResultKernel,
-    //                                    2,
-    //                                    NULL, //offset
-    //                                    globalThreadsResult,
-    //                                    //localThreadsResult,
+    //                                    0,
     //                                    NULL,
-    //                                    1,
-    //                                    wait_events_res,
-    //                                    &event_result);
+    //                                    &event_sort);
     //
-    //    CheckOpenCLError(status, "clEnqueueNDRangeKernel.");
+    //    CheckOpenCLError(status, "clEnqueueNDRangeKernel sortKernel.");
     //
-    //    status = clWaitForEvents(1, &event_result);
-    //    CheckOpenCLError(status, "clWaitForEvents.");
-
-    printTiming(event_sort, "Mean-shift: ");
-    printTiming(event_peaks, "Mean-shift Peaks: ");
-    printTiming(event_result, "Mean-shift Result: ");
-
-    //Read back the image - if textures were used for showing this wouldn't be necessary
-    //blocking read
-    //    status = clEnqueueReadBuffer(commandQueue,
-    //                                 d_outputImageBuffer,
-    //                                 CL_TRUE,
-    //                                 0,
-    //                                 width * height * sizeof (cl_uchar4),
-    //                                 h_outputImageData,
-    //                                 0,
-    //                                 0,
-    //                                 0);
     //
-    //    CheckOpenCLError(status, "read output.");
+    //    status = clWaitForEvents(1, &event_sort);
+    //    CheckOpenCLError(status, "clWaitForEvents meanshift.");
+    //    cout << "test" << endl;
 
 }
 
@@ -779,8 +659,8 @@ void PGR_radiosity::releaseCL()
     /* Releases OpenCL resources (Context, Memory etc.) */
     cl_int status;
 
-    status = clReleaseKernel(this->sortKernel);
-    CheckOpenCLError(status, "clReleaseKernel sortKernel.");
+    //status = clReleaseKernel(this->sortKernel);
+    //CheckOpenCLError(status, "clReleaseKernel sortKernel.");
     status = clReleaseKernel(this->radiosityKernel);
     CheckOpenCLError(status, "clReleaseKernel radiosityKernel.");
 

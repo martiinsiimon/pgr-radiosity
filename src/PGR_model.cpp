@@ -261,17 +261,30 @@ int PGR_model::getPatchesGeometryCL(cl_float16 *data)
         data[i].s[13] = this->patches.at(i)->vertices[0].normal[1];
         data[i].s[14] = this->patches.at(i)->vertices[0].normal[2];
 
-        //the last part is unused
-        data[i].s[15] = 0;
+        //area of patch
+        data[i].s[15] = this->patches.at(i)->area;
     }
     return i;
 }
 
-int PGR_model::getIdsOfNMostEnergizedPatches(vector<int> *ids, int n)
+cl_uint PGR_model::getIdsOfNMostEnergizedPatchesCL(cl_uint *indices, int n)
+{
+    vector<uint> ids;
+    int count = this->getIdsOfNMostEnergizedPatches(&ids, n);
+
+    for (int i = 0; i < count; i++)
+    {
+        indices[i] = ids.at(i);
+    }
+
+    return (cl_uint) count;
+}
+
+int PGR_model::getIdsOfNMostEnergizedPatches(vector<uint> *ids, int n)
 {
     int count = 0; //real count
-    int pos = 0; //position of maximal energy
-    int maxPos = this->patches.size(); //sentinel
+    uint pos = 0; //position of maximal energy
+    uint maxPos = this->patches.size(); //sentinel
     double max = 0.0; //maximal energy
     double lastMax = 10000000.0; //last maximal energy
     double lastMaxOld = lastMax;
