@@ -14,6 +14,8 @@
 using namespace std;
 
 /* Program constants - mostly default values */
+#define PGR_GPU 1
+#define PGR_CPU 2
 #define PGR_WINDOW_WIDTH 1024 // Window width
 #define PGR_WINDOW_HEIGHT 768 // Window height
 #define PGR_CAMERA_Z 5.3f // Translation of camera in z-axis direction
@@ -21,7 +23,7 @@ using namespace std;
 #define PGR_CAMERA_X 0.0f // Translation of camera in x-axis direction
 #define PGR_ROTATE_X 20.0f // Rotation about x-axis
 #define PGR_ROTATE_Y -25.0f // Rotation about y-axis
-#define PGR_CORE cpu //Radiosity computing unit {cpu,gpu}
+#define PGR_CORE PGR_CPU //Radiosity computing unit {cpu,gpu}
 #define PGR_MAX_AREA 0.1f //Maximal area size of every patch
 
 /* Program global variables - initialized to default values*/
@@ -111,6 +113,20 @@ void onWindowRedraw()
  */
 int main(int argc, char** argv)
 {
+    int core;
+    if (argc == 2 && string(argv[1]) == "cpu")
+    {
+        core = PGR_CPU;
+    }
+    else if (argc == 2 && string(argv[1]) == "gpu")
+    {
+        core = PGR_GPU;
+    }
+    else
+    {
+        core = PGR_CPU;
+    }
+    
     try
     {
         // Init SDL - only video subsystem will be used
@@ -119,7 +135,7 @@ int main(int argc, char** argv)
         // Shutdown SDL when program ends
         atexit(SDL_Quit);
 
-        renderer = new PGR_renderer();
+        renderer = new PGR_renderer(core);
 
         init(width, height, 24, 24, 8);
 
@@ -198,10 +214,6 @@ void onKeyDown(SDLKey key, Uint16 /*mod*/)
  */
 void onMouseMove(unsigned /*x*/, unsigned /*y*/, int xrel, int yrel, Uint8 buttons)
 {
-    /* Do not permit scene rotation when radiosity rendering */
-    if (renderRadiosity)
-        return;
-
     /* Check if correct mouse button is pressed down */
     if (buttons & SDL_BUTTON_LMASK)
     {

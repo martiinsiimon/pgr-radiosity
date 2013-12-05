@@ -30,11 +30,12 @@ using namespace std;
 class PGR_radiosity {
 public:
     PGR_radiosity();
-    PGR_radiosity(PGR_model * m);
+    PGR_radiosity(PGR_model * m, int c);
     PGR_radiosity(const PGR_radiosity& orig);
     virtual ~PGR_radiosity();
 
     void compute();
+    bool isComputed();
 
 private:
     void computeRadiosity();
@@ -59,15 +60,15 @@ private:
     /* OpenCL structures */
     /*struct factorsCL;*/
     cl_context context;
-    cl_command_queue commandQueue;
+    cl_command_queue queue;
     cl_kernel radiosityKernel; //, sortKernel;
     cl_mem factorsCL; // form factors
     cl_mem indicesCL; // indices of N most energized items
-    cl_mem patchesCL; // struct of all patches
-    cl_mem patchesGeometryCL; // struct of all patches
+    cl_mem patchesInfoCL; // struct of all patches
+    cl_mem patchesGeoCL; // struct of all patches
     cl_program program; // OpenCL program
-    cl_float16 * raw_patchesGeometry;
-    cl_float4 * raw_patches;
+    cl_float16 * raw_patchesGeo;
+    cl_float4 * raw_patchesInfo;
     cl_uint * raw_indices;
     uint maxWorkGroupSize;
     uint workGroupSize;
@@ -75,7 +76,7 @@ private:
 
 
     PGR_model * model;
-    bool computedFactors;
+    //bool computedFactors;
     bool computedRadiosity;
     int core;
 };

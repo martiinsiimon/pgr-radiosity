@@ -31,15 +31,18 @@ glm::vec3 light_pos = glm::vec3(0, 2.5, 0);
 
 PGR_renderer::PGR_renderer()
 {
+}
+
+PGR_renderer::PGR_renderer(int c)
+{
     this->model = new PGR_model(C_ROOM);
     PGR_model * light = new PGR_model(C_LIGHT);
     this->model->appendModel(light);
     delete light;
-    //cout << this->model->getMaximalEnergy() << endl;
     this->maxArea = -1.0;
     this->divided = true;
 
-    this->radiosity = new PGR_radiosity(this->model);
+    this->radiosity = new PGR_radiosity(this->model, c);
 }
 
 PGR_renderer::PGR_renderer(const PGR_renderer& orig)
@@ -86,10 +89,8 @@ bool PGR_renderer::divide()
     {
         /* Max area set, need to divide all patches */
         this->model->setMaxArea(this->maxArea);
-        cout << "Patches before dividing:" << this->model->patches.size() << endl;
         this->model->divide();
         this->model->updateArrays();
-        cout << "Patches after dividing:" << this->model->patches.size() << endl;
         this->divided = true;
         return true;
     }
@@ -135,7 +136,6 @@ void PGR_renderer::drawSceneDefault(glm::mat4 mvp)
     glUniform3f(ldUniform, 0.5, 0.5, 0.5);
 
     /* Draw room */
-    /* Note: Here should be the second shader program, object to bottom from here should react to light */
     glEnableVertexAttribArray(positionAttrib);
     glEnableVertexAttribArray(colorAttrib);
     glEnableVertexAttribArray(normalAttrib);
@@ -154,9 +154,6 @@ void PGR_renderer::drawSceneDefault(glm::mat4 mvp)
     glDisableVertexAttribArray(positionAttrib);
     glDisableVertexAttribArray(colorAttrib);
     glDisableVertexAttribArray(normalAttrib);
-
-
-    /* Draw objects */
 }
 
 /**
@@ -165,16 +162,17 @@ void PGR_renderer::drawSceneDefault(glm::mat4 mvp)
  */
 void PGR_renderer::drawSceneRadiosity(glm::mat4 mvp)
 {
-    this->radiosity->compute();
-    this->createBuffers();
+    if (!this->radiosity->isComputed())
+    {
+        this->radiosity->compute();
+        this->createBuffers();
+    }
 
     glUseProgram(iProg);
 
     glUniformMatrix4fv(mvpUniform, 1, GL_FALSE, glm::value_ptr(mvp));
 
     /* Draw room */
-    /* Note: Here should be the second shader program, object to bottom from here should react to light */
-    //glUseProgram(iProg);
     glEnableVertexAttribArray(positionAttrib);
     glEnableVertexAttribArray(colorAttrib);
 
@@ -188,6 +186,5 @@ void PGR_renderer::drawSceneRadiosity(glm::mat4 mvp)
 
     glDisableVertexAttribArray(positionAttrib);
     glDisableVertexAttribArray(colorAttrib);
-    // ###DBG###
 }
 

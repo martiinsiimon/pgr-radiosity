@@ -9,17 +9,53 @@
 #include "PGR_radiosity.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <sys/time.h>
+#endif //WIN32
+
+
+double GetTime(void)
+{
+#if _WIN32  /* toto jede na Windows */
+    static int initialized = 0;
+    static LARGE_INTEGER frequency;
+    LARGE_INTEGER value;
+
+    if (!initialized)
+    { /* prvni volani */
+        initialized = 1;
+        if (QueryPerformanceFrequency(&frequency) == 0)
+        { /* pokud hi-res pocitadlo neni podporovano */
+            exit(-1);
+        }
+    }
+
+    QueryPerformanceCounter(&value);
+    return (double) value.QuadPart / (double) frequency.QuadPart; /* vrat hodnotu v sekundach */
+
+#else  /* toto jede na Linux/Unixovych systemech */
+    struct timeval tv;
+    if (gettimeofday(&tv, NULL) == -1)
+    { /* vezmi cas */
+        exit(-2);
+    }
+    return (double) tv.tv_sec + (double) tv.tv_usec / 1000000.; /* vrat cas v sekundach */
+#endif
+}
 
 PGR_radiosity::PGR_radiosity()
 {
 }
 
-PGR_radiosity::PGR_radiosity(PGR_model * m)
+PGR_radiosity::PGR_radiosity(PGR_model * m, int c)
 {
     this->model = m;
-    this->computedFactors = false;
+    //this->computedFactors = false;
     this->computedRadiosity = false;
-    this->core = PGR_CPU;
+    this->core = c;
+    cout << "Radiosity via " << ((c == PGR_CPU) ? "CPU" : "GPU") << endl;
 }
 
 PGR_radiosity::PGR_radiosity(const PGR_radiosity& orig)
@@ -30,19 +66,33 @@ PGR_radiosity::~PGR_radiosity()
 {
 }
 
+bool PGR_radiosity::isComputed()
+{
+    return this->computedRadiosity;
+}
+
 void PGR_radiosity::compute()
 {
+    double t_start, t_end;
+
     if (this->core == PGR_CPU)
     {
+        t_start = GetTime();
         while (this->model->getMaximalEnergy() > LIMIT)
         {
             this->computeRadiosity();
         }
+        t_end = GetTime();
     }
     else
     {
+        t_start = GetTime();
         this->computeRadiosityCL();
+        t_end = GetTime();
     }
+    this->computedRadiosity = true;
+
+    cout << "Radiosity computation time: " << t_end - t_start << "s" << endl;
 }
 
 void PGR_radiosity::computeRadiosity()
@@ -130,8 +180,6 @@ double PGR_radiosity::formFactor(glm::vec3 RecvPos, glm::vec3 ShootPos, glm::vec
 
     double distance2 = glm::dot(r, r);
     r = glm::normalize(r);
-    RecvNormal = glm::normalize(RecvNormal);
-    ShootNormal = glm::normalize(ShootNormal);
 
     // the angles of the receiver and the shooter from r
     double cosi = glm::dot(RecvNormal, r);
@@ -151,7 +199,6 @@ void PGR_radiosity::computeRadiosityCL()
     /* Prepare CL structures */
     if (this->prepareCL() != 0)
     {
-        cout << "DBG: jsem tady2" << endl;
         this->releaseCL();
         return;
     }
@@ -159,30 +206,31 @@ void PGR_radiosity::computeRadiosityCL()
     /* Run OpenCL kernel that computes radiosity. It includes a loop */
     this->runRadiosityKernelCL();
 
-    // this->raw_patches = new cl_float4[this->model->getIndicesCount()];
-    //this->model->getPatchesCL(this->raw_patches);
-    int status = clEnqueueReadBuffer(this->commandQueue,
-                                     this->patchesCL,
+
+    /* Read buffers from gpu memory */
+    int status = clEnqueueReadBuffer(this->queue,
+                                     this->patchesInfoCL,
                                      CL_TRUE, //blocking write
                                      0,
-                                     this->model->getIndicesCount() * sizeof (cl_float4),
-                                     this->raw_patches,
+                                     this->model->getPatchesCount() * sizeof (cl_float4),
+                                     this->raw_patchesInfo,
                                      0,
                                      0,
                                      0);
     CheckOpenCLError(status, "read patches.");
 
-    status = clEnqueueReadBuffer(this->commandQueue,
-                                     this->patchesGeometryCL,
-                                     CL_TRUE, //blocking write
-                                     0,
-                                     this->model->getIndicesCount() * sizeof (cl_float4),
-                                     this->raw_patchesGeometry,
-                                     0,
-                                     0,
-                                     0);
+    status = clEnqueueReadBuffer(this->queue,
+                                 this->patchesGeoCL,
+                                 CL_TRUE, //blocking write
+                                 0,
+                                 this->model->getPatchesCount() * sizeof (cl_float16),
+                                 this->raw_patchesGeo,
+                                 0,
+                                 0,
+                                 0);
     CheckOpenCLError(status, "read patchesGeometry.");
 
+    //TODO decode opencl memory object into our patches
 
     /* Release CL structures */
     this->releaseCL();
@@ -362,38 +410,33 @@ int PGR_radiosity::prepareCL()
         CheckOpenCLError(ciErr, "clGetDeviceInfo: Id=%i: CL_DEVICE_EXTENSIONS=%s", f0, sTmp);
     }
 
-    cl_context_properties cps[3] = {
-        CL_CONTEXT_PLATFORM,
-        (cl_context_properties) platform,
-        0
-    };
+    cl_context_properties cps[3] = {CL_CONTEXT_PLATFORM, (cl_context_properties) platform, 0};
 
     /* Create context */
     this->context = clCreateContext(cps, 1, &cdDevices[deviceIndex], NULL, NULL, &ciErr);
     CheckOpenCLError(ciErr, "clCreateContext");
 
     /* Create a command queue */
-    this->commandQueue = clCreateCommandQueue(this->context, cdDevices[deviceIndex],
-                                              CL_QUEUE_PROFILING_ENABLE | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &ciErr);
+    this->queue = clCreateCommandQueue(this->context, cdDevices[deviceIndex], CL_QUEUE_PROFILING_ENABLE | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &ciErr);
     CheckOpenCLError(ciErr, "clCreateCommandQueue");
 
 
     /* Allocate buffer o patches */
-    this->patchesCL = clCreateBuffer(this->context,
+    this->patchesInfoCL = clCreateBuffer(this->context,
                                      CL_MEM_READ_WRITE,
-                                     this->model->getIndicesCount() * sizeof (cl_float4),
+                                     this->model->getPatchesCount() * sizeof (cl_float4),
                                      0,
                                      &ciErr);
     CheckOpenCLError(ciErr, "CreateBuffer patchesCL");
 
-    this->raw_patches = new cl_float4[this->model->getIndicesCount()];
-    this->model->getPatchesCL(this->raw_patches);
-    ciErr = clEnqueueWriteBuffer(this->commandQueue,
-                                 this->patchesCL,
+    this->raw_patchesInfo = new cl_float4[this->model->getPatchesCount()];
+    this->model->getPatchesCL(this->raw_patchesInfo);
+    ciErr = clEnqueueWriteBuffer(this->queue,
+                                 this->patchesInfoCL,
                                  CL_TRUE, //blocking write
                                  0,
-                                 this->model->getIndicesCount() * sizeof (cl_float4),
-                                 this->raw_patches,
+                                 this->model->getPatchesCount() * sizeof (cl_float4),
+                                 this->raw_patchesInfo,
                                  0,
                                  0,
                                  0);
@@ -401,21 +444,21 @@ int PGR_radiosity::prepareCL()
 
 
     /* Allocate buffer of patches geometry */
-    this->patchesGeometryCL = clCreateBuffer(this->context,
+    this->patchesGeoCL = clCreateBuffer(this->context,
                                              CL_MEM_READ_WRITE,
-                                             this->model->getIndicesCount() * sizeof (cl_float16),
+                                             this->model->getPatchesCount() * sizeof (cl_float16),
                                              0,
                                              &ciErr);
     CheckOpenCLError(ciErr, "CreateBuffer patchesGeometryCL");
 
-    this->raw_patchesGeometry = new cl_float16[this->model->getIndicesCount()];
-    this->model->getPatchesGeometryCL(raw_patchesGeometry);
-    ciErr = clEnqueueWriteBuffer(this->commandQueue,
-                                 this->patchesGeometryCL,
+    this->raw_patchesGeo = new cl_float16[this->model->getPatchesCount()];
+    this->model->getPatchesGeometryCL(raw_patchesGeo);
+    ciErr = clEnqueueWriteBuffer(this->queue,
+                                 this->patchesGeoCL,
                                  CL_TRUE, //blocking write
                                  0,
-                                 this->model->getIndicesCount() * sizeof (cl_float16),
-                                 this->raw_patchesGeometry,
+                                 this->model->getPatchesCount() * sizeof (cl_float16),
+                                 this->raw_patchesGeo,
                                  0,
                                  0,
                                  0);
@@ -425,7 +468,7 @@ int PGR_radiosity::prepareCL()
     /* Allocate buffer of indices */
     this->indicesCL = clCreateBuffer(this->context,
                                      CL_MEM_READ_WRITE,
-                                     this->model->getIndicesCount() * sizeof (cl_uchar),
+                                     this->model->getPatchesCount() * sizeof (cl_uint),
                                      0,
                                      &ciErr);
     CheckOpenCLError(ciErr, "CreateBuffer indicesCL");
@@ -571,13 +614,13 @@ int PGR_radiosity::printTiming(cl_event event, const char* title)
 void PGR_radiosity::runRadiosityKernelCL()
 {
     int status;
-    cl_event event_result, event_sort;
+    cl_event event_radiosity;
 
     /* Setup arguments to the kernel */
-    status = clSetKernelArg(this->radiosityKernel, 0, sizeof (cl_mem), &this->patchesGeometryCL);
+    status = clSetKernelArg(this->radiosityKernel, 0, sizeof (cl_mem), &this->patchesGeoCL);
     CheckOpenCLError(status, "clSetKernelArg. (patchesCL)");
 
-    status = clSetKernelArg(this->radiosityKernel, 1, sizeof (cl_mem), &this->patchesCL);
+    status = clSetKernelArg(this->radiosityKernel, 1, sizeof (cl_mem), &this->patchesInfoCL);
     CheckOpenCLError(status, "clSetKernelArg. (patchesCL)");
 
     cl_uint patchesCount = (uint)this->model->getPatchesCount();
@@ -586,7 +629,7 @@ void PGR_radiosity::runRadiosityKernelCL()
 
     raw_indices = new cl_uint[this->workGroupSize];
     cl_uint indicesCount = this->model->getIdsOfNMostEnergizedPatchesCL(raw_indices, this->workGroupSize);
-    status = clEnqueueWriteBuffer(this->commandQueue,
+    status = clEnqueueWriteBuffer(this->queue,
                                   this->indicesCL,
                                   CL_TRUE, //blocking write
                                   0,
@@ -602,7 +645,27 @@ void PGR_radiosity::runRadiosityKernelCL()
     status = clSetKernelArg(this->radiosityKernel, 4, sizeof (cl_uint), &indicesCount);
     CheckOpenCLError(status, "clSetKernelArg. (indicesCount)");
 
-    //////////////////////////////////////////////////////////////////////////////////////////////////
+    size_t globalThreads[] = {this->workGroupSize};
+    size_t localThreads[] = {this->workGroupSize};
+
+
+    //while ()
+    status = clEnqueueNDRangeKernel(this->queue,
+                                    this->radiosityKernel,
+                                    1, //1D
+                                    NULL, //offset
+                                    globalThreads,
+                                    localThreads,
+                                    0,
+                                    NULL,
+                                    &event_radiosity);
+
+    CheckOpenCLError(status, "clEnqueueNDRangeKernel radiosityKernel.");
+
+    status = clWaitForEvents(1, &event_radiosity);
+    CheckOpenCLError(status, "clWaitForEvents radiosityKernel.");
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
     // mean-shift
 
     //    /* patches buffer */
@@ -668,9 +731,9 @@ void PGR_radiosity::releaseCL()
 
     status = clReleaseMemObject(this->indicesCL);
     CheckOpenCLError(status, "clReleaseMemObject indicesCL");
-    status = clReleaseMemObject(this->patchesCL);
+    status = clReleaseMemObject(this->patchesInfoCL);
     CheckOpenCLError(status, "clReleaseMemObject patchesCL");
-    status = clReleaseMemObject(this->patchesGeometryCL);
+    status = clReleaseMemObject(this->patchesGeoCL);
     CheckOpenCLError(status, "clReleaseMemObject patchesGeometryCL");
     //status = clReleaseMemObject(this->factorsCL);
     //CheckOpenCLError(status, "clReleaseMemObject factorsCL");
@@ -678,12 +741,12 @@ void PGR_radiosity::releaseCL()
     status = clReleaseProgram(this->program);
     CheckOpenCLError(status, "clReleaseProgram.");
 
-    status = clReleaseCommandQueue(this->commandQueue);
+    status = clReleaseCommandQueue(this->queue);
     CheckOpenCLError(status, "clReleaseCommandQueue.");
 
     status = clReleaseContext(this->context);
     CheckOpenCLError(status, "clReleaseContext.");
 
-    delete [] this->raw_patches;
-    delete [] this->raw_patchesGeometry;
+    delete [] this->raw_patchesInfo;
+    delete [] this->raw_patchesGeo;
 }

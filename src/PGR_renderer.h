@@ -20,6 +20,7 @@ using namespace std;
 class PGR_renderer {
 public:
     PGR_renderer();
+    PGR_renderer(int c);
     PGR_renderer(const PGR_renderer& orig);
     PGR_renderer(string);
     virtual ~PGR_renderer();
