@@ -603,7 +603,7 @@ void PGR_radiosity::runRadiosityKernelCL()
 
     /* Events */
     cl_event event_bufferPatchesInfo;
-    cl_event event_radiosity;
+    cl_event event_radiosity, event_sort;
 
     double maximalEnergy;
 
@@ -620,6 +620,7 @@ void PGR_radiosity::runRadiosityKernelCL()
     status = clSetKernelArg(this->radiosityKernel, 2, sizeof (cl_uint), &patchesCount);
     CheckOpenCLError(status, "clSetKernelArg. (patchesCount)");
 
+    /* Set initial energy */
     this->raw_indices = new cl_uint[this->workGroupSize];
     cl_uint indicesCount = this->model->getIdsOfNMostEnergizedPatchesCL(this->raw_indices, this->workGroupSize, LIMIT);
 
@@ -637,24 +638,35 @@ void PGR_radiosity::runRadiosityKernelCL()
     status = clSetKernelArg(this->radiosityKernel, 3, sizeof (cl_mem), &this->indicesCL);
     CheckOpenCLError(status, "clSetKernelArg. (indicesCL)");
 
+    //TODO change to global memory
     status = clSetKernelArg(this->radiosityKernel, 4, sizeof (cl_uint), &indicesCount);
     CheckOpenCLError(status, "clSetKernelArg. (indicesCount)");
 
-    size_t globalThreads[] = {this->workGroupSize};
-    size_t localThreads[] = {this->workGroupSize};
+    size_t globalThreadsMain[] = {this->workGroupSize};
+    size_t localThreadsMain[] = {this->workGroupSize};
+
+    //TODO add parameters for sortKernel (patchesCL, patchesGeometry, indices, indicesCount, maximalEnergy)
+    //TODO addThisParameter
+    //    status = clSetKernelArg(this->sortKernel, 5, sizeof (cl_uint), &maximalEnergy);
+    //    CheckOpenCLError(status, "clSetKernelArg. (indicesCount)");
+
+    //size_t globalThreadsSort[] = {1}; //only one kernel computes
+    //size_t localThreadsSort[] = {1};
+
 
     //while (maximalEnergy > LIMIT)
     while (cycles < 200)
     {
         //cout << cycles++ << " energy: " << maximalEnergy << endl;
-
         cycles++;
+
+
         status = clEnqueueNDRangeKernel(this->queue,
                                         this->radiosityKernel,
                                         1, //1D
                                         NULL, //offset
-                                        globalThreads,
-                                        localThreads,
+                                        globalThreadsMain,
+                                        localThreadsMain,
                                         0,
                                         NULL,
                                         &event_radiosity);
@@ -664,6 +676,37 @@ void PGR_radiosity::runRadiosityKernelCL()
         status = clWaitForEvents(1, &event_radiosity);
         CheckOpenCLError(status, "clWaitForEvents radiosityKernel.");
 
+        //FIXME add this core
+        //        status = clEnqueueNDRangeKernel(this->queue,
+        //                                        this->sortKernel,
+        //                                        1, //1D
+        //                                        NULL, //offset
+        //                                        globalThreadsSort,
+        //                                        localThreadsSort,
+        //                                        0,
+        //                                        NULL,
+        //                                        &event_sort);
+        //CheckOpenCLError(status, "clEnqueueNDRangeKernel sortKernel.");
+
+        //        status = clWaitForEvents(1, &event_sort);
+        //        CheckOpenCLError(status, "clWaitForEvents sortKernel.");
+
+        //TODO read maximal energy
+        //        status = clEnqueueReadBuffer(this->queue,
+        //                                      this->maximalEnergyCL,
+        //                                      CL_TRUE, //blocking write
+        //                                      0,
+        //                                      sizeof (cl_float),
+        //                                      this->raw_maximalEnergy,
+        //                                      0,
+        //                                      NULL,
+        //                                      &event_maximalEnergy);
+        //        CheckOpenCLError(status, "Read maximal energy");
+        //        status = clWaitForEvents(1, &event_maximalEnergy);
+        //        CheckOpenCLError(status, "clWaitForEvents read Maximal energy.");
+
+        //BEGIN
+        //TODO delete this!
         /* Read buffers from gpu memory */
         int status = clEnqueueReadBuffer(this->queue,
                                          this->patchesInfoCL,
@@ -704,12 +747,7 @@ void PGR_radiosity::runRadiosityKernelCL()
 
             clFinish(this->queue);
         }
-
-        //TODO avoid memory reading/writing
-        //add sortKernel before the actual kernel
-        //the sort kernel should sort indices parallel to avoid memory copies
-        //this is better
-
+        //END
     }
     cout << "cycles: " << cycles << endl;
 
