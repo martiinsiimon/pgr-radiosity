@@ -51,8 +51,8 @@ public:
 
     /* Fill a vector of indices of N most energized patches. The index is in vector
      * patches */
-    int getIdsOfNMostEnergizedPatches(vector<uint> *ids, int n);
-    cl_uint getIdsOfNMostEnergizedPatchesCL(cl_uint *indices, int n);
+    int getIdsOfNMostEnergizedPatches(vector<uint> *ids, int n, double limit);
+    cl_uint getIdsOfNMostEnergizedPatchesCL(cl_uint *indices, int n, double limit);
 
     /* Get the energy of the most energized patch. Used to decide to terminate
      * radiosity computation */

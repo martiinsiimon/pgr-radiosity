@@ -267,10 +267,10 @@ int PGR_model::getPatchesGeometryCL(cl_float16 *data)
     return i;
 }
 
-cl_uint PGR_model::getIdsOfNMostEnergizedPatchesCL(cl_uint *indices, int n)
+cl_uint PGR_model::getIdsOfNMostEnergizedPatchesCL(cl_uint *indices, int n, double limit)
 {
     vector<uint> ids;
-    int count = this->getIdsOfNMostEnergizedPatches(&ids, n);
+    int count = this->getIdsOfNMostEnergizedPatches(&ids, n, limit);
 
     for (int i = 0; i < count; i++)
     {
@@ -280,7 +280,7 @@ cl_uint PGR_model::getIdsOfNMostEnergizedPatchesCL(cl_uint *indices, int n)
     return (cl_uint) count;
 }
 
-int PGR_model::getIdsOfNMostEnergizedPatches(vector<uint> *ids, int n)
+int PGR_model::getIdsOfNMostEnergizedPatches(vector<uint> *ids, int n, double limit)
 {
     int count = 0; //real count
     uint pos = 0; //position of maximal energy
@@ -303,7 +303,7 @@ int PGR_model::getIdsOfNMostEnergizedPatches(vector<uint> *ids, int n)
             }
         }
 
-        if (max == 0.0)
+        if (max == 0.0 || max < limit)
         {
             if (j == this->patches.size() - 1)
             {
@@ -347,22 +347,22 @@ void PGR_model::decodePatchesCL(cl_float4* data, uint size)
 
     for (int i = 0; i < size; i++)
     {
-        this->patches.at(i)->setEnergy(data[i].s[0]);
+        this->patches[i]->setEnergy(data[i].s[0]);
 
-        this->patches.at(i)->vertices[0].color[0] = data[i].s[1];
-        this->patches.at(i)->vertices[1].color[0] = data[i].s[1];
-        this->patches.at(i)->vertices[2].color[0] = data[i].s[1];
-        this->patches.at(i)->vertices[3].color[0] = data[i].s[1];
+        this->patches[i]->vertices[0].color[0] = data[i].s[1];
+        this->patches[i]->vertices[1].color[0] = data[i].s[1];
+        this->patches[i]->vertices[2].color[0] = data[i].s[1];
+        this->patches[i]->vertices[3].color[0] = data[i].s[1];
 
-        this->patches.at(i)->vertices[0].color[1] = data[i].s[2];
-        this->patches.at(i)->vertices[1].color[1] = data[i].s[2];
-        this->patches.at(i)->vertices[2].color[1] = data[i].s[2];
-        this->patches.at(i)->vertices[3].color[1] = data[i].s[2];
+        this->patches[i]->vertices[0].color[1] = data[i].s[2];
+        this->patches[i]->vertices[1].color[1] = data[i].s[2];
+        this->patches[i]->vertices[2].color[1] = data[i].s[2];
+        this->patches[i]->vertices[3].color[1] = data[i].s[2];
 
-        this->patches.at(i)->vertices[0].color[2] = data[i].s[3];
-        this->patches.at(i)->vertices[1].color[2] = data[i].s[3];
-        this->patches.at(i)->vertices[2].color[2] = data[i].s[3];
-        this->patches.at(i)->vertices[3].color[2] = data[i].s[3];
+        this->patches[i]->vertices[0].color[2] = data[i].s[3];
+        this->patches[i]->vertices[1].color[2] = data[i].s[3];
+        this->patches[i]->vertices[2].color[2] = data[i].s[3];
+        this->patches[i]->vertices[3].color[2] = data[i].s[3];
     }
 }
 
@@ -377,31 +377,31 @@ void PGR_model::decodePatchesGeometryCL(cl_float16* data, uint size)
     for (int i = 0; i < size; i++)
     {
         //vertex 1
-        this->patches.at(i)->vertices[0].position[0] = data[i].s[0];
-        this->patches.at(i)->vertices[0].position[1] = data[i].s[1];
-        this->patches.at(i)->vertices[0].position[2] = data[i].s[2];
+        this->patches[i]->vertices[0].position[0] = data[i].s[0];
+        this->patches[i]->vertices[0].position[1] = data[i].s[1];
+        this->patches[i]->vertices[0].position[2] = data[i].s[2];
 
         //vertex 2
-        this->patches.at(i)->vertices[1].position[0] = data[i].s[3];
-        this->patches.at(i)->vertices[1].position[1] = data[i].s[4];
-        this->patches.at(i)->vertices[1].position[2] = data[i].s[5];
+        this->patches[i]->vertices[1].position[0] = data[i].s[3];
+        this->patches[i]->vertices[1].position[1] = data[i].s[4];
+        this->patches[i]->vertices[1].position[2] = data[i].s[5];
 
         //vertex 3
-        this->patches.at(i)->vertices[2].position[0] = data[i].s[6];
-        this->patches.at(i)->vertices[2].position[1] = data[i].s[7];
-        this->patches.at(i)->vertices[2].position[2] = data[i].s[8];
+        this->patches[i]->vertices[2].position[0] = data[i].s[6];
+        this->patches[i]->vertices[2].position[1] = data[i].s[7];
+        this->patches[i]->vertices[2].position[2] = data[i].s[8];
 
         //vertex 4
-        this->patches.at(i)->vertices[3].position[0] = data[i].s[9];
-        this->patches.at(i)->vertices[3].position[1] = data[i].s[10];
-        this->patches.at(i)->vertices[3].position[2] = data[i].s[11];
+        this->patches[i]->vertices[3].position[0] = data[i].s[9];
+        this->patches[i]->vertices[3].position[1] = data[i].s[10];
+        this->patches[i]->vertices[3].position[2] = data[i].s[11];
 
         //normal of patch - the same for all vertices
-        this->patches.at(i)->vertices[0].normal[0] = data[i].s[12];
-        this->patches.at(i)->vertices[0].normal[1] = data[i].s[13];
-        this->patches.at(i)->vertices[0].normal[2] = data[i].s[14];
+        this->patches[i]->vertices[0].normal[0] = data[i].s[12];
+        this->patches[i]->vertices[0].normal[1] = data[i].s[13];
+        this->patches[i]->vertices[0].normal[2] = data[i].s[14];
 
         //area of patch
-        this->patches.at(i)->area = data[i].s[15];
+        this->patches[i]->area = data[i].s[15];
     }
 }

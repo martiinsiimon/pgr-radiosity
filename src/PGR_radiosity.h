@@ -51,7 +51,6 @@ private:
     const char *CLErrorString(cl_int _err);
     void CheckOpenCLError(cl_int _ciErr, const char *_sMsg, ...);
     char* loadProgSource(const char* cFilename);
-    int printTiming(cl_event event, const char* title);
 
     /* OpenCL structures */
     cl_context context;

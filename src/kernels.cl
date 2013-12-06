@@ -40,6 +40,11 @@ __kernel void radiosity(__global float16* patchesGeo, __global float4* patchesIn
 {
     int i = get_global_id(0); //position in indices array
 
+    if (i >= indicesCount)
+    {
+        return;
+    }
+
     float16 lightGeo = patchesGeo[indices[i]];
     float4 lightInfo = patchesInfo[indices[i]];
 
@@ -81,16 +86,16 @@ __kernel void radiosity(__global float16* patchesGeo, __global float4* patchesIn
         double delta = formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
 
         /* Distribute energy */
-        patchInfo.s0 += lightInfo.s0 * 0.5 * delta;
+        patchesInfo[j].s0 += lightInfo.s0 * 0.5 * delta;
 
         /* Distribute color */
-        patchInfo.s1 += lightInfo.s1 * 0.5 * delta;
-        patchInfo.s2 += lightInfo.s2 * 0.5 * delta;
-        patchInfo.s3 += lightInfo.s3 * 0.5 * delta;
+        patchesInfo[j].s1 += lightInfo.s1 * 0.5 * delta;
+        patchesInfo[j].s2 += lightInfo.s2 * 0.5 * delta;
+        patchesInfo[j].s3 += lightInfo.s3 * 0.5 * delta;
     }
 
     /* Erase energy */
-    lightInfo.s0 = 0;
+    patchesInfo[indices[i]].s0 = 0; //this is not working!!!
 }
 
 

@@ -73,6 +73,7 @@ bool PGR_radiosity::isComputed()
 void PGR_radiosity::compute()
 {
     double t_start, t_end;
+    int cycles = 0;
 
     if (this->core == PGR_CPU)
     {
@@ -80,8 +81,10 @@ void PGR_radiosity::compute()
         while (this->model->getMaximalEnergy() > LIMIT)
         {
             this->computeRadiosity();
+            cycles++;
         }
         t_end = GetTime();
+        cout << "cycles: " << cycles << endl;
     }
     else
     {
@@ -101,7 +104,7 @@ void PGR_radiosity::computeRadiosity()
      */
 
     vector<uint> ids;
-    int count = this->model->getIdsOfNMostEnergizedPatches(&ids, N);
+    int count = this->model->getIdsOfNMostEnergizedPatches(&ids, N, LIMIT);
 
     for (int i = 0; i < count; i++)
     {
@@ -202,8 +205,9 @@ void PGR_radiosity::computeRadiosityCL()
     this->runRadiosityKernelCL();
 
     /* Events */
-    cl_event event_bufferPatchesInfo, event_bufferPatchesGeo;
+    cl_event event_bufferPatchesInfo; //, event_bufferPatchesGeo;
 
+    clFinish(this->queue);
     /* Read buffers from gpu memory */
     int status = clEnqueueReadBuffer(this->queue,
                                      this->patchesInfoCL,
@@ -217,27 +221,27 @@ void PGR_radiosity::computeRadiosityCL()
     CheckOpenCLError(status, "read patches.");
 
     /* Wait until the memory is readed */
-    status = clWaitForEvents(1, &event_bufferPatchesInfo);
-    CheckOpenCLError(status, "clWaitForEvents readMemory.");
+    //    status = clWaitForEvents(1, &event_bufferPatchesInfo);
+    //    CheckOpenCLError(status, "clWaitForEvents readMemory.");
+    //
+    //    status = clEnqueueReadBuffer(this->queue,
+    //                                 this->patchesGeoCL,
+    //                                 CL_TRUE, //blocking write
+    //                                 0,
+    //                                 this->model->getPatchesCount() * sizeof (cl_float16),
+    //                                 this->raw_patchesGeo,
+    //                                 0,
+    //                                 0,
+    //                                 &event_bufferPatchesGeo);
+    //    CheckOpenCLError(status, "read patchesGeometry.");
 
-    status = clEnqueueReadBuffer(this->queue,
-                                 this->patchesGeoCL,
-                                 CL_TRUE, //blocking write
-                                 0,
-                                 this->model->getPatchesCount() * sizeof (cl_float16),
-                                 this->raw_patchesGeo,
-                                 0,
-                                 0,
-                                 &event_bufferPatchesGeo);
-    CheckOpenCLError(status, "read patchesGeometry.");
-
-    /* Wait until the memory is readed */
-    status = clWaitForEvents(1, &event_bufferPatchesGeo);
-    CheckOpenCLError(status, "clWaitForEvents readMemory.");
+    //    /* Wait until the memory is readed */
+    //    status = clWaitForEvents(1, &event_bufferPatchesGeo);
+    //    CheckOpenCLError(status, "clWaitForEvents readMemory.");
 
     /* Decode opencl memory objects */
     this->model->decodePatchesCL(this->raw_patchesInfo, this->model->getPatchesCount());
-    this->model->decodePatchesGeometryCL(this->raw_patchesGeo, this->model->getPatchesCount());
+    //this->model->decodePatchesGeometryCL(this->raw_patchesGeo, this->model->getPatchesCount());
 
     this->model->updateArrays();
 
@@ -592,38 +596,18 @@ char* PGR_radiosity::loadProgSource(const char* cFilename)
     return cSourceString;
 }
 
-int PGR_radiosity::printTiming(cl_event event, const char* title)
-{
-    cl_ulong startTime;
-    cl_ulong endTime;
-    /* Display proiling info */
-    cl_int status = clGetEventProfilingInfo(event,
-                                            CL_PROFILING_COMMAND_START,
-                                            sizeof (cl_ulong),
-                                            &startTime,
-                                            0);
-    CheckOpenCLError(status, "clGetEventProfilingInfo.(startTime)");
-
-
-    status = clGetEventProfilingInfo(event,
-                                     CL_PROFILING_COMMAND_END,
-                                     sizeof (cl_ulong),
-                                     &endTime,
-                                     0);
-
-    CheckOpenCLError(status, "clGetEventProfilingInfo.(stopTime)");
-
-    cl_double elapsedTime = (endTime - startTime) * 1e-6;
-
-    printf("%s elapsedTime %.3lf ms\n", title, elapsedTime);
-
-    return 0;
-}
-
 void PGR_radiosity::runRadiosityKernelCL()
 {
     int status;
+    int cycles = 0;
+
+    /* Events */
+    cl_event event_bufferPatchesInfo;
     cl_event event_radiosity;
+
+    double maximalEnergy;
+
+    maximalEnergy = this->model->getMaximalEnergy();
 
     /* Setup arguments to the kernel */
     status = clSetKernelArg(this->radiosityKernel, 0, sizeof (cl_mem), &this->patchesGeoCL);
@@ -636,55 +620,98 @@ void PGR_radiosity::runRadiosityKernelCL()
     status = clSetKernelArg(this->radiosityKernel, 2, sizeof (cl_uint), &patchesCount);
     CheckOpenCLError(status, "clSetKernelArg. (patchesCount)");
 
-    raw_indices = new cl_uint[this->workGroupSize];
-    cl_uint indicesCount = this->model->getIdsOfNMostEnergizedPatchesCL(raw_indices, this->workGroupSize);
+    this->raw_indices = new cl_uint[this->workGroupSize];
+    cl_uint indicesCount = this->model->getIdsOfNMostEnergizedPatchesCL(this->raw_indices, this->workGroupSize, LIMIT);
+
     status = clEnqueueWriteBuffer(this->queue,
                                   this->indicesCL,
                                   CL_TRUE, //blocking write
                                   0,
                                   indicesCount * sizeof (cl_uint),
-                                  raw_indices,
+                                  this->raw_indices,
                                   0,
                                   0,
                                   0);
     CheckOpenCLError(status, "Copy patches geometry");
+
     status = clSetKernelArg(this->radiosityKernel, 3, sizeof (cl_mem), &this->indicesCL);
     CheckOpenCLError(status, "clSetKernelArg. (indicesCL)");
 
     status = clSetKernelArg(this->radiosityKernel, 4, sizeof (cl_uint), &indicesCount);
     CheckOpenCLError(status, "clSetKernelArg. (indicesCount)");
 
-    size_t globalThreads[] = {indicesCount};
-    size_t localThreads[] = {indicesCount};
+    size_t globalThreads[] = {this->workGroupSize};
+    size_t localThreads[] = {this->workGroupSize};
 
-    //TODO add cycle while getMaxEnergy is bigger than limit
-    //while ()
-    status = clEnqueueNDRangeKernel(this->queue,
-                                    this->radiosityKernel,
-                                    1, //1D
-                                    NULL, //offset
-                                    globalThreads,
-                                    localThreads,
-                                    0,
-                                    NULL,
-                                    &event_radiosity);
+    //while (maximalEnergy > LIMIT)
+    while (cycles < 200)
+    {
+        //cout << cycles++ << " energy: " << maximalEnergy << endl;
 
-    CheckOpenCLError(status, "clEnqueueNDRangeKernel radiosityKernel.");
+        cycles++;
+        status = clEnqueueNDRangeKernel(this->queue,
+                                        this->radiosityKernel,
+                                        1, //1D
+                                        NULL, //offset
+                                        globalThreads,
+                                        localThreads,
+                                        0,
+                                        NULL,
+                                        &event_radiosity);
 
-    status = clWaitForEvents(1, &event_radiosity);
-    CheckOpenCLError(status, "clWaitForEvents radiosityKernel.");
+        CheckOpenCLError(status, "clEnqueueNDRangeKernel radiosityKernel.");
 
-    //TODO read patchesCL from gpu
-    //decode it
-    //determine maximal energy
+        status = clWaitForEvents(1, &event_radiosity);
+        CheckOpenCLError(status, "clWaitForEvents radiosityKernel.");
 
-    //OR
+        /* Read buffers from gpu memory */
+        int status = clEnqueueReadBuffer(this->queue,
+                                         this->patchesInfoCL,
+                                         CL_TRUE, //blocking write
+                                         0,
+                                         this->model->getPatchesCount() * sizeof (cl_float4),
+                                         this->raw_patchesInfo,
+                                         1,
+                                         &event_radiosity,
+                                         &event_bufferPatchesInfo);
+        CheckOpenCLError(status, "read patches.");
 
-    //add sortKernel before the actual kernel
-    //the sort kernel should sort indices parallel to avoid memory copies
-    //this is better
+        /* Wait until the memory is readed */
+        status = clWaitForEvents(1, &event_bufferPatchesInfo);
+        CheckOpenCLError(status, "clWaitForEvents readMemory.");
 
-    //end while
+        this->model->decodePatchesCL(this->raw_patchesInfo, this->model->getPatchesCount());
+
+        maximalEnergy = this->model->getMaximalEnergy();
+
+        if (maximalEnergy > LIMIT)
+        {
+            indicesCount = this->model->getIdsOfNMostEnergizedPatchesCL(this->raw_indices, this->workGroupSize, LIMIT);
+
+            status = clEnqueueWriteBuffer(this->queue,
+                                          this->indicesCL,
+                                          CL_TRUE, //blocking write
+                                          0,
+                                          indicesCount * sizeof (cl_uint),
+                                          this->raw_indices,
+                                          0,
+                                          0,
+                                          0);
+            CheckOpenCLError(status, "Copy patches geometry");
+
+            status = clSetKernelArg(this->radiosityKernel, 3, sizeof (cl_mem), &this->indicesCL);
+            CheckOpenCLError(status, "clSetKernelArg. (indicesCL)");
+
+            clFinish(this->queue);
+        }
+
+        //TODO avoid memory reading/writing
+        //add sortKernel before the actual kernel
+        //the sort kernel should sort indices parallel to avoid memory copies
+        //this is better
+
+    }
+    cout << "cycles: " << cycles << endl;
 
 }
 
