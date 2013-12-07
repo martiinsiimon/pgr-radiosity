@@ -32,15 +32,67 @@ double formFactor(float4 RecvPos, float4 ShootPos, float4 RecvNormal, float4 Sho
     return (max(cosi * cosj, (double) 0) / (pi * distance2)) * ShootDArea;
 }
 
+__kernel void sort(__global float4* patchesInfo, uint patchesCount, __global uint* indices, __global uint* indicesCount, uint n, float limit, __global float* maximalEnergy)
+{
+
+    int count = 0; //real count
+    uint pos = 0; //position of maximal energy
+    uint maxPos = patchesCount; //sentinel
+    float max = 0.0f; //maximal energy
+    float lastMax = 10000000.0f; //last maximal energy
+    float lastMaxOld = lastMax;
+
+    for (int i = 0; i < n; i++)
+    {
+        max = 0.0f;
+        int j;
+        for (j = 0; j < maxPos; j++)
+        {
+            float energy = patchesInfo[j].s0;
+            if (energy >= max && energy < lastMax)
+            {
+                pos = j;
+                max = energy;
+            }
+        }
+
+        if (i == 0)
+        {
+            maximalEnergy[0] = max;
+        }
+
+
+        if (max == 0.0f || max < limit)
+        {
+            if (j == maxPos)
+            {
+                break;
+            }
+
+            lastMax = lastMaxOld;
+            maxPos = patchesCount;
+            continue;
+        }
+
+
+        indices[i] = pos;
+        count++;
+        maxPos = pos;
+        lastMaxOld = max;
+    }
+
+    indicesCount[0] = count;
+}
+
 
 /*
  * Compute radiosity step - energy distribution of N most energized patches
  */
-__kernel void radiosity(__global float16* patchesGeo, __global float4* patchesInfo, uint patchesCount, __global uint* indices, uint indicesCount)
+__kernel void radiosity(__global float16* patchesGeo, __global float4* patchesInfo, uint patchesCount, __global uint* indices, __global uint* indicesCount)
 {
     int i = get_global_id(0); //position in indices array
 
-    if (i >= indicesCount)
+    if (i >= indicesCount[0])
     {
         return;
     }
@@ -68,7 +120,7 @@ __kernel void radiosity(__global float16* patchesGeo, __global float4* patchesIn
     for(int j = 0; j < patchesCount; j++) {
 
         float16 patchGeo = patchesGeo[j];
-        float4 patchInfo = patchesInfo[j];
+        //float4 patchInfo = patchesInfo[j];
 
         /* Center of patch */
         x = (patchGeo.s0 + patchGeo.s3 + patchGeo.s6 + patchGeo.s9) / 4.0;

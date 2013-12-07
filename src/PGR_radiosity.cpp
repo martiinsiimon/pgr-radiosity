@@ -9,6 +9,7 @@
 #include "PGR_radiosity.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
 #ifdef _WIN32
 #include <windows.h>
 #else
@@ -486,6 +487,20 @@ int PGR_radiosity::prepareCL()
                                      &ciErr);
     CheckOpenCLError(ciErr, "CreateBuffer indicesCL");
 
+    this->indicesCountCL = clCreateBuffer(this->context,
+                                          CL_MEM_READ_WRITE,
+                                          sizeof (cl_uint),
+                                          0,
+                                          &ciErr);
+    CheckOpenCLError(ciErr, "CreateBuffer indicesCountCL");
+
+    this->maximalEnergyCL = clCreateBuffer(this->context,
+                                          CL_MEM_READ_WRITE,
+                                           sizeof (cl_float),
+                                          0,
+                                          &ciErr);
+    CheckOpenCLError(ciErr, "CreateBuffer indicesCountCL");
+
     /* Create and compile and openCL program */
     char *cSourceCL = loadProgSource("kernels.cl");
 
@@ -525,14 +540,13 @@ int PGR_radiosity::prepareCL()
     CheckOpenCLError(logStatus, "clGetProgramBuildInfo.");
     free(buildLog);
 
-    size_t tempKernelWorkGroupSize; //TODO choose sizes
+    size_t tempKernelWorkGroupSize;
 
     /* Create kernels */
-    //    this->sortKernel = clCreateKernel(program, "sort_parallel", &ciErr);
-    //    CheckOpenCLError(ciErr, "clCreateKernel sort_parallel");
     this->radiosityKernel = clCreateKernel(program, "radiosity", &ciErr);
     CheckOpenCLError(ciErr, "clCreateKernel radiosity");
-
+    this->sortKernel = clCreateKernel(program, "sort", &ciErr);
+    CheckOpenCLError(ciErr, "clCreateKernel sort");
 
     this->maxWorkGroupSize = 1024;
     this->workGroupSize = 1024;
@@ -602,14 +616,14 @@ void PGR_radiosity::runRadiosityKernelCL()
     int cycles = 0;
 
     /* Events */
-    cl_event event_bufferPatchesInfo;
-    cl_event event_radiosity, event_sort;
+    //cl_event event_bufferPatchesInfo;
+    cl_event event_radiosity, event_sort, event_maximalEnergy;
 
-    double maximalEnergy;
+    float maximalEnergy;
 
     maximalEnergy = this->model->getMaximalEnergy();
 
-    /* Setup arguments to the kernel */
+    /* Setup arguments to the radiosity kernel */
     status = clSetKernelArg(this->radiosityKernel, 0, sizeof (cl_mem), &this->patchesGeoCL);
     CheckOpenCLError(status, "clSetKernelArg. (patchesCL)");
 
@@ -624,6 +638,8 @@ void PGR_radiosity::runRadiosityKernelCL()
     this->raw_indices = new cl_uint[this->workGroupSize];
     cl_uint indicesCount = this->model->getIdsOfNMostEnergizedPatchesCL(this->raw_indices, this->workGroupSize, LIMIT);
 
+    memcpy(this->indicesCountCL, &indicesCount, sizeof (cl_uint));
+
     status = clEnqueueWriteBuffer(this->queue,
                                   this->indicesCL,
                                   CL_TRUE, //blocking write
@@ -633,34 +649,49 @@ void PGR_radiosity::runRadiosityKernelCL()
                                   0,
                                   0,
                                   0);
-    CheckOpenCLError(status, "Copy patches geometry");
+    CheckOpenCLError(status, "Copy indices to GPU");
 
     status = clSetKernelArg(this->radiosityKernel, 3, sizeof (cl_mem), &this->indicesCL);
     CheckOpenCLError(status, "clSetKernelArg. (indicesCL)");
 
-    //TODO change to global memory
-    status = clSetKernelArg(this->radiosityKernel, 4, sizeof (cl_uint), &indicesCount);
+    status = clSetKernelArg(this->radiosityKernel, 4, sizeof (cl_mem), &this->indicesCountCL);
     CheckOpenCLError(status, "clSetKernelArg. (indicesCount)");
 
     size_t globalThreadsMain[] = {this->workGroupSize};
     size_t localThreadsMain[] = {this->workGroupSize};
 
-    //TODO add parameters for sortKernel (patchesCL, patchesGeometry, indices, indicesCount, maximalEnergy)
-    //TODO addThisParameter
-    //    status = clSetKernelArg(this->sortKernel, 5, sizeof (cl_uint), &maximalEnergy);
-    //    CheckOpenCLError(status, "clSetKernelArg. (indicesCount)");
+    /* Set arguments for sort kernel */
+    status = clSetKernelArg(this->sortKernel, 0, sizeof (cl_mem), &this->patchesInfoCL);
+    CheckOpenCLError(status, "clSetKernelArg. (patchesCL)");
 
-    //size_t globalThreadsSort[] = {1}; //only one kernel computes
-    //size_t localThreadsSort[] = {1};
+    status = clSetKernelArg(this->sortKernel, 1, sizeof (cl_uint), &patchesCount);
+    CheckOpenCLError(status, "clSetKernelArg. (patchesCount)");
 
+    status = clSetKernelArg(this->sortKernel, 2, sizeof (cl_mem), &this->indicesCL);
+    CheckOpenCLError(status, "clSetKernelArg. (indicesCL)");
 
-    //while (maximalEnergy > LIMIT)
-    while (cycles < 200)
+    status = clSetKernelArg(this->sortKernel, 3, sizeof (cl_mem), &this->indicesCountCL);
+    CheckOpenCLError(status, "clSetKernelArg. (indicesCount)");
+
+    status = clSetKernelArg(this->sortKernel, 4, sizeof (cl_uint), &this->workGroupSize);
+    CheckOpenCLError(status, "clSetKernelArg. (n)");
+
+    float limit = LIMIT;
+    status = clSetKernelArg(this->sortKernel, 5, sizeof (cl_float), &limit);
+    CheckOpenCLError(status, "clSetKernelArg. (limit)");
+
+    status = clSetKernelArg(this->sortKernel, 6, sizeof (cl_mem), &this->maximalEnergyCL);
+    CheckOpenCLError(status, "clSetKernelArg. (maximalEnergy)");
+
+    size_t globalThreadsSort[] = {1}; //only one kernel computes
+    size_t localThreadsSort[] = {1};
+
+    while (maximalEnergy > LIMIT)
     {
-        //cout << cycles++ << " energy: " << maximalEnergy << endl;
+        //cout << cycles << " energy: " << maximalEnergy << endl;
         cycles++;
 
-
+        /* Star kernel - radiosity step*/
         status = clEnqueueNDRangeKernel(this->queue,
                                         this->radiosityKernel,
                                         1, //1D
@@ -673,81 +704,36 @@ void PGR_radiosity::runRadiosityKernelCL()
 
         CheckOpenCLError(status, "clEnqueueNDRangeKernel radiosityKernel.");
 
-        status = clWaitForEvents(1, &event_radiosity);
-        CheckOpenCLError(status, "clWaitForEvents radiosityKernel.");
+        /* Start kerne - recompute indices array */
+        status = clEnqueueNDRangeKernel(this->queue,
+                                        this->sortKernel,
+                                        1, //1D
+                                        NULL, //offset
+                                        globalThreadsSort,
+                                        localThreadsSort,
+                                        1,
+                                        &event_radiosity,
+                                        &event_sort);
+        CheckOpenCLError(status, "clEnqueueNDRangeKernel sortKernel.");
 
-        //FIXME add this core
-        //        status = clEnqueueNDRangeKernel(this->queue,
-        //                                        this->sortKernel,
-        //                                        1, //1D
-        //                                        NULL, //offset
-        //                                        globalThreadsSort,
-        //                                        localThreadsSort,
-        //                                        0,
-        //                                        NULL,
-        //                                        &event_sort);
-        //CheckOpenCLError(status, "clEnqueueNDRangeKernel sortKernel.");
+        /* Wait until indices computation ends */
+        status = clWaitForEvents(1, &event_sort);
+        CheckOpenCLError(status, "clWaitForEvents sortKernel.");
 
-        //        status = clWaitForEvents(1, &event_sort);
-        //        CheckOpenCLError(status, "clWaitForEvents sortKernel.");
 
-        //TODO read maximal energy
-        //        status = clEnqueueReadBuffer(this->queue,
-        //                                      this->maximalEnergyCL,
-        //                                      CL_TRUE, //blocking write
-        //                                      0,
-        //                                      sizeof (cl_float),
-        //                                      this->raw_maximalEnergy,
-        //                                      0,
-        //                                      NULL,
-        //                                      &event_maximalEnergy);
-        //        CheckOpenCLError(status, "Read maximal energy");
-        //        status = clWaitForEvents(1, &event_maximalEnergy);
-        //        CheckOpenCLError(status, "clWaitForEvents read Maximal energy.");
-
-        //BEGIN
-        //TODO delete this!
-        /* Read buffers from gpu memory */
-        int status = clEnqueueReadBuffer(this->queue,
-                                         this->patchesInfoCL,
-                                         CL_TRUE, //blocking write
-                                         0,
-                                         this->model->getPatchesCount() * sizeof (cl_float4),
-                                         this->raw_patchesInfo,
-                                         1,
-                                         &event_radiosity,
-                                         &event_bufferPatchesInfo);
-        CheckOpenCLError(status, "read patches.");
-
-        /* Wait until the memory is readed */
-        status = clWaitForEvents(1, &event_bufferPatchesInfo);
-        CheckOpenCLError(status, "clWaitForEvents readMemory.");
-
-        this->model->decodePatchesCL(this->raw_patchesInfo, this->model->getPatchesCount());
-
-        maximalEnergy = this->model->getMaximalEnergy();
-
-        if (maximalEnergy > LIMIT)
-        {
-            indicesCount = this->model->getIdsOfNMostEnergizedPatchesCL(this->raw_indices, this->workGroupSize, LIMIT);
-
-            status = clEnqueueWriteBuffer(this->queue,
-                                          this->indicesCL,
-                                          CL_TRUE, //blocking write
-                                          0,
-                                          indicesCount * sizeof (cl_uint),
-                                          this->raw_indices,
-                                          0,
-                                          0,
-                                          0);
-            CheckOpenCLError(status, "Copy patches geometry");
-
-            status = clSetKernelArg(this->radiosityKernel, 3, sizeof (cl_mem), &this->indicesCL);
-            CheckOpenCLError(status, "clSetKernelArg. (indicesCL)");
-
-            clFinish(this->queue);
-        }
-        //END
+        /* Read maximal energy from buffer */
+        status = clEnqueueReadBuffer(this->queue,
+                                     this->maximalEnergyCL,
+                                     CL_TRUE, //blocking write
+                                     0,
+                                     sizeof (cl_float),
+                                     &maximalEnergy,
+                                     0,
+                                     NULL,
+                                     &event_maximalEnergy);
+        CheckOpenCLError(status, "Read maximal energy");
+        status = clWaitForEvents(1, &event_maximalEnergy);
+        CheckOpenCLError(status, "clWaitForEvents read Maximal energy.");
     }
     cout << "cycles: " << cycles << endl;
 
