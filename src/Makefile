@@ -14,7 +14,7 @@ ifeq ($(OS), Windows_NT)
     RM=del
     DEPS=pgr.o
 else
-    LIBS=-L/usr/lib `sdl-config --libs` -lGL -lGLEW -lOpenCL
+    LIBS=-L/usr/lib `sdl-config --libs` -lGL -lGLU -lGLEW -lOpenCL
     FLAGS=$(CFLAGS) `sdl-config --cflags` -I. -IGL -DUSE_GLEE
     RM=rm -f
     USE_GLEE=1

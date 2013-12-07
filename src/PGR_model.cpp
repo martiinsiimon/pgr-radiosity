@@ -9,6 +9,8 @@
 //#include <iostream>
 #include <cstring>
 #include <list>
+#include <GL/glu.h>
+
 
 PGR_model::PGR_model()
 {
@@ -406,28 +408,129 @@ void PGR_model::decodePatchesGeometryCL(cl_float16* data, uint size)
     }
 }
 
-void PGR_model::getViewFromPatch(int i)
+void PGR_model::getViewFromPatch(int i, cl_float3 *texFront, cl_float3 *texTop, cl_float3 *texBottom, cl_float3 *texLeft, cl_float3 *texRight)
 {
     PGR_patch * p = this->patches[i];
 
+
+    float eye[] = {0.0f, 0.0f, 0.0f}; //TODO
+    float center[] = {
+        (p->vertices[0].position[0] + p->vertices[1].position[0] + p->vertices[2].position[0] + p->vertices[3].position[0]) / 4,
+        (p->vertices[0].position[1] + p->vertices[1].position[1] + p->vertices[2].position[1] + p->vertices[3].position[1]) / 4,
+        (p->vertices[0].position[2] + p->vertices[1].position[2] + p->vertices[2].position[2] + p->vertices[3].position[2]) / 4
+    };
+    float up[3]; //TODO compute the UP vector
     //determine the center of the patch
 
-    //move to the center
+    /* Front view */
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //is this correct?
+    //glViewport(x, y, 256, 256); //FIXME
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluPerspective(90, (double) 0, 1e-3, 50);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    gluLookAt(eye[0], eye[1], eye[2], center[0], center[1], center[2], up[0], up[1], up[2]);
 
-    //set direction according to the normal
-    //store to the texture[0] view
+    glBegin(GL_QUADS);
+    for (unsigned i = 0; i< this->patches.size(); i++)
+    {
+        glColor3f(this->patches[i]->uniqueColor[0], this->patches[i]->uniqueColor[1], this->patches[i]->uniqueColor[2]);
+        for (int j = 0; j < 4; j++)
+            glVertex3f(this->patches[i]->vertices[j].position[0],
+                       this->patches[i]->vertices[j].position[1],
+                       this->patches[i]->vertices[j].position[2]);
+    }
+    glEnd();
+    //glReadPixels(...)
 
-    //set direction to the left from the normal
-    //store to the texture[1] view
+    /* Top view */
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //is this correct?
+    //glViewport(x, y, 256, 256); //FIXME
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluPerspective(90, (double) 0, 1e-3, 50);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    gluLookAt(eye[0], eye[1], eye[2], center[0], center[1], center[2], up[0], up[1], up[2]);
 
-    //set direction to the right from the normal
-    //store to the texture[2] view
+    glBegin(GL_QUADS);
+    for (unsigned i = 0; i< this->patches.size(); i++)
+    {
+        glColor3f(this->patches[i]->uniqueColor[0], this->patches[i]->uniqueColor[1], this->patches[i]->uniqueColor[2]);
+        for (int j = 0; j < 4; j++)
+            glVertex3f(this->patches[i]->vertices[j].position[0],
+                       this->patches[i]->vertices[j].position[1],
+                       this->patches[i]->vertices[j].position[2]);
+    }
+    glEnd();
+    //glReadPixels(...)
 
-    //set direction top from the normal
-    //store to the texture[3] view
+    /* Bottom view */
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //is this correct?
+    //glViewport(x, y, 256, 256); //FIXME
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluPerspective(90, (double) 0, 1e-3, 50);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    gluLookAt(eye[0], eye[1], eye[2], center[0], center[1], center[2], up[0], up[1], up[2]);
 
-    //set direction down from the normal
-    //store to the texture[4] view
+    glBegin(GL_QUADS);
+    for (unsigned i = 0; i< this->patches.size(); i++)
+    {
+        glColor3f(this->patches[i]->uniqueColor[0], this->patches[i]->uniqueColor[1], this->patches[i]->uniqueColor[2]);
+        for (int j = 0; j < 4; j++)
+            glVertex3f(this->patches[i]->vertices[j].position[0],
+                       this->patches[i]->vertices[j].position[1],
+                       this->patches[i]->vertices[j].position[2]);
+    }
+    glEnd();
+    //glReadPixels(...)
+
+    /* Left view */
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //is this correct?
+    //glViewport(x, y, 256, 256); //FIXME
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluPerspective(90, (double) 0, 1e-3, 50);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    gluLookAt(eye[0], eye[1], eye[2], center[0], center[1], center[2], up[0], up[1], up[2]);
+
+    glBegin(GL_QUADS);
+    for (unsigned i = 0; i< this->patches.size(); i++)
+    {
+        glColor3f(this->patches[i]->uniqueColor[0], this->patches[i]->uniqueColor[1], this->patches[i]->uniqueColor[2]);
+        for (int j = 0; j < 4; j++)
+            glVertex3f(this->patches[i]->vertices[j].position[0],
+                       this->patches[i]->vertices[j].position[1],
+                       this->patches[i]->vertices[j].position[2]);
+    }
+    glEnd();
+    //glReadPixels(...)
+
+    /* Right view */
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //is this correct?
+    //glViewport(x, y, 256, 256); //FIXME
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluPerspective(90, (double) 0, 1e-3, 50);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    gluLookAt(eye[0], eye[1], eye[2], center[0], center[1], center[2], up[0], up[1], up[2]);
+
+    glBegin(GL_QUADS);
+    for (unsigned i = 0; i< this->patches.size(); i++)
+    {
+        glColor3f(this->patches[i]->uniqueColor[0], this->patches[i]->uniqueColor[1], this->patches[i]->uniqueColor[2]);
+        for (int j = 0; j < 4; j++)
+            glVertex3f(this->patches[i]->vertices[j].position[0],
+                       this->patches[i]->vertices[j].position[1],
+                       this->patches[i]->vertices[j].position[2]);
+    }
+    glEnd();
+    //glReadPixels(...)
 }
 
 void PGR_model::generateUniqueColor()
