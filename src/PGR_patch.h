@@ -29,6 +29,7 @@ public:
     void setVertices(Point p0, Point p1, Point p2, Point p3);
     void setArea(float a);
     void setEnergy(double e);
+    void updateColor();
     double getEnergy();
 
     void computeArea();
@@ -45,6 +46,8 @@ public:
     Point vertices[4];
     float area;
     double energy;
+    float uniqueColor[3];
+    float newDiffColor[3];
 };
 
 #endif	/* PGR_PATCH_H */
