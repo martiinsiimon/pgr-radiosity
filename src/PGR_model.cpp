@@ -405,3 +405,36 @@ void PGR_model::decodePatchesGeometryCL(cl_float16* data, uint size)
         this->patches[i]->area = data[i].s[15];
     }
 }
+
+void PGR_model::generateUniqueColor()
+{
+    for(int i = 0; i < this->patches.size(); i++)
+    {
+        float *uniqueColor = new float [3];
+        this->idToUniqueColor(i, &uniqueColor);
+        this->patches[i]->uniqueColor[0] = uniqueColor[0];
+        this->patches[i]->uniqueColor[1] = uniqueColor[1];
+        this->patches[i]->uniqueColor[2] = uniqueColor[2];
+        delete[] uniqueColor;
+    }
+}
+
+void PGR_model::idToUniqueColor(int id, float *uniqueColor[3])
+{
+    (*uniqueColor)[0] = (float)(id & 0b11111111) / 256;
+    id >>= 8;
+    (*uniqueColor)[1] = (float)(id & 0b11111111) / 256;
+    id >>= 8;
+    (*uniqueColor)[2] = (float)(id & 0b11111111) / 256;
+}
+
+int PGR_model::uniqueColorToId(float *uniqueColor)
+{
+    int id = (int)(uniqueColor[2] * 256);
+    id <<= 8;
+    id |= (int)(uniqueColor[1] * 256);
+    id <<= 8;
+    id |= (int)(uniqueColor[0] * 256);
+    
+    return id;
+}

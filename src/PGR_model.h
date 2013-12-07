@@ -61,6 +61,10 @@ public:
     void decodePatchesGeometryCL(cl_float16 *data, uint size);
     void decodePatchesCL(cl_float4 *data, cl_double *energies, uint size);
 
+    void idToUniqueColor(int id, float* uniqueColor[3]);
+    int uniqueColorToId(float *uniqueColor);
+    void generateUniqueColor();
+
     vector<PGR_patch*> patches;
 private:
     void deletePatches();

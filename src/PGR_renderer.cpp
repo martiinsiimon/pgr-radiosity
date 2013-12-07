@@ -41,7 +41,7 @@ PGR_renderer::PGR_renderer(int c)
     delete light;
     this->maxArea = -1.0;
     this->divided = true;
-
+    
     this->radiosity = new PGR_radiosity(this->model, c);
 }
 
