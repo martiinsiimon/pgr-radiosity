@@ -17,6 +17,8 @@
 #endif //WIN32
 
 
+bool debug_log = true; // enable debug log
+
 double GetTime(void)
 {
 #if _WIN32  /* toto jede na Windows */
@@ -221,25 +223,6 @@ void PGR_radiosity::computeRadiosityCL()
                                      &event_bufferPatchesInfo);
     CheckOpenCLError(status, "read patches.");
 
-    /* Wait until the memory is readed */
-    //    status = clWaitForEvents(1, &event_bufferPatchesInfo);
-    //    CheckOpenCLError(status, "clWaitForEvents readMemory.");
-    //
-    //    status = clEnqueueReadBuffer(this->queue,
-    //                                 this->patchesGeoCL,
-    //                                 CL_TRUE, //blocking write
-    //                                 0,
-    //                                 this->model->getPatchesCount() * sizeof (cl_float16),
-    //                                 this->raw_patchesGeo,
-    //                                 0,
-    //                                 0,
-    //                                 &event_bufferPatchesGeo);
-    //    CheckOpenCLError(status, "read patchesGeometry.");
-
-    //    /* Wait until the memory is readed */
-    //    status = clWaitForEvents(1, &event_bufferPatchesGeo);
-    //    CheckOpenCLError(status, "clWaitForEvents readMemory.");
-
     /* Decode opencl memory objects */
     this->model->decodePatchesCL(this->raw_patchesInfo, this->model->getPatchesCount());
     //this->model->decodePatchesGeometryCL(this->raw_patchesGeo, this->model->getPatchesCount());
@@ -316,6 +299,11 @@ void PGR_radiosity::CheckOpenCLError(cl_int _ciErr, const char *_sMsg, ...)
     if (_ciErr != CL_SUCCESS)
     {
         printf("ERROR: %s: (%i)%s\n", buffer, _ciErr, CLErrorString(_ciErr));
+    }
+    else
+    {
+        if (debug_log)
+            printf("%f:    OK: %s\n", GetTime(), buffer);
     }
 }
 
@@ -686,8 +674,10 @@ void PGR_radiosity::runRadiosityKernelCL()
     size_t globalThreadsSort[] = {1}; //only one kernel computes
     size_t localThreadsSort[] = {1};
 
+    debug_log = false;
     while (maximalEnergy > LIMIT)
     {
+
         //cout << cycles << " energy: " << maximalEnergy << endl;
         cycles++;
 
@@ -736,7 +726,7 @@ void PGR_radiosity::runRadiosityKernelCL()
         CheckOpenCLError(status, "clWaitForEvents read Maximal energy.");
     }
     cout << "cycles: " << cycles << endl;
-
+    debug_log = true;
 }
 
 void PGR_radiosity::releaseCL()
