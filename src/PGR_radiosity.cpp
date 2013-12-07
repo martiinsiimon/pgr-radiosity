@@ -224,7 +224,7 @@ void PGR_radiosity::computeRadiosityCL()
     CheckOpenCLError(status, "read patches.");
 
     /* Decode opencl memory objects */
-    this->model->decodePatchesCL(this->raw_patchesInfo, this->model->getPatchesCount());
+    this->model->decodePatchesCL(this->raw_patchesInfo, this->raw_patchesEnergies, this->model->getPatchesCount());
     //this->model->decodePatchesGeometryCL(this->raw_patchesGeo, this->model->getPatchesCount());
 
     this->model->updateArrays();
@@ -423,7 +423,7 @@ int PGR_radiosity::prepareCL()
     CheckOpenCLError(ciErr, "clCreateCommandQueue");
 
 
-    /* Allocate buffer o patches */
+    /* Allocate buffer of patches */
     this->patchesInfoCL = clCreateBuffer(this->context,
                                      CL_MEM_READ_WRITE,
                                      this->model->getPatchesCount() * sizeof (cl_float4),
@@ -432,7 +432,9 @@ int PGR_radiosity::prepareCL()
     CheckOpenCLError(ciErr, "CreateBuffer patchesCL");
 
     this->raw_patchesInfo = new cl_float4[this->model->getPatchesCount()];
-    this->model->getPatchesCL(this->raw_patchesInfo);
+    this->raw_patchesEnergies = new cl_double[this->model->getPatchesCount()];
+    this->model->getPatchesCL(this->raw_patchesInfo, this->raw_patchesEnergies);
+
     ciErr = clEnqueueWriteBuffer(this->queue,
                                  this->patchesInfoCL,
                                  CL_TRUE, //blocking write
@@ -442,8 +444,25 @@ int PGR_radiosity::prepareCL()
                                  0,
                                  0,
                                  0);
-    CheckOpenCLError(ciErr, "Copy patches");
+    CheckOpenCLError(ciErr, "Copy patches colors");
 
+    /* Alocate buffer of energies */
+    this->patchesEnergiesCL = clCreateBuffer(this->context,
+                                         CL_MEM_READ_WRITE,
+                                         this->model->getPatchesCount() * sizeof (cl_double),
+                                         0,
+                                         &ciErr);
+    CheckOpenCLError(ciErr, "CreateBuffer patchesCL");
+    ciErr = clEnqueueWriteBuffer(this->queue,
+                                 this->patchesEnergiesCL,
+                                 CL_TRUE, //blocking write
+                                 0,
+                                 this->model->getPatchesCount() * sizeof (cl_double),
+                                 this->raw_patchesEnergies,
+                                 0,
+                                 0,
+                                 0);
+    CheckOpenCLError(ciErr, "Copy patches");
 
     /* Allocate buffer of patches geometry */
     this->patchesGeoCL = clCreateBuffer(this->context,
@@ -484,7 +503,7 @@ int PGR_radiosity::prepareCL()
 
     this->maximalEnergyCL = clCreateBuffer(this->context,
                                           CL_MEM_READ_WRITE,
-                                           sizeof (cl_float),
+                                           sizeof (cl_double),
                                           0,
                                           &ciErr);
     CheckOpenCLError(ciErr, "CreateBuffer indicesCountCL");
@@ -607,7 +626,7 @@ void PGR_radiosity::runRadiosityKernelCL()
     //cl_event event_bufferPatchesInfo;
     cl_event event_radiosity, event_sort, event_maximalEnergy;
 
-    float maximalEnergy;
+    double maximalEnergy;
 
     maximalEnergy = this->model->getMaximalEnergy();
 
@@ -626,7 +645,16 @@ void PGR_radiosity::runRadiosityKernelCL()
     this->raw_indices = new cl_uint[this->workGroupSize];
     cl_uint indicesCount = this->model->getIdsOfNMostEnergizedPatchesCL(this->raw_indices, this->workGroupSize, LIMIT);
 
-    memcpy(this->indicesCountCL, &indicesCount, sizeof (cl_uint));
+    status = clEnqueueWriteBuffer(this->queue,
+                                  this->indicesCountCL,
+                                  CL_TRUE, //blocking write
+                                  0,
+                                  sizeof (cl_uint),
+                                  &indicesCount,
+                                  0,
+                                  0,
+                                  0);
+    CheckOpenCLError(status, "Copy indicesCount to GPU");
 
     status = clEnqueueWriteBuffer(this->queue,
                                   this->indicesCL,
@@ -645,11 +673,14 @@ void PGR_radiosity::runRadiosityKernelCL()
     status = clSetKernelArg(this->radiosityKernel, 4, sizeof (cl_mem), &this->indicesCountCL);
     CheckOpenCLError(status, "clSetKernelArg. (indicesCount)");
 
+    status = clSetKernelArg(this->radiosityKernel, 5, sizeof (cl_mem), &this->patchesEnergiesCL);
+    CheckOpenCLError(status, "clSetKernelArg. (patchesCL)");
+
     size_t globalThreadsMain[] = {this->workGroupSize};
     size_t localThreadsMain[] = {this->workGroupSize};
 
     /* Set arguments for sort kernel */
-    status = clSetKernelArg(this->sortKernel, 0, sizeof (cl_mem), &this->patchesInfoCL);
+    status = clSetKernelArg(this->sortKernel, 0, sizeof (cl_mem), &this->patchesEnergiesCL);
     CheckOpenCLError(status, "clSetKernelArg. (patchesCL)");
 
     status = clSetKernelArg(this->sortKernel, 1, sizeof (cl_uint), &patchesCount);
@@ -664,8 +695,8 @@ void PGR_radiosity::runRadiosityKernelCL()
     status = clSetKernelArg(this->sortKernel, 4, sizeof (cl_uint), &this->workGroupSize);
     CheckOpenCLError(status, "clSetKernelArg. (n)");
 
-    float limit = LIMIT;
-    status = clSetKernelArg(this->sortKernel, 5, sizeof (cl_float), &limit);
+    double limit = LIMIT;
+    status = clSetKernelArg(this->sortKernel, 5, sizeof (cl_double), &limit);
     CheckOpenCLError(status, "clSetKernelArg. (limit)");
 
     status = clSetKernelArg(this->sortKernel, 6, sizeof (cl_mem), &this->maximalEnergyCL);
@@ -678,7 +709,7 @@ void PGR_radiosity::runRadiosityKernelCL()
     while (maximalEnergy > LIMIT)
     {
 
-        //cout << cycles << " energy: " << maximalEnergy << endl;
+        cout << cycles << " energy: " << maximalEnergy << endl;
         cycles++;
 
         /* Star kernel - radiosity step*/
@@ -716,7 +747,7 @@ void PGR_radiosity::runRadiosityKernelCL()
                                      this->maximalEnergyCL,
                                      CL_TRUE, //blocking write
                                      0,
-                                     sizeof (cl_float),
+                                     sizeof (cl_double),
                                      &maximalEnergy,
                                      0,
                                      NULL,
@@ -734,8 +765,8 @@ void PGR_radiosity::releaseCL()
     /* Releases OpenCL resources (Context, Memory etc.) */
     cl_int status;
 
-    //status = clReleaseKernel(this->sortKernel);
-    //CheckOpenCLError(status, "clReleaseKernel sortKernel.");
+    status = clReleaseKernel(this->sortKernel);
+    CheckOpenCLError(status, "clReleaseKernel sortKernel.");
     status = clReleaseKernel(this->radiosityKernel);
     CheckOpenCLError(status, "clReleaseKernel radiosityKernel.");
 
@@ -745,8 +776,12 @@ void PGR_radiosity::releaseCL()
     CheckOpenCLError(status, "clReleaseMemObject patchesCL");
     status = clReleaseMemObject(this->patchesGeoCL);
     CheckOpenCLError(status, "clReleaseMemObject patchesGeometryCL");
-    //status = clReleaseMemObject(this->factorsCL);
-    //CheckOpenCLError(status, "clReleaseMemObject factorsCL");
+    status = clReleaseMemObject(this->indicesCountCL);
+    CheckOpenCLError(status, "clReleaseMemObject indicesCountCL");
+    status = clReleaseMemObject(this->patchesEnergiesCL);
+    CheckOpenCLError(status, "clReleaseMemObject patchesEnergiesCL");
+    status = clReleaseMemObject(this->maximalEnergyCL);
+    CheckOpenCLError(status, "clReleaseMemObject maximalEnergyCL");
 
     status = clReleaseProgram(this->program);
     CheckOpenCLError(status, "clReleaseProgram.");

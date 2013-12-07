@@ -58,13 +58,15 @@ private:
     cl_kernel radiosityKernel, sortKernel;
     cl_mem indicesCountCL; // count of all patches needs to be global
     cl_mem indicesCL; // indices of N most energized items
-    cl_mem patchesInfoCL; // struct of all patches
-    cl_mem patchesGeoCL; // struct of all patches
+    cl_mem patchesInfoCL; // struct of all patches colors
+    cl_mem patchesGeoCL; // struct of all patches geometries
+    cl_mem patchesEnergiesCL; //struct of all patches energies
     cl_mem maximalEnergyCL; // maximal energy needs to be global
     cl_program program; // OpenCL program
     cl_float16 * raw_patchesGeo;
     cl_float4 * raw_patchesInfo;
     cl_uint * raw_indices;
+    cl_double * raw_patchesEnergies;
     uint maxWorkGroupSize;
     uint workGroupSize;
 

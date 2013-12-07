@@ -44,7 +44,7 @@ public:
     int getPatchesCount();
 
     /* Fill given opencl memory object with patches */
-    int getPatchesCL(cl_float4 *data);
+    int getPatchesCL(cl_float4 *data, cl_double *energies);
 
     /* Fill given opencl memory object with patches geometry */
     int getPatchesGeometryCL(cl_float16 *data);
@@ -59,7 +59,7 @@ public:
     double getMaximalEnergy();
 
     void decodePatchesGeometryCL(cl_float16 *data, uint size);
-    void decodePatchesCL(cl_float4 *data, uint size);
+    void decodePatchesCL(cl_float4 *data, cl_double *energies, uint size);
 
     vector<PGR_patch*> patches;
 private:

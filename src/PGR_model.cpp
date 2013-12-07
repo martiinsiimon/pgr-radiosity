@@ -214,18 +214,18 @@ void PGR_model::divide()
     this->patches = tmpPatches;
 }
 
-int PGR_model::getPatchesCL(cl_float4 *data)
+int PGR_model::getPatchesCL(cl_float4 *data, cl_double *energies)
 {
     int i;
     for (i = 0; i < this->patches.size(); i++)
     {
         //energy
-        data[i].s0 = this->patches.at(i)->energy;
+        energies[i] = this->patches.at(i)->energy;
 
         //color, all vertices are the same
-        data[i].s1 = this->patches.at(i)->vertices[0].color[0];
-        data[i].s2 = this->patches.at(i)->vertices[0].color[1];
-        data[i].s3 = this->patches.at(i)->vertices[0].color[2];
+        data[i].s0 = this->patches.at(i)->vertices[0].color[0];
+        data[i].s1 = this->patches.at(i)->vertices[0].color[1];
+        data[i].s2 = this->patches.at(i)->vertices[0].color[2];
     }
 
     return i;
@@ -337,7 +337,7 @@ double PGR_model::getMaximalEnergy()
     return energy;
 }
 
-void PGR_model::decodePatchesCL(cl_float4* data, uint size)
+void PGR_model::decodePatchesCL(cl_float4 *data, cl_double *energies, uint size)
 {
     if (size != this->getPatchesCount())
     {
@@ -347,22 +347,22 @@ void PGR_model::decodePatchesCL(cl_float4* data, uint size)
 
     for (int i = 0; i < size; i++)
     {
-        this->patches[i]->setEnergy(data[i].s[0]);
+        this->patches[i]->setEnergy(energies[i]);
 
-        this->patches[i]->vertices[0].color[0] = data[i].s[1];
-        this->patches[i]->vertices[1].color[0] = data[i].s[1];
-        this->patches[i]->vertices[2].color[0] = data[i].s[1];
-        this->patches[i]->vertices[3].color[0] = data[i].s[1];
+        this->patches[i]->vertices[0].color[0] = data[i].s[0];
+        this->patches[i]->vertices[1].color[0] = data[i].s[0];
+        this->patches[i]->vertices[2].color[0] = data[i].s[0];
+        this->patches[i]->vertices[3].color[0] = data[i].s[0];
 
-        this->patches[i]->vertices[0].color[1] = data[i].s[2];
-        this->patches[i]->vertices[1].color[1] = data[i].s[2];
-        this->patches[i]->vertices[2].color[1] = data[i].s[2];
-        this->patches[i]->vertices[3].color[1] = data[i].s[2];
+        this->patches[i]->vertices[0].color[1] = data[i].s[1];
+        this->patches[i]->vertices[1].color[1] = data[i].s[1];
+        this->patches[i]->vertices[2].color[1] = data[i].s[1];
+        this->patches[i]->vertices[3].color[1] = data[i].s[1];
 
-        this->patches[i]->vertices[0].color[2] = data[i].s[3];
-        this->patches[i]->vertices[1].color[2] = data[i].s[3];
-        this->patches[i]->vertices[2].color[2] = data[i].s[3];
-        this->patches[i]->vertices[3].color[2] = data[i].s[3];
+        this->patches[i]->vertices[0].color[2] = data[i].s[2];
+        this->patches[i]->vertices[1].color[2] = data[i].s[2];
+        this->patches[i]->vertices[2].color[2] = data[i].s[2];
+        this->patches[i]->vertices[3].color[2] = data[i].s[2];
     }
 }
 

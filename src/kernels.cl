@@ -32,23 +32,23 @@ double formFactor(float4 RecvPos, float4 ShootPos, float4 RecvNormal, float4 Sho
     return (max(cosi * cosj, (double) 0) / (pi * distance2)) * ShootDArea;
 }
 
-__kernel void sort(__global float4* patchesInfo, uint patchesCount, __global uint* indices, __global uint* indicesCount, uint n, float limit, __global float* maximalEnergy)
+__kernel void sort(__global double* energies, uint patchesCount, __global uint* indices, __global uint* indicesCount, uint n, double limit, __global double* maximalEnergy)
 {
 
     int count = 0; //real count
     uint pos = 0; //position of maximal energy
     uint maxPos = patchesCount; //sentinel
-    float max = 0.0f; //maximal energy
-    float lastMax = 10000000.0f; //last maximal energy
-    float lastMaxOld = lastMax;
+    double max = 0.0; //maximal energy
+    double lastMax = 10000000.0f; //last maximal energy
+    double lastMaxOld = lastMax;
 
     for (int i = 0; i < n; i++)
     {
-        max = 0.0f;
+        max = 0.0;
         int j;
         for (j = 0; j < maxPos; j++)
         {
-            float energy = patchesInfo[j].s0;
+            double energy = energies[j];
             if (energy >= max && energy < lastMax)
             {
                 pos = j;
@@ -62,7 +62,7 @@ __kernel void sort(__global float4* patchesInfo, uint patchesCount, __global uin
         }
 
 
-        if (max == 0.0f || max < limit)
+        if (max == 0.0 || max < limit)
         {
             if (j == maxPos)
             {
@@ -88,7 +88,7 @@ __kernel void sort(__global float4* patchesInfo, uint patchesCount, __global uin
 /*
  * Compute radiosity step - energy distribution of N most energized patches
  */
-__kernel void radiosity(__global float16* patchesGeo, __global float4* patchesInfo, uint patchesCount, __global uint* indices, __global uint* indicesCount)
+__kernel void radiosity(__global float16* patchesGeo, __global float4* patchesInfo, uint patchesCount, __global uint* indices, __global uint* indicesCount, __global double* energies)
 {
     int i = get_global_id(0); //position in indices array
 
@@ -99,6 +99,7 @@ __kernel void radiosity(__global float16* patchesGeo, __global float4* patchesIn
 
     float16 lightGeo = patchesGeo[indices[i]];
     float4 lightInfo = patchesInfo[indices[i]];
+    double lightEnergy = energies[indices[i]];
 
     float x, y, z;
 
@@ -138,16 +139,16 @@ __kernel void radiosity(__global float16* patchesGeo, __global float4* patchesIn
         double delta = formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
 
         /* Distribute energy */
-        patchesInfo[j].s0 += lightInfo.s0 * 0.5 * delta;
+        energies[j] += lightEnergy * 0.5 * delta;
 
         /* Distribute color */
+        patchesInfo[j].s0 += lightInfo.s0 * 0.5 * delta;
         patchesInfo[j].s1 += lightInfo.s1 * 0.5 * delta;
         patchesInfo[j].s2 += lightInfo.s2 * 0.5 * delta;
-        patchesInfo[j].s3 += lightInfo.s3 * 0.5 * delta;
     }
 
     /* Erase energy */
-    patchesInfo[indices[i]].s0 = 0; //this is not working!!!
+    energies[indices[i]] = 0;
 }
 
 
