@@ -105,8 +105,6 @@ void onWindowRedraw()
     }
 }
 
-
-
 /**
  * Main function. Event handlers are registered and scene and renderer are
  * initialized
@@ -126,7 +124,7 @@ int main(int argc, char** argv)
     {
         core = PGR_CPU;
     }
-    
+
     try
     {
         // Init SDL - only video subsystem will be used

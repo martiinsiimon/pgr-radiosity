@@ -61,6 +61,8 @@ public:
     void decodePatchesGeometryCL(cl_float16 *data, uint size);
     void decodePatchesCL(cl_float4 *data, cl_double *energies, uint size);
 
+    void getViewFromPatch(/*texture,*/int i);
+
     vector<PGR_patch*> patches;
 private:
     void deletePatches();

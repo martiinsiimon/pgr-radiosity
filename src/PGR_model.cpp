@@ -405,3 +405,27 @@ void PGR_model::decodePatchesGeometryCL(cl_float16* data, uint size)
         this->patches[i]->area = data[i].s[15];
     }
 }
+
+void PGR_model::getViewFromPatch(int i)
+{
+    PGR_patch * p = this->patches[i];
+
+    //determine the center of the patch
+
+    //move to the center
+
+    //set direction according to the normal
+    //store to the texture[0] view
+
+    //set direction to the left from the normal
+    //store to the texture[1] view
+
+    //set direction to the right from the normal
+    //store to the texture[2] view
+
+    //set direction top from the normal
+    //store to the texture[3] view
+
+    //set direction down from the normal
+    //store to the texture[4] view
+}
