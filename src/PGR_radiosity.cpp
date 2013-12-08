@@ -676,6 +676,13 @@ void PGR_radiosity::runRadiosityKernelCL()
     status = clSetKernelArg(this->radiosityKernel, 5, sizeof (cl_mem), &this->patchesEnergiesCL);
     CheckOpenCLError(status, "clSetKernelArg. (patchesCL)");
 
+    //TODO add argument with big memory blob of texture from point
+    //TODO write initial memory data ammount
+
+    //TODO add size of one memory blob as a constant - to skip to another texture
+
+    //TODO add parameter as local memory of patchCount*sizeof(bit) size
+
     size_t globalThreadsMain[] = {this->workGroupSize};
     size_t localThreadsMain[] = {this->workGroupSize};
 
@@ -755,6 +762,11 @@ void PGR_radiosity::runRadiosityKernelCL()
         CheckOpenCLError(status, "Read maximal energy");
         status = clWaitForEvents(1, &event_maximalEnergy);
         CheckOpenCLError(status, "clWaitForEvents read Maximal energy.");
+
+        //TODO read indices to determine which patches need to have texture view
+        //TODO get texture view from these patches
+        //TODO create one big memory blob
+        //TODO write the memory blob to gpu
     }
     cout << "cycles: " << cycles << endl;
     debug_log = true;
