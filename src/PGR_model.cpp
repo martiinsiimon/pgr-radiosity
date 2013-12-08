@@ -408,7 +408,7 @@ void PGR_model::decodePatchesGeometryCL(cl_float16* data, uint size)
     }
 }
 
-void PGR_model::getViewFromPatch(int i, cl_float3 *texFront, cl_float3 *texTop, cl_float3 *texBottom, cl_float3 *texLeft, cl_float3 *texRight)
+void PGR_model::getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop, cl_float3 **texBottom, cl_float3 **texLeft, cl_float3 **texRight)
 {
     PGR_patch * p = this->patches[i];
 
@@ -489,7 +489,7 @@ void PGR_model::getViewFromPatch(int i, cl_float3 *texFront, cl_float3 *texTop, 
         {
             in = w + h * 256;
             texIn = w + h * 256;
-            texFront[texIn] = screen[in];
+            (*texFront)[texIn] = screen[in];
         }
     }
 
@@ -522,7 +522,7 @@ void PGR_model::getViewFromPatch(int i, cl_float3 *texFront, cl_float3 *texTop, 
         {
             in = w + h * 256;
             texIn = w + (h - 128) * 256;
-            texTop[texIn] = screen[in];
+            (*texTop)[texIn] = screen[in];
         }
     }
 
@@ -555,7 +555,7 @@ void PGR_model::getViewFromPatch(int i, cl_float3 *texFront, cl_float3 *texTop, 
         {
             in = w + h * 256;
             texIn = w + h * 256;
-            texBottom[texIn] = screen[in];
+            (*texBottom)[texIn] = screen[in];
         }
     }
 
@@ -588,7 +588,7 @@ void PGR_model::getViewFromPatch(int i, cl_float3 *texFront, cl_float3 *texTop, 
         {
             in = w + h * 256;
             texIn = (w - 128) + h * 256;
-            texLeft[texIn] = screen[in];
+            (*texLeft)[texIn] = screen[in];
         }
     }
 
@@ -621,7 +621,7 @@ void PGR_model::getViewFromPatch(int i, cl_float3 *texFront, cl_float3 *texTop, 
         {
             in = w + h * 256;
             texIn = w + h * 256;
-            texRight[texIn] = screen[in];
+            (*texRight)[texIn] = screen[in];
         }
     }
 

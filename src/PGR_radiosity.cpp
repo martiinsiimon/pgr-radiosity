@@ -112,6 +112,13 @@ void PGR_radiosity::computeRadiosity()
     for (int i = 0; i < count; i++)
     {
         double x, y, z;
+        
+        bool isSetEnergy[this->model->patches.size()];
+        
+        for(int n = 0; n < this->model->patches.size(); n++)
+        {
+            isSetEnergy[n] = false;
+        }
 
         // center of patches
         x = (this->model->patches[ids[i]]->vertices[0].position[0] + this->model->patches[ids[i]]->vertices[1].position[0] + this->model->patches[ids[i]]->vertices[2].position[0] + this->model->patches[ids[i]]->vertices[3].position[0]) / 4.0;
@@ -125,34 +132,213 @@ void PGR_radiosity::computeRadiosity()
         glm::vec3 ShootNormal (x, y, z);
 
         float ShootDArea = this->model->patches[ids[i]]->area;
-        for(int j = 0; j < this->model->patches.size(); j++) {
-            x = (this->model->patches[j]->vertices[0].position[0] + this->model->patches[j]->vertices[1].position[0] + this->model->patches[j]->vertices[2].position[0] + this->model->patches[j]->vertices[3].position[0]) / 4.0;
-            y = (this->model->patches[j]->vertices[0].position[1] + this->model->patches[j]->vertices[1].position[1] + this->model->patches[j]->vertices[2].position[1] + this->model->patches[j]->vertices[3].position[1]) / 4.0;
-            z = (this->model->patches[j]->vertices[0].position[2] + this->model->patches[j]->vertices[1].position[2] + this->model->patches[j]->vertices[2].position[2] + this->model->patches[j]->vertices[3].position[2]) / 4.0;
-            glm::vec3 RecvPos (x, y, z);
+        
+        cl_float3 *texFront = new cl_float3 [256*256];
+        cl_float3 *texTop = new cl_float3 [128*256];
+        cl_float3 *texBottom = new cl_float3 [128*256];
+        cl_float3 *texLeft = new cl_float3 [256*128];
+        cl_float3 *texRight = new cl_float3 [256*128];
+        
+        this->model->getViewFromPatch(ids[i], &texFront, &texTop, &texBottom, &texLeft, &texRight);
+        
+        /* Front */
+        for(int h = 0; h < 256; h++)
+        {
+            for(int w = 0; w < 256; w++)
+            {
+                int j = this->model->uniqueColorToId((float*)&texFront[w + h * 256]);
+                
+                if(isSetEnergy[j] == false) {
+                    x = (this->model->patches[j]->vertices[0].position[0] + this->model->patches[j]->vertices[1].position[0] + this->model->patches[j]->vertices[2].position[0] + this->model->patches[j]->vertices[3].position[0]) / 4.0;
+                    y = (this->model->patches[j]->vertices[0].position[1] + this->model->patches[j]->vertices[1].position[1] + this->model->patches[j]->vertices[2].position[1] + this->model->patches[j]->vertices[3].position[1]) / 4.0;
+                    z = (this->model->patches[j]->vertices[0].position[2] + this->model->patches[j]->vertices[1].position[2] + this->model->patches[j]->vertices[2].position[2] + this->model->patches[j]->vertices[3].position[2]) / 4.0;
+                    glm::vec3 RecvPos (x, y, z);
 
-            x = this->model->patches[j]->vertices[0].normal[0];
-            y = this->model->patches[j]->vertices[0].normal[1];
-            z = this->model->patches[j]->vertices[0].normal[2];
-            glm::vec3 RecvNormal (x, y, z);
+                    x = this->model->patches[j]->vertices[0].normal[0];
+                    y = this->model->patches[j]->vertices[0].normal[1];
+                    z = this->model->patches[j]->vertices[0].normal[2];
+                    glm::vec3 RecvNormal (x, y, z);
 
-            double delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
+                    double delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
 
-            this->model->patches[j]->vertices[0].color[0] =
-            this->model->patches[j]->vertices[1].color[0] =
-            this->model->patches[j]->vertices[2].color[0] =
-                this->model->patches[j]->vertices[3].color[0] += this->model->patches[ids[i]]->vertices[0].color[0] * 0.5 * delta;
-            this->model->patches[j]->vertices[0].color[1] =
-            this->model->patches[j]->vertices[1].color[1] =
-            this->model->patches[j]->vertices[2].color[1] =
-                this->model->patches[j]->vertices[3].color[1] += this->model->patches[ids[i]]->vertices[0].color[1] * 0.5 * delta;
-            this->model->patches[j]->vertices[0].color[2] =
-            this->model->patches[j]->vertices[1].color[2] =
-            this->model->patches[j]->vertices[2].color[2] =
-                this->model->patches[j]->vertices[3].color[2] += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;
-            this->model->patches[j]->energy += this->model->patches[ids[i]]->energy * 0.5 * delta;
+                    this->model->patches[j]->vertices[0].color[0] =
+                    this->model->patches[j]->vertices[1].color[0] =
+                    this->model->patches[j]->vertices[2].color[0] =
+                        this->model->patches[j]->vertices[3].color[0] += this->model->patches[ids[i]]->vertices[0].color[0] * 0.5 * delta;
+                    this->model->patches[j]->vertices[0].color[1] =
+                    this->model->patches[j]->vertices[1].color[1] =
+                    this->model->patches[j]->vertices[2].color[1] =
+                        this->model->patches[j]->vertices[3].color[1] += this->model->patches[ids[i]]->vertices[0].color[1] * 0.5 * delta;
+                    this->model->patches[j]->vertices[0].color[2] =
+                    this->model->patches[j]->vertices[1].color[2] =
+                    this->model->patches[j]->vertices[2].color[2] =
+                        this->model->patches[j]->vertices[3].color[2] += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;
+                    this->model->patches[j]->energy += this->model->patches[ids[i]]->energy * 0.5 * delta;
+                    isSetEnergy[j] = true;
+                }
+            }
         }
+        
+        /* Top */
+        for(int h = 128; h < 256; h++)
+        {
+            for(int w = 0; w < 256; w++)
+            {
+                int j = this->model->uniqueColorToId((float*)&texTop[w + (h - 128) * 256]);
+                
+                if(isSetEnergy[j] == false) {
+                    x = (this->model->patches[j]->vertices[0].position[0] + this->model->patches[j]->vertices[1].position[0] + this->model->patches[j]->vertices[2].position[0] + this->model->patches[j]->vertices[3].position[0]) / 4.0;
+                    y = (this->model->patches[j]->vertices[0].position[1] + this->model->patches[j]->vertices[1].position[1] + this->model->patches[j]->vertices[2].position[1] + this->model->patches[j]->vertices[3].position[1]) / 4.0;
+                    z = (this->model->patches[j]->vertices[0].position[2] + this->model->patches[j]->vertices[1].position[2] + this->model->patches[j]->vertices[2].position[2] + this->model->patches[j]->vertices[3].position[2]) / 4.0;
+                    glm::vec3 RecvPos (x, y, z);
+
+                    x = this->model->patches[j]->vertices[0].normal[0];
+                    y = this->model->patches[j]->vertices[0].normal[1];
+                    z = this->model->patches[j]->vertices[0].normal[2];
+                    glm::vec3 RecvNormal (x, y, z);
+
+                    double delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
+
+                    this->model->patches[j]->vertices[0].color[0] =
+                    this->model->patches[j]->vertices[1].color[0] =
+                    this->model->patches[j]->vertices[2].color[0] =
+                        this->model->patches[j]->vertices[3].color[0] += this->model->patches[ids[i]]->vertices[0].color[0] * 0.5 * delta;
+                    this->model->patches[j]->vertices[0].color[1] =
+                    this->model->patches[j]->vertices[1].color[1] =
+                    this->model->patches[j]->vertices[2].color[1] =
+                        this->model->patches[j]->vertices[3].color[1] += this->model->patches[ids[i]]->vertices[0].color[1] * 0.5 * delta;
+                    this->model->patches[j]->vertices[0].color[2] =
+                    this->model->patches[j]->vertices[1].color[2] =
+                    this->model->patches[j]->vertices[2].color[2] =
+                        this->model->patches[j]->vertices[3].color[2] += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;
+                    this->model->patches[j]->energy += this->model->patches[ids[i]]->energy * 0.5 * delta;
+                    isSetEnergy[j] = true;
+                }
+            }
+        }
+        
+        /* Bottom */
+        for(int h = 0; h < 128; h++)
+        {
+            for(int w = 0; w < 256; w++)
+            {
+                int j = this->model->uniqueColorToId((float*)&texBottom[w + h * 256]);
+                
+                if(isSetEnergy[j] == false) {
+                    x = (this->model->patches[j]->vertices[0].position[0] + this->model->patches[j]->vertices[1].position[0] + this->model->patches[j]->vertices[2].position[0] + this->model->patches[j]->vertices[3].position[0]) / 4.0;
+                    y = (this->model->patches[j]->vertices[0].position[1] + this->model->patches[j]->vertices[1].position[1] + this->model->patches[j]->vertices[2].position[1] + this->model->patches[j]->vertices[3].position[1]) / 4.0;
+                    z = (this->model->patches[j]->vertices[0].position[2] + this->model->patches[j]->vertices[1].position[2] + this->model->patches[j]->vertices[2].position[2] + this->model->patches[j]->vertices[3].position[2]) / 4.0;
+                    glm::vec3 RecvPos (x, y, z);
+
+                    x = this->model->patches[j]->vertices[0].normal[0];
+                    y = this->model->patches[j]->vertices[0].normal[1];
+                    z = this->model->patches[j]->vertices[0].normal[2];
+                    glm::vec3 RecvNormal (x, y, z);
+
+                    double delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
+
+                    this->model->patches[j]->vertices[0].color[0] =
+                    this->model->patches[j]->vertices[1].color[0] =
+                    this->model->patches[j]->vertices[2].color[0] =
+                        this->model->patches[j]->vertices[3].color[0] += this->model->patches[ids[i]]->vertices[0].color[0] * 0.5 * delta;
+                    this->model->patches[j]->vertices[0].color[1] =
+                    this->model->patches[j]->vertices[1].color[1] =
+                    this->model->patches[j]->vertices[2].color[1] =
+                        this->model->patches[j]->vertices[3].color[1] += this->model->patches[ids[i]]->vertices[0].color[1] * 0.5 * delta;
+                    this->model->patches[j]->vertices[0].color[2] =
+                    this->model->patches[j]->vertices[1].color[2] =
+                    this->model->patches[j]->vertices[2].color[2] =
+                        this->model->patches[j]->vertices[3].color[2] += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;
+                    this->model->patches[j]->energy += this->model->patches[ids[i]]->energy * 0.5 * delta;
+                    isSetEnergy[j] = true;
+                }
+            }
+        }
+        
+        /* Left */
+        for(int h = 0; h < 256; h++)
+        {
+            for(int w = 128; w < 256; w++)
+            {
+                int j = this->model->uniqueColorToId((float*)&texLeft[(w - 128) + h * 256]);
+                
+                if(isSetEnergy[j] == false) {
+                    x = (this->model->patches[j]->vertices[0].position[0] + this->model->patches[j]->vertices[1].position[0] + this->model->patches[j]->vertices[2].position[0] + this->model->patches[j]->vertices[3].position[0]) / 4.0;
+                    y = (this->model->patches[j]->vertices[0].position[1] + this->model->patches[j]->vertices[1].position[1] + this->model->patches[j]->vertices[2].position[1] + this->model->patches[j]->vertices[3].position[1]) / 4.0;
+                    z = (this->model->patches[j]->vertices[0].position[2] + this->model->patches[j]->vertices[1].position[2] + this->model->patches[j]->vertices[2].position[2] + this->model->patches[j]->vertices[3].position[2]) / 4.0;
+                    glm::vec3 RecvPos (x, y, z);
+
+                    x = this->model->patches[j]->vertices[0].normal[0];
+                    y = this->model->patches[j]->vertices[0].normal[1];
+                    z = this->model->patches[j]->vertices[0].normal[2];
+                    glm::vec3 RecvNormal (x, y, z);
+
+                    double delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
+
+                    this->model->patches[j]->vertices[0].color[0] =
+                    this->model->patches[j]->vertices[1].color[0] =
+                    this->model->patches[j]->vertices[2].color[0] =
+                        this->model->patches[j]->vertices[3].color[0] += this->model->patches[ids[i]]->vertices[0].color[0] * 0.5 * delta;
+                    this->model->patches[j]->vertices[0].color[1] =
+                    this->model->patches[j]->vertices[1].color[1] =
+                    this->model->patches[j]->vertices[2].color[1] =
+                        this->model->patches[j]->vertices[3].color[1] += this->model->patches[ids[i]]->vertices[0].color[1] * 0.5 * delta;
+                    this->model->patches[j]->vertices[0].color[2] =
+                    this->model->patches[j]->vertices[1].color[2] =
+                    this->model->patches[j]->vertices[2].color[2] =
+                        this->model->patches[j]->vertices[3].color[2] += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;
+                    this->model->patches[j]->energy += this->model->patches[ids[i]]->energy * 0.5 * delta;
+                    isSetEnergy[j] = true;
+                }
+            }
+        }
+        
+        /* Right */
+        for(int h = 0; h < 256; h++)
+        {
+            for(int w = 0; w < 128; w++)
+            {
+                int j = this->model->uniqueColorToId((float*)&texRight[w + h * 256]);
+                
+                if(isSetEnergy[j] == false) {
+                    x = (this->model->patches[j]->vertices[0].position[0] + this->model->patches[j]->vertices[1].position[0] + this->model->patches[j]->vertices[2].position[0] + this->model->patches[j]->vertices[3].position[0]) / 4.0;
+                    y = (this->model->patches[j]->vertices[0].position[1] + this->model->patches[j]->vertices[1].position[1] + this->model->patches[j]->vertices[2].position[1] + this->model->patches[j]->vertices[3].position[1]) / 4.0;
+                    z = (this->model->patches[j]->vertices[0].position[2] + this->model->patches[j]->vertices[1].position[2] + this->model->patches[j]->vertices[2].position[2] + this->model->patches[j]->vertices[3].position[2]) / 4.0;
+                    glm::vec3 RecvPos (x, y, z);
+
+                    x = this->model->patches[j]->vertices[0].normal[0];
+                    y = this->model->patches[j]->vertices[0].normal[1];
+                    z = this->model->patches[j]->vertices[0].normal[2];
+                    glm::vec3 RecvNormal (x, y, z);
+
+                    double delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
+
+                    this->model->patches[j]->vertices[0].color[0] =
+                    this->model->patches[j]->vertices[1].color[0] =
+                    this->model->patches[j]->vertices[2].color[0] =
+                        this->model->patches[j]->vertices[3].color[0] += this->model->patches[ids[i]]->vertices[0].color[0] * 0.5 * delta;
+                    this->model->patches[j]->vertices[0].color[1] =
+                    this->model->patches[j]->vertices[1].color[1] =
+                    this->model->patches[j]->vertices[2].color[1] =
+                        this->model->patches[j]->vertices[3].color[1] += this->model->patches[ids[i]]->vertices[0].color[1] * 0.5 * delta;
+                    this->model->patches[j]->vertices[0].color[2] =
+                    this->model->patches[j]->vertices[1].color[2] =
+                    this->model->patches[j]->vertices[2].color[2] =
+                        this->model->patches[j]->vertices[3].color[2] += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;
+                    this->model->patches[j]->energy += this->model->patches[ids[i]]->energy * 0.5 * delta;
+                    isSetEnergy[j] = true;
+                }
+            }
+        }
+        
+        
         this->model->patches[ids[i]]->energy = 0;
+        
+        delete[] texFront;
+        delete[] texTop;
+        delete[] texBottom;
+        delete[] texLeft;
+        delete[] texRight;
     }
 
     this->model->updateArrays();
