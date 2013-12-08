@@ -38,10 +38,11 @@ PGR_renderer::PGR_renderer(int c)
     this->model = new PGR_model(C_ROOM);
     PGR_model * light = new PGR_model(C_LIGHT);
     this->model->appendModel(light);
+    this->model->generateUniqueColor();
     delete light;
     this->maxArea = -1.0;
     this->divided = true;
-    
+
     this->radiosity = new PGR_radiosity(this->model, c);
 }
 
@@ -121,7 +122,6 @@ void PGR_renderer::createBuffers()
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, roomEBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, this->model->getIndicesCount() * sizeof (unsigned int), this->model->getIndices(), GL_STATIC_DRAW);
 }
-
 /**
  * Draw 3D scene using default renderer. This rendering should be real-time and
  * used to set view angle light sources. It doesn't need to run on GPU.
@@ -145,10 +145,10 @@ void PGR_renderer::drawSceneDefault(glm::mat4 mvp)
     glVertexAttribPointer(colorAttrib, 3, GL_FLOAT, GL_FALSE, sizeof (Point), (void*) offsetof(Point, color));
     glVertexAttribPointer(normalAttrib, 3, GL_FLOAT, GL_FALSE, sizeof (Point), (void*) offsetof(Point, normal));
 
-
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, roomEBO);
+
     glDrawElements(GL_QUADS, this->model->getIndicesCount(), GL_UNSIGNED_INT, NULL);
 
     glDisableVertexAttribArray(positionAttrib);

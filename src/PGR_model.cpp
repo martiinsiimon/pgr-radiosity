@@ -422,14 +422,17 @@ void PGR_model::getViewFromPatch(int i, cl_float3 *texFront, cl_float3 *texTop, 
     float up[3]; //TODO compute the UP vector
     //determine the center of the patch
 
+    cl_float3 * screen = new cl_float3[256 * 256]; //always read the square
+
     /* Front view */
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //is this correct?
-    //glViewport(x, y, 256, 256); //FIXME
+    glViewport(0, 0, 256, 256);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(90, (double) 0, 1e-3, 50);
+    gluPerspective(90, (double) 1, 1e-3, 50);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
+    //TODO center should stay the same, recompute eye and up vectors
     gluLookAt(eye[0], eye[1], eye[2], center[0], center[1], center[2], up[0], up[1], up[2]);
 
     glBegin(GL_QUADS);
@@ -442,16 +445,30 @@ void PGR_model::getViewFromPatch(int i, cl_float3 *texFront, cl_float3 *texTop, 
                        this->patches[i]->vertices[j].position[2]);
     }
     glEnd();
-    //glReadPixels(...)
+    glReadPixels(0, 0, 256, 256, GL_BGR, GL_FLOAT, screen);
+
+    int in;
+    int texIn;
+    /* Copy the whole screen to texture */
+    for (int h = 0; h < 256; h++)
+    {
+        for (int w = 0; w < 256; w++)
+        {
+            in = w + h * 256;
+            texIn = w + h * 256;
+            texFront[texIn] = screen[in];
+        }
+    }
 
     /* Top view */
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //is this correct?
-    //glViewport(x, y, 256, 256); //FIXME
+    glViewport(0, 0, 256, 256);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(90, (double) 0, 1e-3, 50);
+    gluPerspective(90, (double) 1, 1e-3, 50);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
+    //TODO center should stay the same, recompute eye and up vectors
     gluLookAt(eye[0], eye[1], eye[2], center[0], center[1], center[2], up[0], up[1], up[2]);
 
     glBegin(GL_QUADS);
@@ -464,16 +481,28 @@ void PGR_model::getViewFromPatch(int i, cl_float3 *texFront, cl_float3 *texTop, 
                        this->patches[i]->vertices[j].position[2]);
     }
     glEnd();
-    //glReadPixels(...)
+    glReadPixels(0, 0, 256, 256, GL_BGR, GL_FLOAT, screen);
+
+    /* Copy the bottom part of a screen to texture */
+    for (int h = 128; h < 256; h++)
+    {
+        for (int w = 0; w < 256; w++)
+        {
+            in = w + h * 256;
+            texIn = w + (h - 128) * 256;
+            texTop[texIn] = screen[in];
+        }
+    }
 
     /* Bottom view */
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //is this correct?
-    //glViewport(x, y, 256, 256); //FIXME
+    glViewport(0, 0, 256, 256);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(90, (double) 0, 1e-3, 50);
+    gluPerspective(90, (double) 1, 1e-3, 50);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
+    //TODO center should stay the same, recompute eye and up vectors
     gluLookAt(eye[0], eye[1], eye[2], center[0], center[1], center[2], up[0], up[1], up[2]);
 
     glBegin(GL_QUADS);
@@ -486,16 +515,28 @@ void PGR_model::getViewFromPatch(int i, cl_float3 *texFront, cl_float3 *texTop, 
                        this->patches[i]->vertices[j].position[2]);
     }
     glEnd();
-    //glReadPixels(...)
+    glReadPixels(0, 0, 256, 256, GL_BGR, GL_FLOAT, screen);
+
+    /* Copy the top part of a screen to texture */
+    for (int h = 0; h < 128; h++)
+    {
+        for (int w = 0; w < 256; w++)
+        {
+            in = w + h * 256;
+            texIn = w + h * 256;
+            texBottom[texIn] = screen[in];
+        }
+    }
 
     /* Left view */
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //is this correct?
-    //glViewport(x, y, 256, 256); //FIXME
+    glViewport(0, 0, 256, 256); //FIXME
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(90, (double) 0, 1e-3, 50);
+    gluPerspective(90, (double) 1, 1e-3, 50);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
+    //TODO center should stay the same, recompute eye and up vectors
     gluLookAt(eye[0], eye[1], eye[2], center[0], center[1], center[2], up[0], up[1], up[2]);
 
     glBegin(GL_QUADS);
@@ -508,16 +549,28 @@ void PGR_model::getViewFromPatch(int i, cl_float3 *texFront, cl_float3 *texTop, 
                        this->patches[i]->vertices[j].position[2]);
     }
     glEnd();
-    //glReadPixels(...)
+    glReadPixels(0, 0, 256, 256, GL_BGR, GL_FLOAT, screen);
+
+    /* Copy the right part of a screen to texture */
+    for (int h = 0; h < 256; h++)
+    {
+        for (int w = 128; w < 256; w++)
+        {
+            in = w + h * 256;
+            texIn = (w - 128) + h * 256;
+            texLeft[texIn] = screen[in];
+        }
+    }
 
     /* Right view */
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //is this correct?
-    //glViewport(x, y, 256, 256); //FIXME
+    glViewport(0, 0, 256, 256);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(90, (double) 0, 1e-3, 50);
+    gluPerspective(90, (double) 1, 1e-3, 50);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
+    //TODO center should stay the same, recompute eye and up vectors
     gluLookAt(eye[0], eye[1], eye[2], center[0], center[1], center[2], up[0], up[1], up[2]);
 
     glBegin(GL_QUADS);
@@ -530,7 +583,20 @@ void PGR_model::getViewFromPatch(int i, cl_float3 *texFront, cl_float3 *texTop, 
                        this->patches[i]->vertices[j].position[2]);
     }
     glEnd();
-    //glReadPixels(...)
+    glReadPixels(0, 0, 256, 256, GL_BGR, GL_FLOAT, screen);
+
+    /* Copy the left part of a screen to texture */
+    for (int h = 0; h < 256; h++)
+    {
+        for (int w = 0; w < 128; w++)
+        {
+            in = w + h * 256;
+            texIn = w + h * 256;
+            texRight[texIn] = screen[in];
+        }
+    }
+
+    delete [] screen;
 }
 
 void PGR_model::generateUniqueColor()
