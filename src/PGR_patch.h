@@ -11,6 +11,7 @@
 
 #include "model.h"
 #include <vector>
+#include <CL/cl.h>
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
@@ -46,7 +47,7 @@ public:
     Point vertices[4];
     float area;
     double energy;
-    float uniqueColor[3];
+    cl_float3 uniqueColor;
     float newDiffColor[3];
 };
 

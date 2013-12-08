@@ -471,7 +471,7 @@ void PGR_model::getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop
     glBegin(GL_QUADS);
     for (unsigned i = 0; i< this->patches.size(); i++)
     {
-        glColor3f(this->patches[i]->uniqueColor[0], this->patches[i]->uniqueColor[1], this->patches[i]->uniqueColor[2]);
+        glColor3f(this->patches[i]->uniqueColor.x, this->patches[i]->uniqueColor.y, this->patches[i]->uniqueColor.z);
         for (int j = 0; j < 4; j++)
             glVertex3f(this->patches[i]->vertices[j].position[0],
                        this->patches[i]->vertices[j].position[1],
@@ -506,7 +506,7 @@ void PGR_model::getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop
     glBegin(GL_QUADS);
     for (unsigned i = 0; i< this->patches.size(); i++)
     {
-        glColor3f(this->patches[i]->uniqueColor[0], this->patches[i]->uniqueColor[1], this->patches[i]->uniqueColor[2]);
+        glColor3f(this->patches[i]->uniqueColor.x, this->patches[i]->uniqueColor.y, this->patches[i]->uniqueColor.z);
         for (int j = 0; j < 4; j++)
             glVertex3f(this->patches[i]->vertices[j].position[0],
                        this->patches[i]->vertices[j].position[1],
@@ -539,7 +539,7 @@ void PGR_model::getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop
     glBegin(GL_QUADS);
     for (unsigned i = 0; i< this->patches.size(); i++)
     {
-        glColor3f(this->patches[i]->uniqueColor[0], this->patches[i]->uniqueColor[1], this->patches[i]->uniqueColor[2]);
+        glColor3f(this->patches[i]->uniqueColor.x, this->patches[i]->uniqueColor.y, this->patches[i]->uniqueColor.z);
         for (int j = 0; j < 4; j++)
             glVertex3f(this->patches[i]->vertices[j].position[0],
                        this->patches[i]->vertices[j].position[1],
@@ -572,7 +572,7 @@ void PGR_model::getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop
     glBegin(GL_QUADS);
     for (unsigned i = 0; i< this->patches.size(); i++)
     {
-        glColor3f(this->patches[i]->uniqueColor[0], this->patches[i]->uniqueColor[1], this->patches[i]->uniqueColor[2]);
+        glColor3f(this->patches[i]->uniqueColor.x, this->patches[i]->uniqueColor.y, this->patches[i]->uniqueColor.z);
         for (int j = 0; j < 4; j++)
             glVertex3f(this->patches[i]->vertices[j].position[0],
                        this->patches[i]->vertices[j].position[1],
@@ -605,7 +605,7 @@ void PGR_model::getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop
     glBegin(GL_QUADS);
     for (unsigned i = 0; i< this->patches.size(); i++)
     {
-        glColor3f(this->patches[i]->uniqueColor[0], this->patches[i]->uniqueColor[1], this->patches[i]->uniqueColor[2]);
+        glColor3f(this->patches[i]->uniqueColor.x, this->patches[i]->uniqueColor.y, this->patches[i]->uniqueColor.z);
         for (int j = 0; j < 4; j++)
             glVertex3f(this->patches[i]->vertices[j].position[0],
                        this->patches[i]->vertices[j].position[1],
@@ -632,31 +632,30 @@ void PGR_model::generateUniqueColor()
 {
     for(int i = 0; i < this->patches.size(); i++)
     {
-        float *uniqueColor = new float [3];
+        cl_float3 uniqueColor;
         this->idToUniqueColor(i, &uniqueColor);
-        this->patches[i]->uniqueColor[0] = uniqueColor[0];
-        this->patches[i]->uniqueColor[1] = uniqueColor[1];
-        this->patches[i]->uniqueColor[2] = uniqueColor[2];
-        delete[] uniqueColor;
+        this->patches[i]->uniqueColor.x = uniqueColor.x;
+        this->patches[i]->uniqueColor.y = uniqueColor.y;
+        this->patches[i]->uniqueColor.z = uniqueColor.z;
     }
 }
 
-void PGR_model::idToUniqueColor(int id, float *uniqueColor[3])
+void PGR_model::idToUniqueColor(int id, cl_float3 *uniqueColor)
 {
-    (*uniqueColor)[0] = (float)(id & 0b11111111) / 256;
+    (*uniqueColor).x = (float)(id & 0b11111111) / 256;
     id >>= 8;
-    (*uniqueColor)[1] = (float)(id & 0b11111111) / 256;
+    (*uniqueColor).y = (float)(id & 0b11111111) / 256;
     id >>= 8;
-    (*uniqueColor)[2] = (float)(id & 0b11111111) / 256;
+    (*uniqueColor).z = (float)(id & 0b11111111) / 256;
 }
 
-int PGR_model::uniqueColorToId(float *uniqueColor)
+int PGR_model::uniqueColorToId(cl_float3 uniqueColor)
 {
-    int id = (int)(uniqueColor[2] * 256);
+    int id = (int)(uniqueColor.z * 256);
     id <<= 8;
-    id |= (int)(uniqueColor[1] * 256);
+    id |= (int)(uniqueColor.y * 256);
     id <<= 8;
-    id |= (int)(uniqueColor[0] * 256);
+    id |= (int)(uniqueColor.x * 256);
 
     return id;
 }

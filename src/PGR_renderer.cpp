@@ -38,7 +38,6 @@ PGR_renderer::PGR_renderer(int c)
     this->model = new PGR_model(C_ROOM);
     PGR_model * light = new PGR_model(C_LIGHT);
     this->model->appendModel(light);
-    this->model->generateUniqueColor();
     delete light;
     this->maxArea = -1.0;
     this->divided = true;
