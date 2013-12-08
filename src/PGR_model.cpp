@@ -10,7 +10,7 @@
 #include <cstring>
 #include <list>
 #include <GL/glu.h>
-
+#include <glm/gtc/type_ptr.hpp>
 
 PGR_model::PGR_model()
 {
@@ -412,16 +412,50 @@ void PGR_model::getViewFromPatch(int i, cl_float3 *texFront, cl_float3 *texTop, 
 {
     PGR_patch * p = this->patches[i];
 
+    glm::vec3 norm = glm::vec3(p->vertices[0].normal[0], p->vertices[0].normal[1], p->vertices[0].normal[2]);
+    glm::vec3 eye =
+        glm::vec3(
+                  (p->vertices[0].position[0] + p->vertices[1].position[0] + p->vertices[2].position[0] + p->vertices[3].position[0]) / 4,
+                  (p->vertices[0].position[1] + p->vertices[1].position[1] + p->vertices[2].position[1] + p->vertices[3].position[1]) / 4,
+                  (p->vertices[0].position[2] + p->vertices[1].position[2] + p->vertices[2].position[2] + p->vertices[3].position[2]) / 4
+                  );
+    glm::vec3 centerF, centerT, centerB, centerL, centerR;
+    glm::vec3 upF, upT, upB, upL, upR;
 
-    float eye[] = {0.0f, 0.0f, 0.0f}; //TODO
-    float center[] = {
-        (p->vertices[0].position[0] + p->vertices[1].position[0] + p->vertices[2].position[0] + p->vertices[3].position[0]) / 4,
-        (p->vertices[0].position[1] + p->vertices[1].position[1] + p->vertices[2].position[1] + p->vertices[3].position[1]) / 4,
-        (p->vertices[0].position[2] + p->vertices[1].position[2] + p->vertices[2].position[2] + p->vertices[3].position[2]) / 4
-    };
-    float up[3]; //TODO compute the UP vector
-    //determine the center of the patch
+    int dir0, dir1;
+    p->getOrientation(&dir0, &dir1);
 
+    glm::vec3 left = glm::normalize(glm::vec3((dir0 == 0 ? 1 : 0) * -1,
+                                              (dir0 == 1 ? 1 : 0) * -1,
+                                              (dir0 == 2 ? 1 : 0) * -1)); //vector to the left, normalized
+
+    glm::vec3 right = glm::normalize(glm::vec3((dir0 == 0 ? 1 : 0) * 1,
+                                               (dir0 == 1 ? 1 : 0) * 1,
+                                               (dir0 == 2 ? 1 : 0) * 1)); //vector to the right, normalized
+
+    glm::vec3 top = glm::normalize(glm::vec3((dir1 == 0 ? 1 : 0) * -1,
+                                             (dir1 == 1 ? 1 : 0) * -1,
+                                             (dir1 == 2 ? 1 : 0) * -1)); //vector to the top, normalized
+
+    glm::vec3 bottom = glm::normalize(glm::vec3((dir1 == 0 ? 1 : 0) * 1,
+                                                (dir1 == 1 ? 1 : 0) * 1,
+                                                (dir1 == 2 ? 1 : 0) * 1)); //vector to the bottom, normalized
+
+    /* Compute center vectors */
+    centerF = eye + norm;
+    centerL = eye + left;
+    centerR = eye + right;
+    centerT = eye + top;
+    centerB = eye + bottom;
+
+    /* Compute up vectors */
+    upF = centerT;
+    upL = centerT;
+    upR = centerT;
+    upT = -norm;
+    upB = norm;
+
+     //TODO compute the UP vector
     cl_float3 * screen = new cl_float3[256 * 256]; //always read the square
 
     /* Front view */
@@ -432,8 +466,7 @@ void PGR_model::getViewFromPatch(int i, cl_float3 *texFront, cl_float3 *texTop, 
     gluPerspective(90, (double) 1, 1e-3, 50);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-    //TODO center should stay the same, recompute eye and up vectors
-    gluLookAt(eye[0], eye[1], eye[2], center[0], center[1], center[2], up[0], up[1], up[2]);
+    gluLookAt(eye[0], eye[1], eye[2], centerF[0], centerF[1], centerF[2], upF[0], upF[1], upF[2]);
 
     glBegin(GL_QUADS);
     for (unsigned i = 0; i< this->patches.size(); i++)
@@ -468,8 +501,7 @@ void PGR_model::getViewFromPatch(int i, cl_float3 *texFront, cl_float3 *texTop, 
     gluPerspective(90, (double) 1, 1e-3, 50);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-    //TODO center should stay the same, recompute eye and up vectors
-    gluLookAt(eye[0], eye[1], eye[2], center[0], center[1], center[2], up[0], up[1], up[2]);
+    gluLookAt(eye[0], eye[1], eye[2], centerT[0], centerT[1], centerT[2], upT[0], upT[1], upT[2]);
 
     glBegin(GL_QUADS);
     for (unsigned i = 0; i< this->patches.size(); i++)
@@ -502,8 +534,7 @@ void PGR_model::getViewFromPatch(int i, cl_float3 *texFront, cl_float3 *texTop, 
     gluPerspective(90, (double) 1, 1e-3, 50);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-    //TODO center should stay the same, recompute eye and up vectors
-    gluLookAt(eye[0], eye[1], eye[2], center[0], center[1], center[2], up[0], up[1], up[2]);
+    gluLookAt(eye[0], eye[1], eye[2], centerB[0], centerB[1], centerB[2], upB[0], upB[1], upB[2]);
 
     glBegin(GL_QUADS);
     for (unsigned i = 0; i< this->patches.size(); i++)
@@ -536,8 +567,7 @@ void PGR_model::getViewFromPatch(int i, cl_float3 *texFront, cl_float3 *texTop, 
     gluPerspective(90, (double) 1, 1e-3, 50);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-    //TODO center should stay the same, recompute eye and up vectors
-    gluLookAt(eye[0], eye[1], eye[2], center[0], center[1], center[2], up[0], up[1], up[2]);
+    gluLookAt(eye[0], eye[1], eye[2], centerL[0], centerL[1], centerL[2], upL[0], upL[1], upL[2]);
 
     glBegin(GL_QUADS);
     for (unsigned i = 0; i< this->patches.size(); i++)
@@ -570,8 +600,7 @@ void PGR_model::getViewFromPatch(int i, cl_float3 *texFront, cl_float3 *texTop, 
     gluPerspective(90, (double) 1, 1e-3, 50);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-    //TODO center should stay the same, recompute eye and up vectors
-    gluLookAt(eye[0], eye[1], eye[2], center[0], center[1], center[2], up[0], up[1], up[2]);
+    gluLookAt(eye[0], eye[1], eye[2], centerR[0], centerR[1], centerR[2], upR[0], upR[1], upR[2]);
 
     glBegin(GL_QUADS);
     for (unsigned i = 0; i< this->patches.size(); i++)

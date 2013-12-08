@@ -35,8 +35,8 @@ public:
     void computeArea();
     float getShorterLength();
     float getLongerLength();
-private:
     bool getOrientation(int * c1, int * c2);
+private:
     bool getLengths(float * l1, float * l2);
     void copy(PGR_patch * a, PGR_patch * src);
     void copyNormals(PGR_patch * a, PGR_patch * src);
