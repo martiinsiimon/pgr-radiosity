@@ -15,6 +15,7 @@
 #include "model.h"
 #include "PGR_patch.h"
 #include <vector>
+#include <GL/glew.h>
 #include <iostream>
 #include <CL/cl.h>
 
@@ -62,7 +63,7 @@ public:
     void decodePatchesCL(cl_float4 *data, cl_double *energies, uint size);
 
 
-    void getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop, cl_float3 **texBottom, cl_float3 **texLeft, cl_float3 **texRight);
+    void getViewFromPatch(int i, GLuint fbo, GLuint texture, cl_float3 **texFront, cl_float3 **texTop, cl_float3 **texBottom, cl_float3 **texLeft, cl_float3 **texRight);
 
     void idToUniqueColor(int id, cl_float3* uniqueColor);
     int uniqueColorToId(cl_float3 uniqueColor);

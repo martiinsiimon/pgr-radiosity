@@ -408,7 +408,7 @@ void PGR_model::decodePatchesGeometryCL(cl_float16* data, uint size)
     }
 }
 
-void PGR_model::getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop, cl_float3 **texBottom, cl_float3 **texLeft, cl_float3 **texRight)
+void PGR_model::getViewFromPatch(int i, GLuint fbo, GLuint texture, cl_float3 **texFront, cl_float3 **texTop, cl_float3 **texBottom, cl_float3 **texLeft, cl_float3 **texRight)
 {
     PGR_patch * p = this->patches[i];
 
@@ -442,43 +442,54 @@ void PGR_model::getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop
                                                 (dir1 == 2 ? 1 : 0) * 1)); //vector to the bottom, normalized
 
     /* Compute center vectors */
-    centerF = eye + norm;
-    centerL = eye + left;
-    centerR = eye + right;
-    centerT = eye + top;
-    centerB = eye + bottom;
+    centerF = eye + norm; //correct
+    centerL = eye + left; //correct
+    centerR = eye + right; //correct
+    centerT = eye + top; //correct
+    centerB = eye + bottom; //correct
 
     /* Compute up vectors */
-    upF = centerT;
-    upL = centerT;
-    upR = centerT;
-    upT = -norm;
-    upB = norm;
+    upF = glm::normalize(top); //correct
+    upL = glm::normalize(-top); //correct
+    upR = glm::normalize(-top); //correct
+    upT = glm::normalize(norm); //correct
+    upB = glm::normalize(-norm); //correct
 
      //TODO compute the UP vector
     cl_float3 * screen = new cl_float3[256 * 256]; //always read the square
 
     /* Front view */
+    glUseProgram(0); //unbind the shader
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //is this correct?
+
     glViewport(0, 0, 256, 256);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(90, (double) 1, 1e-3, 50);
+    gluPerspective(90, (double) 1, 0.001, 200);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     gluLookAt(eye[0], eye[1], eye[2], centerF[0], centerF[1], centerF[2], upF[0], upF[1], upF[2]);
 
+    glActiveTexture(GL_TEXTURE0); //make texture register 0 active
+    glBindTexture(GL_TEXTURE_2D, texture);
+
     glBegin(GL_QUADS);
     for (unsigned i = 0; i< this->patches.size(); i++)
     {
-        glColor3f(this->patches[i]->uniqueColor.x, this->patches[i]->uniqueColor.y, this->patches[i]->uniqueColor.z);
+        glColor3f(this->patches[i]->uniqueColor.x,
+                  this->patches[i]->uniqueColor.y,
+                  this->patches[i]->uniqueColor.z);
+
         for (int j = 0; j < 4; j++)
             glVertex3f(this->patches[i]->vertices[j].position[0],
                        this->patches[i]->vertices[j].position[1],
                        this->patches[i]->vertices[j].position[2]);
     }
     glEnd();
-    glReadPixels(0, 0, 256, 256, GL_BGR, GL_FLOAT, screen);
+    glFlush();
+    //glReadPixels(0, 0, 256, 256, GL_RGB, GL_FLOAT, screen);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_FLOAT, screen);
 
     int in;
     int texIn;
@@ -490,8 +501,12 @@ void PGR_model::getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop
             in = w + h * 256;
             texIn = w + h * 256;
             (*texFront)[texIn] = screen[in];
+            cout << screen[in].x << ";" << screen[in].y << ";" << screen[in].z << ",";
         }
+        cout << endl;
     }
+
+    return; //TODO remove
 
     /* Top view */
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //is this correct?
@@ -506,7 +521,10 @@ void PGR_model::getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop
     glBegin(GL_QUADS);
     for (unsigned i = 0; i< this->patches.size(); i++)
     {
-        glColor3f(this->patches[i]->uniqueColor.x, this->patches[i]->uniqueColor.y, this->patches[i]->uniqueColor.z);
+        glColor3f(this->patches[i]->uniqueColor.x,
+                  this->patches[i]->uniqueColor.y,
+                  this->patches[i]->uniqueColor.z);
+
         for (int j = 0; j < 4; j++)
             glVertex3f(this->patches[i]->vertices[j].position[0],
                        this->patches[i]->vertices[j].position[1],
@@ -539,7 +557,10 @@ void PGR_model::getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop
     glBegin(GL_QUADS);
     for (unsigned i = 0; i< this->patches.size(); i++)
     {
-        glColor3f(this->patches[i]->uniqueColor.x, this->patches[i]->uniqueColor.y, this->patches[i]->uniqueColor.z);
+        glColor3f(this->patches[i]->uniqueColor.x,
+                  this->patches[i]->uniqueColor.y,
+                  this->patches[i]->uniqueColor.z);
+
         for (int j = 0; j < 4; j++)
             glVertex3f(this->patches[i]->vertices[j].position[0],
                        this->patches[i]->vertices[j].position[1],
@@ -572,7 +593,10 @@ void PGR_model::getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop
     glBegin(GL_QUADS);
     for (unsigned i = 0; i< this->patches.size(); i++)
     {
-        glColor3f(this->patches[i]->uniqueColor.x, this->patches[i]->uniqueColor.y, this->patches[i]->uniqueColor.z);
+        glColor3f(this->patches[i]->uniqueColor.x,
+                  this->patches[i]->uniqueColor.y,
+                  this->patches[i]->uniqueColor.z);
+
         for (int j = 0; j < 4; j++)
             glVertex3f(this->patches[i]->vertices[j].position[0],
                        this->patches[i]->vertices[j].position[1],
@@ -580,6 +604,7 @@ void PGR_model::getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop
     }
     glEnd();
     glReadPixels(0, 0, 256, 256, GL_BGR, GL_FLOAT, screen);
+
 
     /* Copy the right part of a screen to texture */
     for (int h = 0; h < 256; h++)
@@ -589,6 +614,7 @@ void PGR_model::getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop
             in = w + h * 256;
             texIn = (w - 128) + h * 256;
             (*texLeft)[texIn] = screen[in];
+
         }
     }
 
@@ -605,7 +631,10 @@ void PGR_model::getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop
     glBegin(GL_QUADS);
     for (unsigned i = 0; i< this->patches.size(); i++)
     {
-        glColor3f(this->patches[i]->uniqueColor.x, this->patches[i]->uniqueColor.y, this->patches[i]->uniqueColor.z);
+        glColor3f(this->patches[i]->uniqueColor.x,
+                  this->patches[i]->uniqueColor.y,
+                  this->patches[i]->uniqueColor.z);
+        
         for (int j = 0; j < 4; j++)
             glVertex3f(this->patches[i]->vertices[j].position[0],
                        this->patches[i]->vertices[j].position[1],
@@ -626,6 +655,8 @@ void PGR_model::getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop
     }
 
     delete [] screen;
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0); //for sure
 }
 
 void PGR_model::generateUniqueColor()
