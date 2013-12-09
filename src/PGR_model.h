@@ -45,7 +45,7 @@ public:
     int getPatchesCount();
 
     /* Fill given opencl memory object with patches */
-    int getPatchesCL(cl_float4 *data, cl_double *energies);
+    int getPatchesCL(cl_float4 *data, cl_float *energies);
 
     /* Fill given opencl memory object with patches geometry */
     int getPatchesGeometryCL(cl_float16 *data);
@@ -53,14 +53,14 @@ public:
     /* Fill a vector of indices of N most energized patches. The index is in vector
      * patches */
     int getIdsOfNMostEnergizedPatches(vector<uint> *ids, int n, double limit);
-    cl_uint getIdsOfNMostEnergizedPatchesCL(cl_uint *indices, int n, double limit);
+    cl_uint getIdsOfNMostEnergizedPatchesCL(cl_uint *indices, int n, float limit);
 
     /* Get the energy of the most energized patch. Used to decide to terminate
      * radiosity computation */
     double getMaximalEnergy();
 
     void decodePatchesGeometryCL(cl_float16 *data, uint size);
-    void decodePatchesCL(cl_float4 *data, cl_double *energies, uint size);
+    void decodePatchesCL(cl_float4 *data, cl_float *energies, uint size);
 
 
     void getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop, cl_float3 **texBottom, cl_float3 **texLeft, cl_float3 **texRight);

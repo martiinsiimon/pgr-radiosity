@@ -68,7 +68,7 @@ private:
     cl_float16 * raw_patchesGeo;
     cl_float4 * raw_patchesInfo;
     cl_uint * raw_indices;
-    cl_double * raw_patchesEnergies;
+    cl_float * raw_patchesEnergies;
     uint maxWorkGroupSize;
     uint workGroupSize;
 

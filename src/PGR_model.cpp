@@ -216,13 +216,13 @@ void PGR_model::divide()
     this->patches = tmpPatches;
 }
 
-int PGR_model::getPatchesCL(cl_float4 *data, cl_double *energies)
+int PGR_model::getPatchesCL(cl_float4 *data, cl_float *energies)
 {
     int i;
     for (i = 0; i < this->patches.size(); i++)
     {
         //energy
-        energies[i] = this->patches.at(i)->energy;
+        energies[i] = (float) this->patches.at(i)->energy;
 
         //color, all vertices are the same
         data[i].s0 = this->patches.at(i)->vertices[0].color[0];
@@ -269,7 +269,7 @@ int PGR_model::getPatchesGeometryCL(cl_float16 *data)
     return i;
 }
 
-cl_uint PGR_model::getIdsOfNMostEnergizedPatchesCL(cl_uint *indices, int n, double limit)
+cl_uint PGR_model::getIdsOfNMostEnergizedPatchesCL(cl_uint *indices, int n, float limit)
 {
     vector<uint> ids;
     int count = this->getIdsOfNMostEnergizedPatches(&ids, n, limit);
@@ -339,7 +339,7 @@ double PGR_model::getMaximalEnergy()
     return energy;
 }
 
-void PGR_model::decodePatchesCL(cl_float4 *data, cl_double *energies, uint size)
+void PGR_model::decodePatchesCL(cl_float4 *data, cl_float *energies, uint size)
 {
     if (size != this->getPatchesCount())
     {
@@ -349,7 +349,7 @@ void PGR_model::decodePatchesCL(cl_float4 *data, cl_double *energies, uint size)
 
     for (int i = 0; i < size; i++)
     {
-        this->patches[i]->setEnergy(energies[i]);
+        this->patches[i]->setEnergy((double) energies[i]);
 
         this->patches[i]->vertices[0].color[0] = data[i].s[0];
         this->patches[i]->vertices[1].color[0] = data[i].s[0];
@@ -460,7 +460,6 @@ void PGR_model::getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop
     /* Front view */
     glUseProgram(0); //unbind the shader
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
     glViewport(0, 0, 256, 256);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();

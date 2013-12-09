@@ -584,10 +584,15 @@ int PGR_radiosity::prepareCL()
 
         //prioritize AMD and CUDA platforms
 
-        if ((strcmp(sTmp, "Advanced Micro Devices, Inc.") == 0) || (strcmp(sTmp, "NVIDIA Corporation") == 0))
+        if ((strcmp(sTmp, "NVIDIA Corporation") == 0))
         {
             platform = cpPlatforms[f0];
         }
+
+        //        if ((strcmp(sTmp, "Advanced Micro Devices, Inc.") == 0))
+        //        {
+        //            platform = cpPlatforms[f0];
+        //        }
 
         //prioritize Intel
         /*if ((strcmp(sTmp, "Intel(R) Corporation") == 0)) {
@@ -677,7 +682,7 @@ int PGR_radiosity::prepareCL()
     CheckOpenCLError(ciErr, "CreateBuffer patchesCL");
 
     this->raw_patchesInfo = new cl_float4[this->model->getPatchesCount()];
-    this->raw_patchesEnergies = new cl_double[this->model->getPatchesCount()];
+    this->raw_patchesEnergies = new cl_float[this->model->getPatchesCount()];
     this->model->getPatchesCL(this->raw_patchesInfo, this->raw_patchesEnergies);
 
     ciErr = clEnqueueWriteBuffer(this->queue,
@@ -694,7 +699,7 @@ int PGR_radiosity::prepareCL()
     /* Alocate buffer of energies */
     this->patchesEnergiesCL = clCreateBuffer(this->context,
                                          CL_MEM_READ_WRITE,
-                                         this->model->getPatchesCount() * sizeof (cl_double),
+                                             this->model->getPatchesCount() * sizeof (cl_float),
                                          0,
                                          &ciErr);
     CheckOpenCLError(ciErr, "CreateBuffer patchesCL");
@@ -702,7 +707,7 @@ int PGR_radiosity::prepareCL()
                                  this->patchesEnergiesCL,
                                  CL_TRUE, //blocking write
                                  0,
-                                 this->model->getPatchesCount() * sizeof (cl_double),
+                                 this->model->getPatchesCount() * sizeof (cl_float),
                                  this->raw_patchesEnergies,
                                  0,
                                  0,
@@ -748,7 +753,7 @@ int PGR_radiosity::prepareCL()
 
     this->maximalEnergyCL = clCreateBuffer(this->context,
                                           CL_MEM_READ_WRITE,
-                                           sizeof (cl_double),
+                                           sizeof (cl_float),
                                           0,
                                           &ciErr);
     CheckOpenCLError(ciErr, "CreateBuffer indicesCountCL");
@@ -871,9 +876,9 @@ void PGR_radiosity::runRadiosityKernelCL()
     //cl_event event_bufferPatchesInfo;
     cl_event event_radiosity, event_sort, event_maximalEnergy;
 
-    double maximalEnergy;
+    float maximalEnergy;
 
-    maximalEnergy = this->model->getMaximalEnergy();
+    maximalEnergy = (float) this->model->getMaximalEnergy();
 
     /* Setup arguments to the radiosity kernel */
     status = clSetKernelArg(this->radiosityKernel, 0, sizeof (cl_mem), &this->patchesGeoCL);
@@ -947,8 +952,8 @@ void PGR_radiosity::runRadiosityKernelCL()
     status = clSetKernelArg(this->sortKernel, 4, sizeof (cl_uint), &this->workGroupSize);
     CheckOpenCLError(status, "clSetKernelArg. (n)");
 
-    double limit = LIMIT;
-    status = clSetKernelArg(this->sortKernel, 5, sizeof (cl_double), &limit);
+    float limit = LIMIT;
+    status = clSetKernelArg(this->sortKernel, 5, sizeof (cl_float), &limit);
     CheckOpenCLError(status, "clSetKernelArg. (limit)");
 
     status = clSetKernelArg(this->sortKernel, 6, sizeof (cl_mem), &this->maximalEnergyCL);
@@ -999,7 +1004,7 @@ void PGR_radiosity::runRadiosityKernelCL()
                                      this->maximalEnergyCL,
                                      CL_TRUE, //blocking write
                                      0,
-                                     sizeof (cl_double),
+                                     sizeof (cl_float),
                                      &maximalEnergy,
                                      0,
                                      NULL,
@@ -1051,4 +1056,5 @@ void PGR_radiosity::releaseCL()
 
     delete [] this->raw_patchesInfo;
     delete [] this->raw_patchesGeo;
+    delete [] this->raw_patchesEnergies;
 }
