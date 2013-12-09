@@ -8,8 +8,52 @@
  * Sort patches (their indices) into indices array - parallel
  */
 //#pragma OPENCL EXTENSION cl_khr_global_int32_extended_atomics: enable
-//#pragma OPENCL EXTENSION cl_khr_global_int32_base_atomics: enable
+#pragma OPENCL EXTENSION cl_khr_int64_base_atomics: enable
 
+inline void AtomicAdd4(__global float4 *source, int i, const float operand)
+{
+    union {
+        unsigned int intVal;
+        float floatVal;
+    } newVal;
+    union {
+        unsigned int intVal;
+        float floatVal;
+    } prevVal;
+    do
+    {
+        if(i == 0)
+            {prevVal.floatVal = source->s0;}
+        if(i == 1)
+            {prevVal.floatVal = source->s1;}
+        if(i == 2)
+            {prevVal.floatVal = source->s2;}
+        if(i == 3)
+            {prevVal.floatVal = source->s3;}
+            
+        newVal.floatVal = prevVal.floatVal + operand;
+     } while (atomic_cmpxchg((volatile __global unsigned int *)source, prevVal.intVal, newVal.intVal) != prevVal.intVal);
+        
+}
+
+inline void AtomicAdd1(__global float *source, const float operand)
+{
+    union {
+        unsigned int intVal;
+        float floatVal;
+    } newVal;
+    union {
+        unsigned int intVal;
+        float floatVal;
+    } prevVal;
+    do
+    {
+        prevVal.floatVal = *source;
+            
+        newVal.floatVal = prevVal.floatVal + operand;
+     } while (atomic_cmpxchg((volatile __global unsigned int *)source, prevVal.intVal, newVal.intVal) != prevVal.intVal);
+        
+}
 
 float formFactor(float4 RecvPos, float4 ShootPos, float4 RecvNormal, float4 ShootNormal, float ShootDArea)
 {
@@ -149,16 +193,22 @@ __kernel void radiosity(__global float16* patchesGeo, __global float4* patchesIn
         float delta = formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
 
         /* Distribute energy */
-        energies[j] += lightEnergy * 0.5 * delta;
+        float energyDiff = lightEnergy * 0.5 * delta;
+        //AtomicAdd1(&energies[j], energyDiff);
+        energies[j] += energyDiff;
 
         /* Distribute color */
-        patchesInfo[j].s0 += lightInfo.s0 * 0.5 * delta;
-        patchesInfo[j].s1 += lightInfo.s1 * 0.5 * delta;
-        patchesInfo[j].s2 += lightInfo.s2 * 0.5 * delta;
-    }
+        float colorDiff0 = lightInfo.s0 * 0.5 * delta;
+        float colorDiff1 = lightInfo.s1 * 0.5 * delta;
+        float colorDiff2 = lightInfo.s2 * 0.5 * delta;
 
-    /* Erase energy */
-    //energies[indices[i]] = 0;
+        patchesInfo[j].s0 += colorDiff0;
+        patchesInfo[j].s1 += colorDiff1;
+        patchesInfo[j].s2 += colorDiff2;
+        //AtomicAdd4(&patchesInfo[j],0, colorDiff0);
+        //AtomicAdd4(&patchesInfo[j],1, colorDiff1);
+        //AtomicAdd4(&patchesInfo[j],2, colorDiff2);
+    }
 }
 
 

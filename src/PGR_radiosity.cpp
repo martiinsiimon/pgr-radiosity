@@ -805,8 +805,8 @@ int PGR_radiosity::prepareCL()
     this->sortKernel = clCreateKernel(program, "sort", &ciErr);
     CheckOpenCLError(ciErr, "clCreateKernel sort");
 
-    this->maxWorkGroupSize = 1024;
-    this->workGroupSize = 1024;
+    this->maxWorkGroupSize = 512;
+    this->workGroupSize = 512;
 
     ciErr = clGetKernelWorkGroupInfo(this->radiosityKernel,
                                      cdDevices[deviceIndex],
@@ -994,10 +994,6 @@ void PGR_radiosity::runRadiosityKernelCL()
                                         &event_sort);
         CheckOpenCLError(status, "clEnqueueNDRangeKernel sortKernel.");
 
-        /* Wait until indices computation ends */
-        status = clWaitForEvents(1, &event_sort);
-        CheckOpenCLError(status, "clWaitForEvents sortKernel.");
-
 
         /* Read maximal energy from buffer */
         status = clEnqueueReadBuffer(this->queue,
@@ -1006,8 +1002,8 @@ void PGR_radiosity::runRadiosityKernelCL()
                                      0,
                                      sizeof (cl_float),
                                      &maximalEnergy,
-                                     0,
-                                     NULL,
+                                     1,
+                                     &event_sort,
                                      &event_maximalEnergy);
         CheckOpenCLError(status, "Read maximal energy");
         status = clWaitForEvents(1, &event_maximalEnergy);
@@ -1017,6 +1013,7 @@ void PGR_radiosity::runRadiosityKernelCL()
         //TODO get texture view from these patches
         //TODO create one big memory blob
         //TODO write the memory blob to gpu
+        //break;
     }
     cout << "cycles: " << cycles << endl;
     debug_log = true;
