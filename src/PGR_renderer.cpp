@@ -50,6 +50,22 @@ PGR_renderer::PGR_renderer(const PGR_renderer& orig)
 {
 }
 
+void PGR_renderer::setResolution(uint w, uint h)
+{
+    this->setWidth(w);
+    this->setHeight(h);
+}
+
+void PGR_renderer::setWidth(uint w)
+{
+    this->width = w;
+}
+
+void PGR_renderer::setHeight(uint h)
+{
+    this->height = h;
+}
+
 PGR_renderer::~PGR_renderer()
 {
 
@@ -86,43 +102,6 @@ void PGR_renderer::init()
     glGenBuffers(1, &roomEBO);
 
     this->refillBuffers();
-
-
-    GLuint _fbo;
-    GLuint _depth;
-    GLuint _color;
-
-    glGenFramebuffers(1, &_fbo);
-    glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
-
-    glGenTextures(1, &_color); //texture for drawing
-
-    // "Bind" the newly created texture : all future texture functions will modify this texture
-    glBindTexture(GL_TEXTURE_2D, _color);
-
-    // Give an empty image to OpenGL ( the last "0" )
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, this->fboWidth, this->fboHeight, 0, GL_RGB, GL_FLOAT, 0);
-
-    // Poor filtering. Needed !
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-
-    // The depth buffer
-    glGenRenderbuffers(1, &_depth);
-    glBindRenderbuffer(GL_RENDERBUFFER, _depth);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, this->fboWidth, this->fboHeight);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, _depth);
-
-        // Set "renderedTexture" as our colour attachement #0
-    //glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, color, 0);
-    //
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-
-    //
-    this->radiosity->setFramebuffer(_fbo);
-    this->radiosity->setTexture(_color);
 }
 
 bool PGR_renderer::divide()
@@ -168,7 +147,7 @@ void PGR_renderer::refillBuffers()
  */
 void PGR_renderer::drawSceneDefault(glm::mat4 mvp)
 {
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    //glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(iProg);
 
     glUniformMatrix4fv(mvpUniform, 1, GL_FALSE, glm::value_ptr(mvp));
@@ -210,9 +189,10 @@ void PGR_renderer::drawSceneRadiosity(glm::mat4 mvp)
         this->refillBuffers();
     }
 
-
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(iProg);
+
+    glViewport(0, 0, this->width, this->height);
 
     glUniformMatrix4fv(mvpUniform, 1, GL_FALSE, glm::value_ptr(mvp));
     glUniform3f(laUniform, 0.2, 0.2, 0.2); //turn off basic shadows

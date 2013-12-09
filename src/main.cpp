@@ -77,6 +77,8 @@ void onWindowRedraw()
                                             ),
                                 camera_rot_y, glm::vec3(0, 1, 0)
                                 );
+    renderer->setResolution(width, height);
+
 
     /* Choose renderer */
     if (!renderRadiosity)
@@ -97,7 +99,6 @@ void onWindowRedraw()
 
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LESS);
-
 
         renderer->drawSceneRadiosity(mvp);
 
