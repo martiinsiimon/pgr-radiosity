@@ -7,9 +7,12 @@
 /*
  * Sort patches (their indices) into indices array - parallel
  */
-double formFactor(float4 RecvPos, float4 ShootPos, float4 RecvNormal, float4 ShootNormal, float ShootDArea)
+//#pragma OPENCL EXTENSION cl_khr_fp64: enable
+
+
+float formFactor(float4 RecvPos, float4 ShootPos, float4 RecvNormal, float4 ShootNormal, float ShootDArea)
 {
-    double pi = 3.14159265358979323846;
+    float pi = 3.14159265358979323846f;
 
     // a normalized vector from shooter to receiver
     if (ShootPos.x == RecvPos.x &&
@@ -25,22 +28,22 @@ double formFactor(float4 RecvPos, float4 ShootPos, float4 RecvNormal, float4 Sho
     r = normalize(r);
 
     // the angles of the receiver and the shooter from r
-    double cosi = dot(RecvNormal, r);
-    double cosj = -dot(ShootNormal, r);
+    float cosi = dot(RecvNormal, r);
+    float cosj = -dot(ShootNormal, r);
 
     // retrun computed disc approximation form factor
-    return (max(cosi * cosj, (double) 0) / (pi * distance2)) * ShootDArea;
+    return (max(cosi * cosj, 0.0f) / (pi * distance2)) * ShootDArea;
 }
 
-__kernel void sort(__global double* energies, uint patchesCount, __global uint* indices, __global uint* indicesCount, uint n, double limit, __global double* maximalEnergy)
+__kernel void sort(__global float* energies, uint patchesCount, __global uint* indices, __global uint* indicesCount, uint n, float limit, __global float* maximalEnergy)
 {
 
     int count = 0; //real count
     uint pos = 0; //position of maximal energy
     uint maxPos = patchesCount; //sentinel
-    double max = 0.0; //maximal energy
-    double lastMax = 10000000.0f; //last maximal energy
-    double lastMaxOld = lastMax;
+    float max = 0.0f; //maximal energy
+    float lastMax = 10000000.0f; //last maximal energy
+    float lastMaxOld = lastMax;
 
     for (int i = 0; i < n; i++)
     {
@@ -48,7 +51,7 @@ __kernel void sort(__global double* energies, uint patchesCount, __global uint* 
         int j;
         for (j = 0; j < maxPos; j++)
         {
-            double energy = energies[j];
+            float energy = energies[j];
             if (energy >= max && energy < lastMax)
             {
                 pos = j;
@@ -88,7 +91,7 @@ __kernel void sort(__global double* energies, uint patchesCount, __global uint* 
 /*
  * Compute radiosity step - energy distribution of N most energized patches
  */
-__kernel void radiosity(__global float16* patchesGeo, __global float4* patchesInfo, uint patchesCount, __global uint* indices, __global uint* indicesCount, __global double* energies/* array of textures, uint textureSize, __local bit* visited */)
+__kernel void radiosity(__global float16* patchesGeo, __global float4* patchesInfo, uint patchesCount, __global uint* indices, __global uint* indicesCount, __global float* energies/* array of textures, uint textureSize, __local bit* visited */)
 {
     int i = get_global_id(0); //position in indices array
     //int texI = i * textureSize;
@@ -100,7 +103,7 @@ __kernel void radiosity(__global float16* patchesGeo, __global float4* patchesIn
 
     float16 lightGeo = patchesGeo[indices[i]];
     float4 lightInfo = patchesInfo[indices[i]];
-    double lightEnergy = energies[indices[i]];
+    float lightEnergy = energies[indices[i]];
 
     float x, y, z;
 
@@ -141,7 +144,7 @@ __kernel void radiosity(__global float16* patchesGeo, __global float4* patchesIn
         float4 RecvNormal = {x,y,z,0};
 
         /* Compute form factor */
-        double delta = formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
+        float delta = formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
 
         /* Distribute energy */
         energies[j] += lightEnergy * 0.5 * delta;
