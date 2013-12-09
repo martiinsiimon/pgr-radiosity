@@ -74,6 +74,7 @@ public:
 private:
     void deletePatches();
     void addLightEnergy(double e);
+    void drawUniqueColorScene();
 
     Point *vertices;
     unsigned int verticesCount;
