@@ -7,12 +7,13 @@
 /*
  * Sort patches (their indices) into indices array - parallel
  */
-//#pragma OPENCL EXTENSION cl_khr_fp64: enable
+//#pragma OPENCL EXTENSION cl_khr_global_int32_extended_atomics: enable
+//#pragma OPENCL EXTENSION cl_khr_global_int32_base_atomics: enable
 
 
 float formFactor(float4 RecvPos, float4 ShootPos, float4 RecvNormal, float4 ShootNormal, float ShootDArea)
 {
-    float pi = 3.14159265358979323846f;
+    float pi = (float)3.14159265358979323846f;
 
     // a normalized vector from shooter to receiver
     if (ShootPos.x == RecvPos.x &&
@@ -104,6 +105,7 @@ __kernel void radiosity(__global float16* patchesGeo, __global float4* patchesIn
     float16 lightGeo = patchesGeo[indices[i]];
     float4 lightInfo = patchesInfo[indices[i]];
     float lightEnergy = energies[indices[i]];
+    energies[indices[i]] = 0;
 
     float x, y, z;
 
@@ -156,7 +158,7 @@ __kernel void radiosity(__global float16* patchesGeo, __global float4* patchesIn
     }
 
     /* Erase energy */
-    energies[indices[i]] = 0;
+    //energies[indices[i]] = 0;
 }
 
 
