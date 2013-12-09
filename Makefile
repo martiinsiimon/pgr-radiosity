@@ -20,8 +20,11 @@ src:
 doc:
 	make -C $(DOC)
 
-run:
-	make -C $(SRC) run
+run-cpu:
+	make -C $(SRC) run-cpu
+
+run-gpu:
+	make -C $(SRC) run-gpu
 
 clean: clean-src clean-doc
 	$(RM) $(ARCHIVE)

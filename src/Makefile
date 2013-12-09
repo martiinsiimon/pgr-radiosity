@@ -21,16 +21,19 @@ else
     DEPS=pgr.o GLee.o
 endif
 
-.PHONY: all clean run
+.PHONY: all clean run-cpu run-gpu run
 
 all: $(OBJ) exe
 	$(CC) $(FLAGS) $(LIBS) $(OBJ) -o $(EXE)
 
 exe: $(EXE)
 
-
 run:
-	./$(EXE)
+run-cpu:
+	./$(EXE) cpu
+
+run-gpu:
+	./$(EXE) gpu
 
 clean:
 	$(RM) *.o $(EXE)

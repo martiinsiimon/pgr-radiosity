@@ -88,9 +88,10 @@ __kernel void sort(__global double* energies, uint patchesCount, __global uint* 
 /*
  * Compute radiosity step - energy distribution of N most energized patches
  */
-__kernel void radiosity(__global float16* patchesGeo, __global float4* patchesInfo, uint patchesCount, __global uint* indices, __global uint* indicesCount, __global double* energies)
+__kernel void radiosity(__global float16* patchesGeo, __global float4* patchesInfo, uint patchesCount, __global uint* indices, __global uint* indicesCount, __global double* energies/* array of textures, uint textureSize, __local bit* visited */)
 {
     int i = get_global_id(0); //position in indices array
+    //int texI = i * textureSize;
 
     if (i >= indicesCount[0])
     {
@@ -117,6 +118,10 @@ __kernel void radiosity(__global float16* patchesGeo, __global float4* patchesIn
 
     /* Area of light patch */
     float ShootDArea = lightGeo.sF;
+
+    //go through all the texture
+    //every point convert to index and if visited[index]==0 -> compute form factor and set to correct index
+    //otherwise continue
 
     for(int j = 0; j < patchesCount; j++) {
 
