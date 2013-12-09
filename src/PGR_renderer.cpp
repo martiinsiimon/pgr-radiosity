@@ -42,6 +42,7 @@ PGR_renderer::PGR_renderer(int c)
     this->maxArea = -1.0;
     this->divided = true;
 
+
     this->radiosity = new PGR_radiosity(this->model, c);
 }
 
@@ -80,7 +81,48 @@ void PGR_renderer::init()
 
     this->divide();
 
-    this->createBuffers();
+    /* Create buffers */
+    glGenBuffers(1, &roomVBO);
+    glGenBuffers(1, &roomEBO);
+
+    this->refillBuffers();
+
+
+    GLuint _fbo;
+    GLuint _depth;
+    GLuint _color;
+
+    glGenFramebuffers(1, &_fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
+
+    glGenTextures(1, &_color); //texture for drawing
+
+    // "Bind" the newly created texture : all future texture functions will modify this texture
+    glBindTexture(GL_TEXTURE_2D, _color);
+
+    // Give an empty image to OpenGL ( the last "0" )
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, this->fboWidth, this->fboHeight, 0, GL_RGB, GL_FLOAT, 0);
+
+    // Poor filtering. Needed !
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+
+    // The depth buffer
+    glGenRenderbuffers(1, &_depth);
+    glBindRenderbuffer(GL_RENDERBUFFER, _depth);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, this->fboWidth, this->fboHeight);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, _depth);
+
+        // Set "renderedTexture" as our colour attachement #0
+    //glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, color, 0);
+    //
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+    //
+    this->radiosity->setFramebuffer(_fbo);
+    this->radiosity->setTexture(_color);
 }
 
 bool PGR_renderer::divide()
@@ -110,14 +152,13 @@ void PGR_renderer::printPatches()
     }
 }
 
-void PGR_renderer::createBuffers()
+
+void PGR_renderer::refillBuffers()
 {
-    /* Create buffers */
-    glGenBuffers(1, &roomVBO);
     glBindBuffer(GL_ARRAY_BUFFER, roomVBO);
     glBufferData(GL_ARRAY_BUFFER, this->model->getVerticesCount() * sizeof (Point), this->model->getVertices(), GL_STATIC_DRAW);
 
-    glGenBuffers(1, &roomEBO);
+
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, roomEBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, this->model->getIndicesCount() * sizeof (unsigned int), this->model->getIndices(), GL_STATIC_DRAW);
 }
@@ -127,10 +168,11 @@ void PGR_renderer::createBuffers()
  */
 void PGR_renderer::drawSceneDefault(glm::mat4 mvp)
 {
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(iProg);
 
     glUniformMatrix4fv(mvpUniform, 1, GL_FALSE, glm::value_ptr(mvp));
-    glUniform3f(laUniform, 0.2, 0.2, 0.2);
+    glUniform3f(laUniform, 1, 1, 1);
     glUniform3f(lightPosUniform, light_pos[0], light_pos[1], light_pos[2]);
     glUniform3f(ldUniform, 0.5, 0.5, 0.5);
 
@@ -144,11 +186,12 @@ void PGR_renderer::drawSceneDefault(glm::mat4 mvp)
     glVertexAttribPointer(colorAttrib, 3, GL_FLOAT, GL_FALSE, sizeof (Point), (void*) offsetof(Point, color));
     glVertexAttribPointer(normalAttrib, 3, GL_FLOAT, GL_FALSE, sizeof (Point), (void*) offsetof(Point, normal));
 
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, roomEBO);
 
     glDrawElements(GL_QUADS, this->model->getIndicesCount(), GL_UNSIGNED_INT, NULL);
+
 
     glDisableVertexAttribArray(positionAttrib);
     glDisableVertexAttribArray(colorAttrib);
@@ -164,12 +207,16 @@ void PGR_renderer::drawSceneRadiosity(glm::mat4 mvp)
     if (!this->radiosity->isComputed())
     {
         this->radiosity->compute();
-        this->createBuffers();
+        this->refillBuffers();
     }
 
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(iProg);
 
     glUniformMatrix4fv(mvpUniform, 1, GL_FALSE, glm::value_ptr(mvp));
+    glUniform3f(laUniform, 0.2, 0.2, 0.2); //turn off basic shadows
+    glUniform3f(ldUniform, 0.0, 0.0, 0.0); //turn off basic shadows
 
     /* Draw room */
     glEnableVertexAttribArray(positionAttrib);

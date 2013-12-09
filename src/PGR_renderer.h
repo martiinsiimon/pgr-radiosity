@@ -12,6 +12,7 @@
 #include <iostream>
 #include "PGR_model.h"
 #include "PGR_radiosity.h"
+#include <GL/gl.h>
 
 #include <glm/gtc/type_ptr.hpp>
 
@@ -29,7 +30,7 @@ public:
     void drawSceneDefault(glm::mat4);
     void drawSceneRadiosity(glm::mat4);
 private:
-    void createBuffers();
+    void refillBuffers();
     bool divide();
     void printPatches(); //DBG method
 
@@ -39,6 +40,13 @@ private:
     PGR_radiosity * radiosity;
     float maxArea;
     bool divided;
+
+    GLuint fbo;
+    GLuint color;
+    GLuint depth;
+
+    static const uint fboWidth = 256;
+    static const uint fboHeight = 256;
 };
 
 #endif	/* PGR_RENDERER_H */
