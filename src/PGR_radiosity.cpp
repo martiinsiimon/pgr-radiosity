@@ -120,13 +120,25 @@ void PGR_radiosity::computeRadiosity()
 
     vector<uint> ids;
     int count = this->model->getIdsOfNMostEnergizedPatches(&ids, N, LIMIT);
+    bool * isSetEnergy = new bool[this->model->patches.size()];
+
+    cl_float3 *texFront = new cl_float3 [256 * 256];
+    cl_float3 *texTop = new cl_float3 [256 * 128];
+    cl_float3 *texBottom = new cl_float3 [256 * 128];
+    cl_float3 *texLeft = new cl_float3 [128 * 256];
+    cl_float3 *texRight = new cl_float3 [128 * 256];
+
+    memset(texFront, 0, sizeof (cl_float3) * 256 * 256);
+    memset(texTop, 0, sizeof (cl_float3) * 256 * 128);
+    memset(texBottom, 0, sizeof (cl_float3) * 256 * 128);
+    memset(texLeft, 0, sizeof (cl_float3) * 128 * 256);
+    memset(texRight, 0, sizeof (cl_float3) * 128 * 256);
 
     for (int i = 0; i < count; i++)
     {
         double x, y, z;
 
-        bool isSetEnergy[this->model->patches.size()];
-
+        /* Clear the flags */
         for(int n = 0; n < this->model->patches.size(); n++)
         {
             isSetEnergy[n] = false;
@@ -145,11 +157,7 @@ void PGR_radiosity::computeRadiosity()
 
         float ShootDArea = this->model->patches[ids[i]]->area;
 
-        cl_float3 *texFront = new cl_float3 [256 * 256];
-        cl_float3 *texTop = new cl_float3 [256 * 128];
-        cl_float3 *texBottom = new cl_float3 [256 * 128];
-        cl_float3 *texLeft = new cl_float3 [128 * 256];
-        cl_float3 *texRight = new cl_float3 [128 * 256];
+
 
         this->model->getViewFromPatch(ids[i], this->framebuffer, this->texture, &texFront, &texTop, &texBottom, &texLeft, &texRight);
 
@@ -159,6 +167,10 @@ void PGR_radiosity::computeRadiosity()
             for(int w = 0; w < 256; w++)
             {
                 int j = this->model->uniqueColorToId(texFront[w + h * 256]);
+                if (j >= this->model->patches.size() || j < 0)
+                {
+                    continue;
+                }
 
                 if(isSetEnergy[j] == false) {
                     x = (this->model->patches[j]->vertices[0].position[0] + this->model->patches[j]->vertices[1].position[0] + this->model->patches[j]->vertices[2].position[0] + this->model->patches[j]->vertices[3].position[0]) / 4.0;
@@ -197,6 +209,10 @@ void PGR_radiosity::computeRadiosity()
             for(int w = 0; w < 256; w++)
             {
                 int j = this->model->uniqueColorToId(texTop[w + h * 256]);
+                if (j >= this->model->patches.size() || j < 0)
+                {
+                    continue;
+                }
 
                 if(isSetEnergy[j] == false) {
                     x = (this->model->patches[j]->vertices[0].position[0] + this->model->patches[j]->vertices[1].position[0] + this->model->patches[j]->vertices[2].position[0] + this->model->patches[j]->vertices[3].position[0]) / 4.0;
@@ -235,6 +251,10 @@ void PGR_radiosity::computeRadiosity()
             for(int w = 0; w < 256; w++)
             {
                 int j = this->model->uniqueColorToId(texBottom[w + h * 256]);
+                if (j >= this->model->patches.size() || j < 0)
+                {
+                    continue;
+                }
 
                 if(isSetEnergy[j] == false) {
                     x = (this->model->patches[j]->vertices[0].position[0] + this->model->patches[j]->vertices[1].position[0] + this->model->patches[j]->vertices[2].position[0] + this->model->patches[j]->vertices[3].position[0]) / 4.0;
@@ -272,7 +292,11 @@ void PGR_radiosity::computeRadiosity()
         {
             for (int w = 0; w < 128; w++)
             {
-                int j = this->model->uniqueColorToId(texLeft[w + h * 256]);
+                int j = this->model->uniqueColorToId(texLeft[w + h * 128]);
+                if (j >= this->model->patches.size() || j < 0)
+                {
+                    continue;
+                }
 
                 if(isSetEnergy[j] == false) {
                     x = (this->model->patches[j]->vertices[0].position[0] + this->model->patches[j]->vertices[1].position[0] + this->model->patches[j]->vertices[2].position[0] + this->model->patches[j]->vertices[3].position[0]) / 4.0;
@@ -310,7 +334,11 @@ void PGR_radiosity::computeRadiosity()
         {
             for(int w = 0; w < 128; w++)
             {
-                int j = this->model->uniqueColorToId(texRight[w + h * 256]);
+                int j = this->model->uniqueColorToId(texRight[w + h * 128]);
+                if (j >= this->model->patches.size() || j < 0)
+                {
+                    continue;
+                }
 
                 if(isSetEnergy[j] == false) {
                     x = (this->model->patches[j]->vertices[0].position[0] + this->model->patches[j]->vertices[1].position[0] + this->model->patches[j]->vertices[2].position[0] + this->model->patches[j]->vertices[3].position[0]) / 4.0;
@@ -346,13 +374,16 @@ void PGR_radiosity::computeRadiosity()
 
         this->model->patches[ids[i]]->energy = 0;
 
-        delete[] texFront;
-        delete[] texTop;
-        delete[] texBottom;
-        delete[] texLeft;
-        delete[] texRight;
+
     }
 
+
+    delete[] texFront;
+    delete[] texTop;
+    delete[] texBottom;
+    delete[] texLeft;
+    delete[] texRight;
+    delete [] isSetEnergy;
     this->model->updateArrays();
 }
 
