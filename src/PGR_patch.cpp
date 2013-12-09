@@ -51,6 +51,22 @@ void PGR_patch::setVertices(Point p0, Point p1, Point p2, Point p3)
     this->computeArea();
 }
 
+void PGR_patch::printVertices()
+{
+    cout << "v1: [" << this->vertices[0].position[0] << "," << this->vertices[0].position[1] << "," << this->vertices[0].position[2] << "], " <<
+        "v2: [" << this->vertices[1].position[0] << "," << this->vertices[1].position[1] << "," << this->vertices[1].position[2] << "], " <<
+        "v3: [" << this->vertices[2].position[0] << "," << this->vertices[2].position[1] << "," << this->vertices[2].position[2] << "], " <<
+        "v4: [" << this->vertices[3].position[0] << "," << this->vertices[3].position[1] << "," << this->vertices[3].position[2] << "]";
+}
+
+void PGR_patch::printNormals()
+{
+    cout << "n1: [" << this->vertices[0].normal[0] << "," << this->vertices[0].normal[1] << "," << this->vertices[0].normal[2] << "], " <<
+        "n2: [" << this->vertices[1].normal[0] << "," << this->vertices[1].normal[1] << "," << this->vertices[1].normal[2] << "], " <<
+        "n3: [" << this->vertices[2].normal[0] << "," << this->vertices[2].normal[1] << "," << this->vertices[2].normal[2] << "], " <<
+        "n4: [" << this->vertices[3].normal[0] << "," << this->vertices[3].normal[1] << "," << this->vertices[3].normal[2] << "]";
+}
+
 void PGR_patch::setArea(float a)
 {
     this->area = a;
@@ -340,12 +356,12 @@ void PGR_patch::updateColor()
     this->vertices[1].color[0] += this->newDiffColor[0];
     this->vertices[2].color[0] += this->newDiffColor[0];
     this->vertices[3].color[0] += this->newDiffColor[0];
-    
+
     this->vertices[0].color[1] += this->newDiffColor[1];
     this->vertices[1].color[1] += this->newDiffColor[1];
     this->vertices[2].color[1] += this->newDiffColor[1];
     this->vertices[3].color[1] += this->newDiffColor[1];
-    
+
     this->vertices[0].color[2] += this->newDiffColor[2];
     this->vertices[1].color[2] += this->newDiffColor[2];
     this->vertices[2].color[2] += this->newDiffColor[2];

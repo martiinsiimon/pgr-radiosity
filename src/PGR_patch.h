@@ -11,6 +11,7 @@
 
 #include "model.h"
 #include <vector>
+#include <string>
 #include <CL/cl.h>
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
@@ -37,6 +38,9 @@ public:
     float getShorterLength();
     float getLongerLength();
     bool getOrientation(int * c1, int * c2);
+
+    void printVertices();
+    void printNormals();
 private:
     bool getLengths(float * l1, float * l2);
     void copy(PGR_patch * a, PGR_patch * src);
