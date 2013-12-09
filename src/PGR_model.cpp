@@ -408,7 +408,7 @@ void PGR_model::decodePatchesGeometryCL(cl_float16* data, uint size)
     }
 }
 
-void PGR_model::getViewFromPatch(int i, GLuint fbo, GLuint texture, cl_float3 **texFront, cl_float3 **texTop, cl_float3 **texBottom, cl_float3 **texLeft, cl_float3 **texRight)
+void PGR_model::getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop, cl_float3 **texBottom, cl_float3 **texLeft, cl_float3 **texRight)
 {
     PGR_patch * p = this->patches[i];
 
@@ -459,7 +459,6 @@ void PGR_model::getViewFromPatch(int i, GLuint fbo, GLuint texture, cl_float3 **
 
     /* Front view */
     glUseProgram(0); //unbind the shader
-    //glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glViewport(0, 0, 256, 256);
@@ -473,7 +472,6 @@ void PGR_model::getViewFromPatch(int i, GLuint fbo, GLuint texture, cl_float3 **
     this->drawUniqueColorScene();
 
     glReadPixels(0, 0, 256, 256, GL_RGB, GL_FLOAT, screen);
-    //glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_FLOAT, screen);
 
     int in;
     int texIn;
@@ -644,4 +642,28 @@ void PGR_model::drawUniqueColorScene()
     }
     glEnd();
     glFlush();
+}
+
+void PGR_model::recomputeColors()
+{
+    for (int i = 0; i < this->patches.size(); i++)
+    {
+        /* R */
+        this->patches[i]->vertices[0].color[0] += this->patches[i]->newDiffColor[0];
+        this->patches[i]->vertices[1].color[0] += this->patches[i]->newDiffColor[0];
+        this->patches[i]->vertices[2].color[0] += this->patches[i]->newDiffColor[0];
+        this->patches[i]->vertices[3].color[0] += this->patches[i]->newDiffColor[0];
+
+        /* G */
+        this->patches[i]->vertices[0].color[1] += this->patches[i]->newDiffColor[1];
+        this->patches[i]->vertices[1].color[1] += this->patches[i]->newDiffColor[1];
+        this->patches[i]->vertices[2].color[1] += this->patches[i]->newDiffColor[1];
+        this->patches[i]->vertices[3].color[1] += this->patches[i]->newDiffColor[1];
+
+        /* B */
+        this->patches[i]->vertices[0].color[2] += this->patches[i]->newDiffColor[2];
+        this->patches[i]->vertices[1].color[2] += this->patches[i]->newDiffColor[2];
+        this->patches[i]->vertices[2].color[2] += this->patches[i]->newDiffColor[2];
+        this->patches[i]->vertices[3].color[2] += this->patches[i]->newDiffColor[2];
+    }
 }
