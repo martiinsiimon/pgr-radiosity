@@ -36,6 +36,8 @@ public:
 
     void compute();
     bool isComputed();
+    void setFramebuffer(GLuint fbo);
+    void setTexture(GLuint tex);
 
 private:
     void computeRadiosity();
@@ -70,7 +72,8 @@ private:
     uint maxWorkGroupSize;
     uint workGroupSize;
 
-
+    GLuint framebuffer;
+    GLuint texture;
 
     PGR_model * model;
     bool computedRadiosity;
