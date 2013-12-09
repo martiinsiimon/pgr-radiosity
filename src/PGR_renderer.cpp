@@ -172,7 +172,7 @@ void PGR_renderer::drawSceneDefault(glm::mat4 mvp)
     glUseProgram(iProg);
 
     glUniformMatrix4fv(mvpUniform, 1, GL_FALSE, glm::value_ptr(mvp));
-    glUniform3f(laUniform, 1, 1, 1);
+    glUniform3f(laUniform, 0.5, 0.5, 0.5);
     glUniform3f(lightPosUniform, light_pos[0], light_pos[1], light_pos[2]);
     glUniform3f(ldUniform, 0.5, 0.5, 0.5);
 
