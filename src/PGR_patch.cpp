@@ -25,6 +25,10 @@ PGR_patch::PGR_patch(const PGR_patch& orig)
     this->vertices[3] = orig.vertices[0];
     this->area = orig.area;
     this->energy = orig.energy;
+
+    this->newDiffColor[0] = 0.0f;
+    this->newDiffColor[1] = 0.0f;
+    this->newDiffColor[2] = 0.0f;
 }
 
 PGR_patch::PGR_patch(PGR_patch *orig)
