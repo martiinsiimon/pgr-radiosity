@@ -648,7 +648,7 @@ void PGR_model::recomputeColors()
     for (int i = 0; i < this->patches.size(); i++)
     {
         //DBG
-        if (this->patches[i]->intensity > 1.0f) cout << "! " << this->patches[i]->intensity << endl;
+        //if (this->patches[i]->intensity > 1.0f) cout << "! " << this->patches[i]->intensity << endl;
 
         /* Normalize intensity */
         this->patches[i]->intensity = MIN(this->patches[i]->intensity, 1.0f);
@@ -657,9 +657,9 @@ void PGR_model::recomputeColors()
         uint max = MAX(MAX(this->patches[i]->newDiffColor.s0, this->patches[i]->newDiffColor.s1), this->patches[i]->newDiffColor.s2);
         if (max > 255)
         {
-            this->patches[i]->newDiffColor.s0 /= max;
-            this->patches[i]->newDiffColor.s1 /= max;
-            this->patches[i]->newDiffColor.s2 /= max;
+            this->patches[i]->newDiffColor.s0 = (this->patches[i]->newDiffColor.s0 * 255) / max;
+            this->patches[i]->newDiffColor.s1 = (this->patches[i]->newDiffColor.s1 * 255) / max;
+            this->patches[i]->newDiffColor.s2 = (this->patches[i]->newDiffColor.s2 * 255) / max;
         }
 
         /* Set new color */
@@ -671,9 +671,9 @@ void PGR_model::recomputeColors()
         max = MAX(MAX(tmp0, tmp1), tmp2);
         if (max > 255)
         {
-            tmp0 /= max;
-            tmp1 /= max;
-            tmp2 /= max;
+            tmp0 = (tmp0 * 255) / max;
+            tmp1 = (tmp1 * 255) / max;
+            tmp2 = (tmp2 * 255) / max;
         }
         this->patches[i]->vertices[0].color[0] = tmp0;
         this->patches[i]->vertices[0].color[1] = tmp1;
