@@ -89,6 +89,7 @@ void PGR_model::addLightEnergy(double e)
     for (int i = 0; i < this->patches.size(); i++)
     {
         this->patches.at(i)->setEnergy(e);
+        this->patches.at(i)->setIntensity((float) e);
     }
 }
 
@@ -425,11 +426,11 @@ void PGR_model::getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop
     int dir0, dir1;
     p->getOrientation(&dir0, &dir1);
 
-    glm::vec3 left = glm::normalize(glm::vec3((dir0 == 0 ? 1 : 0) * -1,
+    glm::vec3 right = glm::normalize(glm::vec3((dir0 == 0 ? 1 : 0) * -1,
                                               (dir0 == 1 ? 1 : 0) * -1,
                                               (dir0 == 2 ? 1 : 0) * -1)); //vector to the left, normalized
 
-    glm::vec3 right = glm::normalize(glm::vec3((dir0 == 0 ? 1 : 0) * 1,
+    glm::vec3 left = glm::normalize(glm::vec3((dir0 == 0 ? 1 : 0) * 1,
                                                (dir0 == 1 ? 1 : 0) * 1,
                                                (dir0 == 2 ? 1 : 0) * 1)); //vector to the right, normalized
 
@@ -443,17 +444,17 @@ void PGR_model::getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop
 
     /* Compute center vectors */
     centerF = eye + norm;
+    centerT = eye + top; //top;
+    centerB = eye + bottom; //bottom;
     centerL = eye + left;
     centerR = eye + right;
-    centerT = eye + top;
-    centerB = eye + bottom;
 
     /* Compute up vectors */
     upF = glm::normalize(top);
-    upL = glm::normalize(-top);
-    upR = glm::normalize(-top);
-    upT = glm::normalize(norm);
-    upB = glm::normalize(-norm);
+    upT = glm::normalize(-norm);
+    upB = glm::normalize(norm);
+    upL = glm::normalize(top);
+    upR = glm::normalize(top);
 
     cl_float3 * screen = new cl_float3[256 * 256]; //always read the square
 
@@ -463,7 +464,7 @@ void PGR_model::getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop
     glViewport(0, 0, 256, 256);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(90, (double) 1, 0.001, 200);
+    gluPerspective(90, (double) 1, 0.0001, 200);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     gluLookAt(eye[0], eye[1], eye[2], centerF[0], centerF[1], centerF[2], upF[0], upF[1], upF[2]);
@@ -486,11 +487,11 @@ void PGR_model::getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop
     }
 
     /* Top view */
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //is this correct?
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glViewport(0, 0, 256, 256);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(90, (double) 1, 0.001, 200);
+    gluPerspective(90, (double) 1, 0.0001, 200);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     gluLookAt(eye[0], eye[1], eye[2], centerT[0], centerT[1], centerT[2], upT[0], upT[1], upT[2]);
@@ -510,13 +511,12 @@ void PGR_model::getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop
         }
     }
 
-
     /* Bottom view */
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //is this correct?
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glViewport(0, 0, 256, 256);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(90, (double) 1, 0.001, 200);
+    gluPerspective(90, (double) 1, 0.0001, 200);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     gluLookAt(eye[0], eye[1], eye[2], centerB[0], centerB[1], centerB[2], upB[0], upB[1], upB[2]);
@@ -536,13 +536,12 @@ void PGR_model::getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop
         }
     }
 
-
     /* Left view */
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //is this correct?
-    glViewport(0, 0, 256, 256); //FIXME
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glViewport(0, 0, 256, 256);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(90, (double) 1, 0.001, 200);
+    gluPerspective(90, (double) 1, 0.0001, 200);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     gluLookAt(eye[0], eye[1], eye[2], centerL[0], centerL[1], centerL[2], upL[0], upL[1], upL[2]);
@@ -562,13 +561,12 @@ void PGR_model::getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop
         }
     }
 
-
     /* Right view */
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //is this correct?
     glViewport(0, 0, 256, 256);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(90, (double) 1, 0.001, 200);
+    gluPerspective(90, (double) 1, 0.0001, 200);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     gluLookAt(eye[0], eye[1], eye[2], centerR[0], centerR[1], centerR[2], upR[0], upR[1], upR[2]);
@@ -590,6 +588,7 @@ void PGR_model::getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop
 
     delete [] screen;
 
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glBindFramebuffer(GL_FRAMEBUFFER, 0); //for sure
 }
 
@@ -597,11 +596,7 @@ void PGR_model::generateUniqueColor()
 {
     for(int i = 0; i < this->patches.size(); i++)
     {
-        cl_float3 uniqueColor;
-        this->idToUniqueColor(i, &uniqueColor);
-        this->patches[i]->uniqueColor.x = uniqueColor.x;
-        this->patches[i]->uniqueColor.y = uniqueColor.y;
-        this->patches[i]->uniqueColor.z = uniqueColor.z;
+        this->idToUniqueColor(i, &(this->patches[i]->uniqueColor));
     }
 }
 
@@ -647,6 +642,8 @@ void PGR_model::recomputeColors()
 {
     for (int i = 0; i < this->patches.size(); i++)
     {
+
+
         /* R */
         this->patches[i]->vertices[0].color[0] += this->patches[i]->newDiffColor[0];
         this->patches[i]->vertices[1].color[0] += this->patches[i]->newDiffColor[0];
