@@ -14,7 +14,7 @@
 #define C_ROOM 1
 #define C_LIGHT 2
 
-#define C_LIGHT_ENERGY 30.0 //don't know what's the correct ammount
+#define C_LIGHT_ENERGY 50.0 //don't know what's the correct ammount
 
 struct Point {
     float position[3];

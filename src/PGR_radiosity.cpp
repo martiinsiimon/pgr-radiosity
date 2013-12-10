@@ -160,8 +160,6 @@ void PGR_radiosity::computeRadiosity()
 
         float ShootDArea = this->model->patches[ids[i]]->area;
 
-
-
         this->model->getViewFromPatch(ids[i], &texFront, &texTop, &texBottom, &texLeft, &texRight);
 
         // Front
@@ -172,6 +170,7 @@ void PGR_radiosity::computeRadiosity()
                 int j = this->model->uniqueColorToId(texFront[w + h * 256]);
                 if (j >= this->model->patches.size() || j < 0)
                 {
+                    //cout << "ERR" << endl;
                     continue;
                 }
 
@@ -188,23 +187,12 @@ void PGR_radiosity::computeRadiosity()
 
                     double delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
 
-                    /*this->model->patches[j]->vertices[0].color[0] =
-                    this->model->patches[j]->vertices[1].color[0] =
-                    this->model->patches[j]->vertices[2].color[0] =
-                        this->model->patches[j]->vertices[3].color[0] += this->model->patches[ids[i]]->vertices[0].color[0] * 0.5 * delta;*/
-                    this->model->patches[j]->newDiffColor[0] += this->model->patches[ids[i]]->vertices[0].color[0] * delta;
-                    /*this->model->patches[j]->vertices[0].color[1] =
-                        this->model->patches[j]->vertices[1].color[1] =
-                    this->model->patches[j]->vertices[2].color[1] =
-                        this->model->patches[j]->vertices[3].color[1] += this->model->patches[ids[i]]->vertices[0].color[1] * 0.5 * delta;*/
-                    this->model->patches[j]->newDiffColor[1] += this->model->patches[ids[i]]->vertices[0].color[1] * delta;
-                    /*this->model->patches[j]->vertices[0].color[2] =
-                    this->model->patches[j]->vertices[1].color[2] =
-                    this->model->patches[j]->vertices[2].color[2] =
-                        this->model->patches[j]->vertices[3].color[2] += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;*/
-                    this->model->patches[j]->newDiffColor[2] += this->model->patches[ids[i]]->vertices[0].color[2] * delta;
+                    this->model->patches[j]->newDiffColor[0] += this->model->patches[ids[i]]->vertices[0].color[0] * 0.5 * delta;
+                    this->model->patches[j]->newDiffColor[1] += this->model->patches[ids[i]]->vertices[0].color[1] * 0.5 * delta;
+                    this->model->patches[j]->newDiffColor[2] += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;
+
                     this->model->patches[j]->energy += this->model->patches[ids[i]]->energy * 0.5 * delta;
-                    this->model->patches[j]->intensity += this->model->patches[ids[i]]->energy * 0.5 * delta;
+                    this->model->patches[j]->intensity += this->model->patches[ids[i]]->energy * delta;
                     isSetEnergy[j] = true;
                 }
             }
@@ -218,6 +206,7 @@ void PGR_radiosity::computeRadiosity()
                 int j = this->model->uniqueColorToId(texTop[w + h * 256]);
                 if (j >= this->model->patches.size() || j < 0)
                 {
+                    //cout << "ERR" << endl;
                     continue;
                 }
 
@@ -234,23 +223,12 @@ void PGR_radiosity::computeRadiosity()
 
                     double delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
 
-                    /*this->model->patches[j]->vertices[0].color[0] =
-                    this->model->patches[j]->vertices[1].color[0] =
-                    this->model->patches[j]->vertices[2].color[0] =
-                        this->model->patches[j]->vertices[3].color[0] += this->model->patches[ids[i]]->vertices[0].color[0] * 0.5 * delta;*/
-                    this->model->patches[j]->newDiffColor[0] += this->model->patches[ids[i]]->vertices[0].color[0] * delta;
-                    /*this->model->patches[j]->vertices[0].color[1] =
-                        this->model->patches[j]->vertices[1].color[1] =
-                    this->model->patches[j]->vertices[2].color[1] =
-                        this->model->patches[j]->vertices[3].color[1] += this->model->patches[ids[i]]->vertices[0].color[1] * 0.5 * delta;*/
-                    this->model->patches[j]->newDiffColor[1] += this->model->patches[ids[i]]->vertices[0].color[1] * delta;
-                    /*this->model->patches[j]->vertices[0].color[2] =
-                    this->model->patches[j]->vertices[1].color[2] =
-                    this->model->patches[j]->vertices[2].color[2] =
-                        this->model->patches[j]->vertices[3].color[2] += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;*/
-                    this->model->patches[j]->newDiffColor[2] += this->model->patches[ids[i]]->vertices[0].color[2] * delta;
+                    this->model->patches[j]->newDiffColor[0] += this->model->patches[ids[i]]->vertices[0].color[0] * 0.5 * delta;
+                    this->model->patches[j]->newDiffColor[1] += this->model->patches[ids[i]]->vertices[0].color[1] * 0.5 * delta;
+                    this->model->patches[j]->newDiffColor[2] += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;
+
                     this->model->patches[j]->energy += this->model->patches[ids[i]]->energy * 0.5 * delta;
-                    this->model->patches[j]->intensity += this->model->patches[ids[i]]->energy * 0.5 * delta;
+                    this->model->patches[j]->intensity += this->model->patches[ids[i]]->energy * delta;
                     isSetEnergy[j] = true;
                 }
             }
@@ -264,6 +242,7 @@ void PGR_radiosity::computeRadiosity()
                 int j = this->model->uniqueColorToId(texBottom[w + h * 256]);
                 if (j >= this->model->patches.size() || j < 0)
                 {
+                    //cout << "ERR" << endl;
                     continue;
                 }
 
@@ -280,23 +259,12 @@ void PGR_radiosity::computeRadiosity()
 
                     double delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
 
-                    /*this->model->patches[j]->vertices[0].color[0] =
-                    this->model->patches[j]->vertices[1].color[0] =
-                    this->model->patches[j]->vertices[2].color[0] =
-                        this->model->patches[j]->vertices[3].color[0] += this->model->patches[ids[i]]->vertices[0].color[0] * 0.5 * delta;*/
-                    this->model->patches[j]->newDiffColor[0] += this->model->patches[ids[i]]->vertices[0].color[0] * delta;
-                    /*this->model->patches[j]->vertices[0].color[1] =
-                        this->model->patches[j]->vertices[1].color[1] =
-                    this->model->patches[j]->vertices[2].color[1] =
-                        this->model->patches[j]->vertices[3].color[1] += this->model->patches[ids[i]]->vertices[0].color[1] * 0.5 * delta;*/
-                    this->model->patches[j]->newDiffColor[1] += this->model->patches[ids[i]]->vertices[0].color[1] * delta;
-                    /*this->model->patches[j]->vertices[0].color[2] =
-                    this->model->patches[j]->vertices[1].color[2] =
-                    this->model->patches[j]->vertices[2].color[2] =
-                        this->model->patches[j]->vertices[3].color[2] += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;*/
-                    this->model->patches[j]->newDiffColor[2] += this->model->patches[ids[i]]->vertices[0].color[2] * delta;
+                    this->model->patches[j]->newDiffColor[0] += this->model->patches[ids[i]]->vertices[0].color[0] * 0.5 * delta;
+                    this->model->patches[j]->newDiffColor[1] += this->model->patches[ids[i]]->vertices[0].color[1] * 0.5 * delta;
+                    this->model->patches[j]->newDiffColor[2] += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;
+
                     this->model->patches[j]->energy += this->model->patches[ids[i]]->energy * 0.5 * delta;
-                    this->model->patches[j]->intensity += this->model->patches[ids[i]]->energy * 0.5 * delta;
+                    this->model->patches[j]->intensity += this->model->patches[ids[i]]->energy * delta;
                     isSetEnergy[j] = true;
                 }
             }
@@ -310,6 +278,7 @@ void PGR_radiosity::computeRadiosity()
                 int j = this->model->uniqueColorToId(texLeft[w + h * 128]);
                 if (j >= this->model->patches.size() || j < 0)
                 {
+                    //cout << "ERR" << endl;
                     continue;
                 }
 
@@ -326,23 +295,12 @@ void PGR_radiosity::computeRadiosity()
 
                     double delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
 
-                    /*this->model->patches[j]->vertices[0].color[0] =
-                    this->model->patches[j]->vertices[1].color[0] =
-                    this->model->patches[j]->vertices[2].color[0] =
-                        this->model->patches[j]->vertices[3].color[0] += this->model->patches[ids[i]]->vertices[0].color[0] * 0.5 * delta;*/
-                    this->model->patches[j]->newDiffColor[0] += this->model->patches[ids[i]]->vertices[0].color[0] * delta;
-                    /*this->model->patches[j]->vertices[0].color[1] =
-                        this->model->patches[j]->vertices[1].color[1] =
-                    this->model->patches[j]->vertices[2].color[1] =
-                        this->model->patches[j]->vertices[3].color[1] += this->model->patches[ids[i]]->vertices[0].color[1] * 0.5 * delta;*/
-                    this->model->patches[j]->newDiffColor[1] += this->model->patches[ids[i]]->vertices[0].color[1] * delta;
-                    /*this->model->patches[j]->vertices[0].color[2] =
-                    this->model->patches[j]->vertices[1].color[2] =
-                    this->model->patches[j]->vertices[2].color[2] =
-                        this->model->patches[j]->vertices[3].color[2] += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;*/
-                    this->model->patches[j]->newDiffColor[2] += this->model->patches[ids[i]]->vertices[0].color[2] * delta;
+                    this->model->patches[j]->newDiffColor[0] += this->model->patches[ids[i]]->vertices[0].color[0] * 0.5 * delta;
+                    this->model->patches[j]->newDiffColor[1] += this->model->patches[ids[i]]->vertices[0].color[1] * 0.5 * delta;
+                    this->model->patches[j]->newDiffColor[2] += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;
+
                     this->model->patches[j]->energy += this->model->patches[ids[i]]->energy * 0.5 * delta;
-                    this->model->patches[j]->intensity += this->model->patches[ids[i]]->energy * 0.5 * delta;
+                    this->model->patches[j]->intensity += this->model->patches[ids[i]]->energy * delta;
                     isSetEnergy[j] = true;
                 }
             }
@@ -356,6 +314,7 @@ void PGR_radiosity::computeRadiosity()
                 int j = this->model->uniqueColorToId(texRight[w + h * 128]);
                 if (j >= this->model->patches.size() || j < 0)
                 {
+                    //cout << "ERR" << endl;
                     continue;
                 }
 
@@ -372,23 +331,12 @@ void PGR_radiosity::computeRadiosity()
 
                     double delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
 
-                    /*this->model->patches[j]->vertices[0].color[0] =
-                    this->model->patches[j]->vertices[1].color[0] =
-                    this->model->patches[j]->vertices[2].color[0] =
-                        this->model->patches[j]->vertices[3].color[0] += this->model->patches[ids[i]]->vertices[0].color[0] * 0.5 * delta;*/
-                    this->model->patches[j]->newDiffColor[0] += this->model->patches[ids[i]]->vertices[0].color[0] * delta;
-                    /*this->model->patches[j]->vertices[0].color[1] =
-                        this->model->patches[j]->vertices[1].color[1] =
-                    this->model->patches[j]->vertices[2].color[1] =
-                        this->model->patches[j]->vertices[3].color[1] += this->model->patches[ids[i]]->vertices[0].color[1] * 0.5 * delta;*/
-                    this->model->patches[j]->newDiffColor[1] += this->model->patches[ids[i]]->vertices[0].color[1] * delta;
-                    /*this->model->patches[j]->vertices[0].color[2] =
-                    this->model->patches[j]->vertices[1].color[2] =
-                    this->model->patches[j]->vertices[2].color[2] =
-                        this->model->patches[j]->vertices[3].color[2] += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;*/
-                    this->model->patches[j]->newDiffColor[2] += this->model->patches[ids[i]]->vertices[0].color[2] * delta;
+                    this->model->patches[j]->newDiffColor[0] += this->model->patches[ids[i]]->vertices[0].color[0] * 0.5 * delta;
+                    this->model->patches[j]->newDiffColor[1] += this->model->patches[ids[i]]->vertices[0].color[1] * 0.5 * delta;
+                    this->model->patches[j]->newDiffColor[2] += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;
+
                     this->model->patches[j]->energy += this->model->patches[ids[i]]->energy * 0.5 * delta;
-                    this->model->patches[j]->intensity += this->model->patches[ids[i]]->energy * 0.5 * delta;
+                    this->model->patches[j]->intensity += this->model->patches[ids[i]]->energy * delta;
                     isSetEnergy[j] = true;
                 }
             }

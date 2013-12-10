@@ -468,7 +468,7 @@ void PGR_model::getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop
     glViewport(0, 0, 256, 256);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(90, (double) 1, 0.0001, 200);
+    gluPerspective(100, (double) 1, 0.01, 200);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     gluLookAt(eye[0], eye[1], eye[2], centerF[0], centerF[1], centerF[2], upF[0], upF[1], upF[2]);
@@ -495,7 +495,7 @@ void PGR_model::getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop
     glViewport(0, 0, 256, 256);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(90, (double) 1, 0.0001, 200);
+    gluPerspective(90, (double) 1, 0.01, 200);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     gluLookAt(eye[0], eye[1], eye[2], centerT[0], centerT[1], centerT[2], upT[0], upT[1], upT[2]);
@@ -520,7 +520,7 @@ void PGR_model::getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop
     glViewport(0, 0, 256, 256);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(90, (double) 1, 0.0001, 200);
+    gluPerspective(90, (double) 1, 0.01, 200);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     gluLookAt(eye[0], eye[1], eye[2], centerB[0], centerB[1], centerB[2], upB[0], upB[1], upB[2]);
@@ -545,7 +545,7 @@ void PGR_model::getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop
     glViewport(0, 0, 256, 256);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(90, (double) 1, 0.0001, 200);
+    gluPerspective(90, (double) 1, 0.01, 200);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     gluLookAt(eye[0], eye[1], eye[2], centerL[0], centerL[1], centerL[2], upL[0], upL[1], upL[2]);
@@ -570,7 +570,7 @@ void PGR_model::getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop
     glViewport(0, 0, 256, 256);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(90, (double) 1, 0.0001, 200);
+    gluPerspective(90, (double) 1, 0.01, 200);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     gluLookAt(eye[0], eye[1], eye[2], centerR[0], centerR[1], centerR[2], upR[0], upR[1], upR[2]);
@@ -654,10 +654,12 @@ void PGR_model::recomputeColors()
 
         /* Normalize diff with keeping aspect ratio */
         float max = MAX(MAX(this->patches[i]->newDiffColor[0], this->patches[i]->newDiffColor[1]), this->patches[i]->newDiffColor[2]);
-        this->patches[i]->newDiffColor[0] /= max;
-        this->patches[i]->newDiffColor[1] /= max;
-        this->patches[i]->newDiffColor[2] /= max;
-
+        if (max > 1.0f)
+        {
+            this->patches[i]->newDiffColor[0] /= max;
+            this->patches[i]->newDiffColor[1] /= max;
+            this->patches[i]->newDiffColor[2] /= max;
+        }
 
         /* Set new color */
         this->patches[i]->vertices[0].color[0] += this->patches[i]->newDiffColor[0];
@@ -666,9 +668,12 @@ void PGR_model::recomputeColors()
 
         /* Normalize with keeping aspect ratio */
         max = MAX(MAX(this->patches[i]->vertices[0].color[0], this->patches[i]->vertices[0].color[1]), this->patches[i]->vertices[0].color[2]);
-        this->patches[i]->vertices[0].color[0] /= max;
-        this->patches[i]->vertices[0].color[1] /= max;
-        this->patches[i]->vertices[0].color[2] /= max;
+        if (max > 1.0f)
+        {
+            this->patches[i]->vertices[0].color[0] /= max;
+            this->patches[i]->vertices[0].color[1] /= max;
+            this->patches[i]->vertices[0].color[2] /= max;
+        }
 
         /* Multiplicate with intensity */
         this->patches[i]->vertices[0].color[0] *= this->patches[i]->intensity;
