@@ -645,21 +645,114 @@ void PGR_model::recomputeColors()
 
 
         /* R */
-        this->patches[i]->vertices[0].color[0] += this->patches[i]->newDiffColor[0];
-        this->patches[i]->vertices[1].color[0] += this->patches[i]->newDiffColor[0];
-        this->patches[i]->vertices[2].color[0] += this->patches[i]->newDiffColor[0];
-        this->patches[i]->vertices[3].color[0] += this->patches[i]->newDiffColor[0];
+        if((this->patches[i]->vertices[0].color[0] + this->patches[i]->newDiffColor[0]) > 1.0)
+        {
+            this->patches[i]->vertices[0].color[0] = 1;
+        }
+        else
+        {
+            this->patches[i]->vertices[0].color[0] += this->patches[i]->newDiffColor[0];
+        }
+        
+        if((this->patches[i]->vertices[1].color[0] + this->patches[i]->newDiffColor[0]) > 1.0)
+        {
+            this->patches[i]->vertices[1].color[0] = 1;
+        }
+        else 
+        {
+            this->patches[i]->vertices[1].color[0] += this->patches[i]->newDiffColor[0];
+        }
+        
+        if((this->patches[i]->vertices[2].color[0] + this->patches[i]->newDiffColor[0]) > 1.0)
+        {
+            this->patches[i]->vertices[2].color[0] = 1;
+        }
+        else
+        {
+            this->patches[i]->vertices[2].color[0] += this->patches[i]->newDiffColor[0];
+        }
+        
+        if((this->patches[i]->vertices[3].color[0] + this->patches[i]->newDiffColor[0]) > 1.0)
+        {
+            this->patches[i]->vertices[3].color[0] = 1;
+        }
+        else 
+        {
+            this->patches[i]->vertices[3].color[0] += this->patches[i]->newDiffColor[0];
+        }
 
         /* G */
-        this->patches[i]->vertices[0].color[1] += this->patches[i]->newDiffColor[1];
-        this->patches[i]->vertices[1].color[1] += this->patches[i]->newDiffColor[1];
-        this->patches[i]->vertices[2].color[1] += this->patches[i]->newDiffColor[1];
-        this->patches[i]->vertices[3].color[1] += this->patches[i]->newDiffColor[1];
+        if((this->patches[i]->vertices[0].color[1] + this->patches[i]->newDiffColor[1]) > 1.0)
+        {
+            this->patches[i]->vertices[0].color[1] = 1;
+        }
+        else
+        {
+            this->patches[i]->vertices[0].color[1] += this->patches[i]->newDiffColor[1];
+        }
+        
+        if((this->patches[i]->vertices[1].color[1] + this->patches[i]->newDiffColor[1]) > 1.0)
+        {
+            this->patches[i]->vertices[1].color[1] = 1;
+        }
+        else 
+        {
+            this->patches[i]->vertices[1].color[1] += this->patches[i]->newDiffColor[1];
+        }
+        
+        if((this->patches[i]->vertices[2].color[1] + this->patches[i]->newDiffColor[1]) > 1.0)
+        {
+            this->patches[i]->vertices[2].color[1] = 1;
+        }
+        else
+        {
+            this->patches[i]->vertices[2].color[1] += this->patches[i]->newDiffColor[1];
+        }
+        
+        if((this->patches[i]->vertices[3].color[1] + this->patches[i]->newDiffColor[1]) > 1.0)
+        {
+            this->patches[i]->vertices[3].color[1] = 1;
+        }
+        else 
+        {
+            this->patches[i]->vertices[3].color[1] += this->patches[i]->newDiffColor[1];
+        }
 
         /* B */
-        this->patches[i]->vertices[0].color[2] += this->patches[i]->newDiffColor[2];
-        this->patches[i]->vertices[1].color[2] += this->patches[i]->newDiffColor[2];
-        this->patches[i]->vertices[2].color[2] += this->patches[i]->newDiffColor[2];
-        this->patches[i]->vertices[3].color[2] += this->patches[i]->newDiffColor[2];
+        if((this->patches[i]->vertices[0].color[2] + this->patches[i]->newDiffColor[2]) > 1.0)
+        {
+            this->patches[i]->vertices[0].color[2] = 1;
+        }
+        else
+        {
+            this->patches[i]->vertices[0].color[2] += this->patches[i]->newDiffColor[2];
+        }
+        
+        if((this->patches[i]->vertices[1].color[2] + this->patches[i]->newDiffColor[2]) > 1.0)
+        {
+            this->patches[i]->vertices[1].color[2] = 1;
+        }
+        else 
+        {
+            this->patches[i]->vertices[1].color[2] += this->patches[i]->newDiffColor[2];
+        }
+        
+        if((this->patches[i]->vertices[2].color[2] + this->patches[i]->newDiffColor[2]) > 1.0)
+        {
+            this->patches[i]->vertices[2].color[2] = 1;
+        }
+        else
+        {
+            this->patches[i]->vertices[2].color[2] += this->patches[i]->newDiffColor[2];
+        }
+        
+        if((this->patches[i]->vertices[3].color[2] + this->patches[i]->newDiffColor[2]) > 1.0)
+        {
+            this->patches[i]->vertices[3].color[2] = 1;
+        }
+        else 
+        {
+            this->patches[i]->vertices[3].color[2] += this->patches[i]->newDiffColor[2];
+        }
     }
 }
