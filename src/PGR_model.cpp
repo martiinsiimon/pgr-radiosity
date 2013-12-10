@@ -643,10 +643,10 @@ void PGR_model::recomputeColors()
     for (int i = 0; i < this->patches.size(); i++)
     {
         //DBG
-        if (this->patches[i]->intensity > 1.0f) cout << "!" << endl;
+        if (this->patches[i]->intensity > 1.0f) cout << "! " << this->patches[i]->intensity << endl;
 
         /* Normalize intensity */
-        this->patches[i]->intensity = MAX(this->patches[i]->intensity, 1.0f);
+        this->patches[i]->intensity = MIN(this->patches[i]->intensity, 1.0f);
 
         /* Normalize diff with keeping aspect ratio */
         float max = MAX(MAX(this->patches[i]->newDiffColor[0], this->patches[i]->newDiffColor[1]), this->patches[i]->newDiffColor[2]);

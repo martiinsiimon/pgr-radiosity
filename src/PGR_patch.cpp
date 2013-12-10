@@ -15,6 +15,18 @@ using namespace std;
 
 PGR_patch::PGR_patch()
 {
+    this->vertices[0] = Point();
+    this->vertices[1] = Point();
+    this->vertices[2] = Point();
+    this->vertices[3] = Point();
+    this->area = 0;
+    this->energy = 0;
+
+    this->newDiffColor[0] = 0;
+    this->newDiffColor[1] = 0;
+    this->newDiffColor[2] = 0;
+
+    this->intensity = 0;
 }
 
 PGR_patch::PGR_patch(const PGR_patch& orig)
@@ -43,11 +55,11 @@ PGR_patch::PGR_patch(PGR_patch *orig)
     this->area = orig->area;
     this->energy = orig->energy;
 
-    this->newDiffColor[0] = 0.0f;
-    this->newDiffColor[1] = 0.0f;
-    this->newDiffColor[2] = 0.0f;
+    this->newDiffColor[0] = orig->newDiffColor[0];
+    this->newDiffColor[1] = orig->newDiffColor[1];
+    this->newDiffColor[2] = orig->newDiffColor[2];
 
-    this->intensity = 0.0f;
+    this->intensity = orig->intensity;
 }
 
 PGR_patch::~PGR_patch()
