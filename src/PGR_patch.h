@@ -34,7 +34,7 @@ public:
     void updateColor();
     double getEnergy();
     void setIntensity(float i);
-    
+    float getIntensity();
 
     void computeArea();
     float getShorterLength();
