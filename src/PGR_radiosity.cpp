@@ -98,6 +98,7 @@ void PGR_radiosity::compute()
             this->computeRadiosity();
             cout << cycles << " energy: " << this->model->getMaximalEnergy() << endl;
             cycles++;
+            break;
         }
         this->model->recomputeColors();
         this->model->updateArrays();
@@ -125,17 +126,17 @@ void PGR_radiosity::computeRadiosity()
     int count = this->model->getIdsOfNMostEnergizedPatches(&ids, N, LIMIT);
     bool * isSetEnergy = new bool[this->model->patches.size()];
 
-    cl_float3 *texFront = new cl_float3 [256 * 256];
-    cl_float3 *texTop = new cl_float3 [256 * 128];
-    cl_float3 *texBottom = new cl_float3 [256 * 128];
-    cl_float3 *texLeft = new cl_float3 [128 * 256];
-    cl_float3 *texRight = new cl_float3 [128 * 256];
+    cl_float3 *texFront = new cl_uchar3 [256 * 256];
+    cl_float3 *texTop = new cl_uchar3 [256 * 128];
+    cl_float3 *texBottom = new cl_uchar3 [256 * 128];
+    cl_float3 *texLeft = new cl_uchar3 [128 * 256];
+    cl_float3 *texRight = new cl_uchar3 [128 * 256];
 
-    memset(texFront, 0, sizeof (cl_float3) * 256 * 256);
-    memset(texTop, 0, sizeof (cl_float3) * 256 * 128);
-    memset(texBottom, 0, sizeof (cl_float3) * 256 * 128);
-    memset(texLeft, 0, sizeof (cl_float3) * 128 * 256);
-    memset(texRight, 0, sizeof (cl_float3) * 128 * 256);
+    memset(texFront, 0, sizeof (cl_uchar3) * 256 * 256);
+    memset(texTop, 0, sizeof (cl_uchar3) * 256 * 128);
+    memset(texBottom, 0, sizeof (cl_uchar3) * 256 * 128);
+    memset(texLeft, 0, sizeof (cl_uchar3) * 128 * 256);
+    memset(texRight, 0, sizeof (cl_uchar3) * 128 * 256);
 
     for (int i = 0; i < count; i++)
     {
@@ -170,7 +171,18 @@ void PGR_radiosity::computeRadiosity()
                 int j = this->model->uniqueColorToId(texFront[w + h * 256]);
                 if (j >= this->model->patches.size() || j < 0)
                 {
+                    cout << "[" << texFront[w + h * 256].x << "," << texFront[w + h * 256].y << "," << texFront[w + h * 256].z << "] -> " << j << endl;
+                    for (int s = 0; s<this->model->patches.size(); s++)
+                    {
+                        if (this->model->patches[s]->uniqueColor.x == texFront[w + h * 256].x &&
+                            this->model->patches[s]->uniqueColor.y == texFront[w + h * 256].y &&
+                            this->model->patches[s]->uniqueColor.z == texFront[w + h * 256].z)
+                        {
+                            cout << "tady!" << endl;
+                        }
+                        }
                     //cout << "ERR" << endl;
+                    //break;
                     continue;
                 }
 
@@ -197,7 +209,7 @@ void PGR_radiosity::computeRadiosity()
                 }
             }
         }
-
+        break;
         // Top
         for (int h = 0; h < 128; h++)
         {
@@ -589,7 +601,7 @@ int PGR_radiosity::prepareCL()
                          cdtTmp & CL_DEVICE_TYPE_ACCELERATOR ? "ACCELERATOR," : "",
                          cdtTmp & CL_DEVICE_TYPE_DEFAULT ? "DEFAULT," : "");
 
-        if (cdtTmp & CL_DEVICE_TYPE_CPU)
+        if (cdtTmp & CL_DEVICE_TYPE_GPU)
         { //prioritize gpu if both cpu and gpu are available
             deviceIndex = f0;
         }

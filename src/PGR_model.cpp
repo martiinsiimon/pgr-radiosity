@@ -460,22 +460,23 @@ void PGR_model::getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop
     upL = glm::normalize(top);
     upR = glm::normalize(top);
 
-    cl_float3 * screen = new cl_float3[256 * 256]; //always read the square
+    cl_uchar3 * screen = new cl_uchar3[256 * 256]; //always read the square
 
     /* Front view */
     glUseProgram(0); //unbind the shader
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glViewport(0, 0, 256, 256);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(100, (double) 1, 0.01, 200);
+    gluPerspective(90, (double) 1, 0.01, 200);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     gluLookAt(eye[0], eye[1], eye[2], centerF[0], centerF[1], centerF[2], upF[0], upF[1], upF[2]);
 
     this->drawUniqueColorScene();
 
-    glReadPixels(0, 0, 256, 256, GL_RGB, GL_FLOAT, screen);
+    glReadPixels(0, 0, 256, 256, GL_RGB, GL_UNSIGNED_BYTE, screen);
 
     int in;
     int texIn;
@@ -502,7 +503,7 @@ void PGR_model::getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop
 
     this->drawUniqueColorScene();
 
-    glReadPixels(0, 0, 256, 256, GL_RGB, GL_FLOAT, screen);
+    glReadPixels(0, 0, 256, 256, GL_RGB, GL_UNSIGNED_BYTE, screen);
 
     /* Copy the bottom part of a screen to texture */
     for (int h = 128; h < 256; h++)
@@ -527,7 +528,7 @@ void PGR_model::getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop
 
     this->drawUniqueColorScene();
 
-    glReadPixels(0, 0, 256, 256, GL_RGB, GL_FLOAT, screen);
+    glReadPixels(0, 0, 256, 256, GL_RGB, GL_UNSIGNED_BYTE, screen);
 
     /* Copy the top part of a screen to texture */
     for (int h = 0; h < 128; h++)
@@ -552,7 +553,7 @@ void PGR_model::getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop
 
     this->drawUniqueColorScene();
 
-    glReadPixels(0, 0, 256, 256, GL_RGB, GL_FLOAT, screen);
+    glReadPixels(0, 0, 256, 256, GL_RGB, GL_UNSIGNED_BYTE, screen);
 
     /* Copy the right part of a screen to texture */
     for (int h = 0; h < 256; h++)
@@ -577,7 +578,7 @@ void PGR_model::getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop
 
     this->drawUniqueColorScene();
 
-    glReadPixels(0, 0, 256, 256, GL_RGB, GL_FLOAT, screen);
+    glReadPixels(0, 0, 256, 256, GL_RGB, GL_UNSIGNED_BYTE, screen);
 
     /* Copy the left part of a screen to texture */
     for (int h = 0; h < 256; h++)
@@ -627,7 +628,7 @@ int PGR_model::uniqueColorToId(cl_float3 uniqueColor)
 void PGR_model::drawUniqueColorScene()
 {
     glBegin(GL_QUADS);
-    for (unsigned i = 0; i< this->patches.size(); i++)
+    for (unsigned int i = 0; i< this->patches.size(); i++)
     {
         glColor3f(this->patches[i]->uniqueColor.x,
                   this->patches[i]->uniqueColor.y,
