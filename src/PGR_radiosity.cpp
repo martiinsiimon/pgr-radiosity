@@ -172,16 +172,6 @@ void PGR_radiosity::computeRadiosity()
                 int j = this->model->uniqueColorToId(texFront[w + h * 256]);
                 if (j >= this->model->patches.size() || j < 0)
                 {
-                    //cout << "[" << (string) (texFront[w + h * 256].s0) << "," << (string) (texFront[w + h * 256].y) << "," << (string) (texFront[w + h * 256].z) << "] -> " << (string) j << endl;
-                    for (int s = 0; s<this->model->patches.size(); s++)
-                    {
-                        if (this->model->patches[s]->uniqueColor.s0 == texFront[w + h * 256].s0 &&
-                            this->model->patches[s]->uniqueColor.s1 == texFront[w + h * 256].s1 &&
-                            this->model->patches[s]->uniqueColor.s2 == texFront[w + h * 256].s2)
-                        {
-                            cout << "tady!" << endl;
-                        }
-                    }
                     //cout << "ERR" << endl;
                     //break;
                     continue;
@@ -210,7 +200,7 @@ void PGR_radiosity::computeRadiosity()
                 }
             }
         }
-        //break;
+
         // Top
         for (int h = 0; h < 128; h++)
         {

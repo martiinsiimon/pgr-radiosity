@@ -567,7 +567,7 @@ void PGR_model::getViewFromPatch(int i, cl_uchar3 **texFront, cl_uchar3 **texTop
     }
 
     /* Right view */
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //is this correct?
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glViewport(0, 0, 256, 256);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -676,8 +676,8 @@ void PGR_model::recomputeColors()
             tmp2 /= max;
         }
         this->patches[i]->vertices[0].color[0] = tmp0;
-        this->patches[i]->vertices[0].color[0] = tmp1;
-        this->patches[i]->vertices[0].color[0] = tmp2;
+        this->patches[i]->vertices[0].color[1] = tmp1;
+        this->patches[i]->vertices[0].color[2] = tmp2;
 
 
         /* Multiplicate with intensity */
