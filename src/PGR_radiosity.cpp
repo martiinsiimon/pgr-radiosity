@@ -99,7 +99,7 @@ void PGR_radiosity::compute()
             this->computeRadiosity();
             cout << cycles << " energy: " << this->model->getMaximalEnergy() << endl;
             cycles++;
-            break;
+            //break;
         }
         this->model->recomputeColors();
         this->model->updateArrays();
@@ -181,7 +181,7 @@ void PGR_radiosity::computeRadiosity()
                         {
                             cout << "tady!" << endl;
                         }
-                        }
+                    }
                     //cout << "ERR" << endl;
                     //break;
                     continue;
@@ -210,7 +210,7 @@ void PGR_radiosity::computeRadiosity()
                 }
             }
         }
-        break;
+        //break;
         // Top
         for (int h = 0; h < 128; h++)
         {

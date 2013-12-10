@@ -162,7 +162,7 @@ void PGR_renderer::drawSceneDefault(glm::mat4 mvp)
 
     glBindBuffer(GL_ARRAY_BUFFER, roomVBO);
     glVertexAttribPointer(positionAttrib, 3, GL_FLOAT, GL_FALSE, sizeof (Point), (void*) offsetof(Point, position));
-    glVertexAttribPointer(colorAttrib, 3, GL_UNSIGNED_BYTE, GL_FALSE, sizeof (Point), (void*) offsetof(Point, color));
+    glVertexAttribPointer(colorAttrib, 3, GL_UNSIGNED_BYTE, GL_TRUE, sizeof (Point), (void*) offsetof(Point, color));
     glVertexAttribPointer(normalAttrib, 3, GL_FLOAT, GL_FALSE, sizeof (Point), (void*) offsetof(Point, normal));
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -204,7 +204,7 @@ void PGR_renderer::drawSceneRadiosity(glm::mat4 mvp)
 
     glBindBuffer(GL_ARRAY_BUFFER, roomVBO);
     glVertexAttribPointer(positionAttrib, 3, GL_FLOAT, GL_FALSE, sizeof (Point), (void*) offsetof(Point, position));
-    glVertexAttribPointer(colorAttrib, 3, GL_UNSIGNED_BYTE, GL_FALSE, sizeof (Point), (void*) offsetof(Point, color));
+    glVertexAttribPointer(colorAttrib, 3, GL_UNSIGNED_BYTE, GL_TRUE, sizeof (Point), (void*) offsetof(Point, color));
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, roomEBO);
