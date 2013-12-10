@@ -195,7 +195,7 @@ void PGR_renderer::drawSceneRadiosity(glm::mat4 mvp)
     glViewport(0, 0, this->width, this->height);
 
     glUniformMatrix4fv(mvpUniform, 1, GL_FALSE, glm::value_ptr(mvp));
-    glUniform3f(laUniform, 0.2, 0.2, 0.2); //turn off basic shadows
+    glUniform3f(laUniform, 1.0, 1.0, 1.0); //turn off basic shadows
     glUniform3f(ldUniform, 0.0, 0.0, 0.0); //turn off basic shadows
 
     /* Draw room */
