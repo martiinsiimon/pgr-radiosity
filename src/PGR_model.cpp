@@ -604,22 +604,22 @@ void PGR_model::generateUniqueColor()
     }
 }
 
-void PGR_model::idToUniqueColor(int id, cl_float3 *uniqueColor)
+void PGR_model::idToUniqueColor(int id, cl_uchar3 *uniqueColor)
 {
-    (*uniqueColor).x = (float)(id & 0b11111111) / 256;
+    (*uniqueColor).x = id & 0b11111111;
     id >>= 8;
-    (*uniqueColor).y = (float)(id & 0b11111111) / 256;
+    (*uniqueColor).y = id & 0b11111111;
     id >>= 8;
-    (*uniqueColor).z = (float)(id & 0b11111111) / 256;
+    (*uniqueColor).z = id & 0b11111111;
 }
 
-int PGR_model::uniqueColorToId(cl_float3 uniqueColor)
+int PGR_model::uniqueColorToId(cl_uchar3 uniqueColor)
 {
-    int id = (int)(uniqueColor.z * 256);
+    int id = uniqueColor.z;
     id <<= 8;
-    id |= (int)(uniqueColor.y * 256);
+    id |= uniqueColor.y;
     id <<= 8;
-    id |= (int)(uniqueColor.x * 256);
+    id |= uniqueColor.x;
 
     return id;
 }

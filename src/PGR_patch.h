@@ -53,7 +53,7 @@ public:
     Point vertices[4];
     float area;
     double energy;
-    cl_float3 uniqueColor;
+    cl_uchar3 uniqueColor;
     float newDiffColor[3];
     float intensity;
 };
