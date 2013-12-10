@@ -26,9 +26,12 @@ PGR_patch::PGR_patch(const PGR_patch& orig)
     this->area = orig.area;
     this->energy = orig.energy;
 
-    this->newDiffColor[0] = 0.0f;
-    this->newDiffColor[1] = 0.0f;
-    this->newDiffColor[2] = 0.0f;
+    this->newDiffColor[0] = orig.newDiffColor[0];
+    this->newDiffColor[1] = orig.newDiffColor[1];
+    this->newDiffColor[2] = orig.newDiffColor[2];
+
+    this->intensity = orig.intensity;
+
 }
 
 PGR_patch::PGR_patch(PGR_patch *orig)
@@ -39,6 +42,12 @@ PGR_patch::PGR_patch(PGR_patch *orig)
     this->vertices[3] = orig->vertices[0];
     this->area = orig->area;
     this->energy = orig->energy;
+
+    this->newDiffColor[0] = 0.0f;
+    this->newDiffColor[1] = 0.0f;
+    this->newDiffColor[2] = 0.0f;
+
+    this->intensity = 0.0f;
 }
 
 PGR_patch::~PGR_patch()
@@ -79,6 +88,11 @@ void PGR_patch::setArea(float a)
 void PGR_patch::setEnergy(double e)
 {
     this->energy = e;
+}
+
+void PGR_patch::setIntensity(float i)
+{
+    this->intensity = i;
 }
 
 double PGR_patch::getEnergy()

@@ -33,6 +33,8 @@ public:
     void setEnergy(double e);
     void updateColor();
     double getEnergy();
+    void setIntensity(float i);
+    
 
     void computeArea();
     float getShorterLength();
@@ -53,6 +55,7 @@ public:
     double energy;
     cl_float3 uniqueColor;
     float newDiffColor[3];
+    float intensity;
 };
 
 #endif	/* PGR_PATCH_H */
