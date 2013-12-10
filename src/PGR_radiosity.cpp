@@ -204,6 +204,7 @@ void PGR_radiosity::computeRadiosity()
                         this->model->patches[j]->vertices[3].color[2] += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;*/
                     this->model->patches[j]->newDiffColor[2] += this->model->patches[ids[i]]->vertices[0].color[2] * delta;
                     this->model->patches[j]->energy += this->model->patches[ids[i]]->energy * 0.5 * delta;
+                    this->model->patches[j]->intensity += this->model->patches[ids[i]]->energy * 0.5 * delta;
                     isSetEnergy[j] = true;
                 }
             }
@@ -249,6 +250,7 @@ void PGR_radiosity::computeRadiosity()
                         this->model->patches[j]->vertices[3].color[2] += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;*/
                     this->model->patches[j]->newDiffColor[2] += this->model->patches[ids[i]]->vertices[0].color[2] * delta;
                     this->model->patches[j]->energy += this->model->patches[ids[i]]->energy * 0.5 * delta;
+                    this->model->patches[j]->intensity += this->model->patches[ids[i]]->energy * 0.5 * delta;
                     isSetEnergy[j] = true;
                 }
             }
@@ -294,6 +296,7 @@ void PGR_radiosity::computeRadiosity()
                         this->model->patches[j]->vertices[3].color[2] += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;*/
                     this->model->patches[j]->newDiffColor[2] += this->model->patches[ids[i]]->vertices[0].color[2] * delta;
                     this->model->patches[j]->energy += this->model->patches[ids[i]]->energy * 0.5 * delta;
+                    this->model->patches[j]->intensity += this->model->patches[ids[i]]->energy * 0.5 * delta;
                     isSetEnergy[j] = true;
                 }
             }
@@ -339,6 +342,7 @@ void PGR_radiosity::computeRadiosity()
                         this->model->patches[j]->vertices[3].color[2] += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;*/
                     this->model->patches[j]->newDiffColor[2] += this->model->patches[ids[i]]->vertices[0].color[2] * delta;
                     this->model->patches[j]->energy += this->model->patches[ids[i]]->energy * 0.5 * delta;
+                    this->model->patches[j]->intensity += this->model->patches[ids[i]]->energy * 0.5 * delta;
                     isSetEnergy[j] = true;
                 }
             }
@@ -384,6 +388,7 @@ void PGR_radiosity::computeRadiosity()
                         this->model->patches[j]->vertices[3].color[2] += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;*/
                     this->model->patches[j]->newDiffColor[2] += this->model->patches[ids[i]]->vertices[0].color[2] * delta;
                     this->model->patches[j]->energy += this->model->patches[ids[i]]->energy * 0.5 * delta;
+                    this->model->patches[j]->intensity += this->model->patches[ids[i]]->energy * 0.5 * delta;
                     isSetEnergy[j] = true;
                 }
             }

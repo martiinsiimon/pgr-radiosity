@@ -642,9 +642,50 @@ void PGR_model::recomputeColors()
 {
     for (int i = 0; i < this->patches.size(); i++)
     {
+        //DBG
+        if (this->patches[i]->intensity > 1.0f) cout << "!" << endl;
+
+        /* Normalize intensity */
+        this->patches[i]->intensity = MAX(this->patches[i]->intensity, 1.0f);
+
+        /* Normalize diff with keeping aspect ratio */
+        float max = MAX(MAX(this->patches[i]->newDiffColor[0], this->patches[i]->newDiffColor[1]), this->patches[i]->newDiffColor[2]);
+        this->patches[i]->newDiffColor[0] /= max;
+        this->patches[i]->newDiffColor[1] /= max;
+        this->patches[i]->newDiffColor[2] /= max;
 
 
-        /* R */
+        /* Set new color */
+        this->patches[i]->vertices[0].color[0] += this->patches[i]->newDiffColor[0];
+        this->patches[i]->vertices[0].color[1] += this->patches[i]->newDiffColor[1];
+        this->patches[i]->vertices[0].color[2] += this->patches[i]->newDiffColor[2];
+
+        /* Normalize with keeping aspect ratio */
+        max = MAX(MAX(this->patches[i]->vertices[0].color[0], this->patches[i]->vertices[0].color[1]), this->patches[i]->vertices[0].color[2]);
+        this->patches[i]->vertices[0].color[0] /= max;
+        this->patches[i]->vertices[0].color[1] /= max;
+        this->patches[i]->vertices[0].color[2] /= max;
+
+        /* Multiplicate with intensity */
+        this->patches[i]->vertices[0].color[0] *= this->patches[i]->intensity;
+        this->patches[i]->vertices[0].color[1] *= this->patches[i]->intensity;
+        this->patches[i]->vertices[0].color[2] *= this->patches[i]->intensity;
+
+        /* Set the same color for all the vertices */
+        this->patches[i]->vertices[1].color[0] = this->patches[i]->vertices[0].color[0];
+        this->patches[i]->vertices[2].color[0] = this->patches[i]->vertices[0].color[0];
+        this->patches[i]->vertices[3].color[0] = this->patches[i]->vertices[0].color[0];
+
+        this->patches[i]->vertices[1].color[1] = this->patches[i]->vertices[0].color[1];
+        this->patches[i]->vertices[2].color[1] = this->patches[i]->vertices[0].color[1];
+        this->patches[i]->vertices[3].color[1] = this->patches[i]->vertices[0].color[1];
+
+        this->patches[i]->vertices[1].color[2] = this->patches[i]->vertices[0].color[2];
+        this->patches[i]->vertices[2].color[2] = this->patches[i]->vertices[0].color[2];
+        this->patches[i]->vertices[3].color[2] = this->patches[i]->vertices[0].color[2];
+
+
+        /*
         if((this->patches[i]->vertices[0].color[0] + this->patches[i]->newDiffColor[0]) > 1.0)
         {
             this->patches[i]->vertices[0].color[0] = 1;
@@ -653,16 +694,16 @@ void PGR_model::recomputeColors()
         {
             this->patches[i]->vertices[0].color[0] += this->patches[i]->newDiffColor[0];
         }
-        
+
         if((this->patches[i]->vertices[1].color[0] + this->patches[i]->newDiffColor[0]) > 1.0)
         {
             this->patches[i]->vertices[1].color[0] = 1;
         }
-        else 
+        else
         {
             this->patches[i]->vertices[1].color[0] += this->patches[i]->newDiffColor[0];
         }
-        
+
         if((this->patches[i]->vertices[2].color[0] + this->patches[i]->newDiffColor[0]) > 1.0)
         {
             this->patches[i]->vertices[2].color[0] = 1;
@@ -671,18 +712,18 @@ void PGR_model::recomputeColors()
         {
             this->patches[i]->vertices[2].color[0] += this->patches[i]->newDiffColor[0];
         }
-        
+
         if((this->patches[i]->vertices[3].color[0] + this->patches[i]->newDiffColor[0]) > 1.0)
         {
             this->patches[i]->vertices[3].color[0] = 1;
         }
-        else 
+        else
         {
             this->patches[i]->vertices[3].color[0] += this->patches[i]->newDiffColor[0];
-        }
+        }*/
 
         /* G */
-        if((this->patches[i]->vertices[0].color[1] + this->patches[i]->newDiffColor[1]) > 1.0)
+        /*if((this->patches[i]->vertices[0].color[1] + this->patches[i]->newDiffColor[1]) > 1.0)
         {
             this->patches[i]->vertices[0].color[1] = 1;
         }
@@ -690,16 +731,16 @@ void PGR_model::recomputeColors()
         {
             this->patches[i]->vertices[0].color[1] += this->patches[i]->newDiffColor[1];
         }
-        
+
         if((this->patches[i]->vertices[1].color[1] + this->patches[i]->newDiffColor[1]) > 1.0)
         {
             this->patches[i]->vertices[1].color[1] = 1;
         }
-        else 
+        else
         {
             this->patches[i]->vertices[1].color[1] += this->patches[i]->newDiffColor[1];
         }
-        
+
         if((this->patches[i]->vertices[2].color[1] + this->patches[i]->newDiffColor[1]) > 1.0)
         {
             this->patches[i]->vertices[2].color[1] = 1;
@@ -708,18 +749,18 @@ void PGR_model::recomputeColors()
         {
             this->patches[i]->vertices[2].color[1] += this->patches[i]->newDiffColor[1];
         }
-        
+
         if((this->patches[i]->vertices[3].color[1] + this->patches[i]->newDiffColor[1]) > 1.0)
         {
             this->patches[i]->vertices[3].color[1] = 1;
         }
-        else 
+        else
         {
             this->patches[i]->vertices[3].color[1] += this->patches[i]->newDiffColor[1];
-        }
+        }*/
 
         /* B */
-        if((this->patches[i]->vertices[0].color[2] + this->patches[i]->newDiffColor[2]) > 1.0)
+        /*if((this->patches[i]->vertices[0].color[2] + this->patches[i]->newDiffColor[2]) > 1.0)
         {
             this->patches[i]->vertices[0].color[2] = 1;
         }
@@ -727,16 +768,16 @@ void PGR_model::recomputeColors()
         {
             this->patches[i]->vertices[0].color[2] += this->patches[i]->newDiffColor[2];
         }
-        
+
         if((this->patches[i]->vertices[1].color[2] + this->patches[i]->newDiffColor[2]) > 1.0)
         {
             this->patches[i]->vertices[1].color[2] = 1;
         }
-        else 
+        else
         {
             this->patches[i]->vertices[1].color[2] += this->patches[i]->newDiffColor[2];
         }
-        
+
         if((this->patches[i]->vertices[2].color[2] + this->patches[i]->newDiffColor[2]) > 1.0)
         {
             this->patches[i]->vertices[2].color[2] = 1;
@@ -745,14 +786,14 @@ void PGR_model::recomputeColors()
         {
             this->patches[i]->vertices[2].color[2] += this->patches[i]->newDiffColor[2];
         }
-        
+
         if((this->patches[i]->vertices[3].color[2] + this->patches[i]->newDiffColor[2]) > 1.0)
         {
             this->patches[i]->vertices[3].color[2] = 1;
         }
-        else 
+        else
         {
             this->patches[i]->vertices[3].color[2] += this->patches[i]->newDiffColor[2];
-        }
+        }*/
     }
 }
