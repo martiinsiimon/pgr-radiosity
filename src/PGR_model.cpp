@@ -413,7 +413,7 @@ void PGR_model::decodePatchesGeometryCL(cl_float16* data, uint size)
     }
 }
 
-void PGR_model::getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop, cl_float3 **texBottom, cl_float3 **texLeft, cl_float3 **texRight)
+void PGR_model::getViewFromPatch(int i, cl_uchar3 **texFront, cl_uchar3 **texTop, cl_uchar3 **texBottom, cl_uchar3 **texLeft, cl_uchar3 **texRight)
 {
     PGR_patch * p = this->patches[i];
 
@@ -654,18 +654,18 @@ void PGR_model::recomputeColors()
         this->patches[i]->intensity = MIN(this->patches[i]->intensity, 1.0f);
 
         /* Normalize diff with keeping aspect ratio */
-        float max = MAX(MAX(this->patches[i]->newDiffColor[0], this->patches[i]->newDiffColor[1]), this->patches[i]->newDiffColor[2]);
+        float max = MAX(MAX(this->patches[i]->newDiffColor.s0, this->patches[i]->newDiffColor.s1), this->patches[i]->newDiffColor.s2);
         if (max > 1.0f)
         {
-            this->patches[i]->newDiffColor[0] /= max;
-            this->patches[i]->newDiffColor[1] /= max;
-            this->patches[i]->newDiffColor[2] /= max;
+            this->patches[i]->newDiffColor.s0 /= max;
+            this->patches[i]->newDiffColor.s1 /= max;
+            this->patches[i]->newDiffColor.s2 /= max;
         }
 
         /* Set new color */
-        this->patches[i]->vertices[0].color[0] += this->patches[i]->newDiffColor[0];
-        this->patches[i]->vertices[0].color[1] += this->patches[i]->newDiffColor[1];
-        this->patches[i]->vertices[0].color[2] += this->patches[i]->newDiffColor[2];
+        this->patches[i]->vertices[0].color[0] += this->patches[i]->newDiffColor.s0;
+        this->patches[i]->vertices[0].color[1] += this->patches[i]->newDiffColor.s1;
+        this->patches[i]->vertices[0].color[2] += this->patches[i]->newDiffColor.s2;
 
         /* Normalize with keeping aspect ratio */
         max = MAX(MAX(this->patches[i]->vertices[0].color[0], this->patches[i]->vertices[0].color[1]), this->patches[i]->vertices[0].color[2]);

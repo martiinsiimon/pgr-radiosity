@@ -63,7 +63,7 @@ public:
     void decodePatchesCL(cl_float4 *data, cl_float *energies, uint size);
 
 
-    void getViewFromPatch(int i, cl_float3 **texFront, cl_float3 **texTop, cl_float3 **texBottom, cl_float3 **texLeft, cl_float3 **texRight);
+    void getViewFromPatch(int i, cl_uchar3 **texFront, cl_uchar3 **texTop, cl_uchar3 **texBottom, cl_uchar3 **texLeft, cl_uchar3 **texRight);
 
     void idToUniqueColor(int id, cl_uchar3* uniqueColor);
     int uniqueColorToId(cl_uchar3 uniqueColor);

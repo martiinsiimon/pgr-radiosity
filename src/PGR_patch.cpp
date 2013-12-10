@@ -22,9 +22,9 @@ PGR_patch::PGR_patch()
     this->area = 0;
     this->energy = 0;
 
-    this->newDiffColor[0] = 0;
-    this->newDiffColor[1] = 0;
-    this->newDiffColor[2] = 0;
+    this->newDiffColor.s0 = 0;
+    this->newDiffColor.s1 = 0;
+    this->newDiffColor.s2 = 0;
 
     this->intensity = 0;
 }
@@ -38,9 +38,9 @@ PGR_patch::PGR_patch(const PGR_patch& orig)
     this->area = orig.area;
     this->energy = orig.energy;
 
-    this->newDiffColor[0] = orig.newDiffColor[0];
-    this->newDiffColor[1] = orig.newDiffColor[1];
-    this->newDiffColor[2] = orig.newDiffColor[2];
+    this->newDiffColor.s0 = orig.newDiffColor.s0;
+    this->newDiffColor.s1 = orig.newDiffColor.s1;
+    this->newDiffColor.s2 = orig.newDiffColor.s2;
 
     this->intensity = orig.intensity;
 
@@ -55,9 +55,9 @@ PGR_patch::PGR_patch(PGR_patch *orig)
     this->area = orig->area;
     this->energy = orig->energy;
 
-    this->newDiffColor[0] = orig->newDiffColor[0];
-    this->newDiffColor[1] = orig->newDiffColor[1];
-    this->newDiffColor[2] = orig->newDiffColor[2];
+    this->newDiffColor.s0 = orig->newDiffColor.s0;
+    this->newDiffColor.s1 = orig->newDiffColor.s1;
+    this->newDiffColor.s2 = orig->newDiffColor.s2;
 
     this->intensity = orig->intensity;
 }
