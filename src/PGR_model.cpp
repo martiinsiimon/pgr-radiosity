@@ -430,11 +430,11 @@ void PGR_model::getViewFromPatch(int i, cl_uchar3 **texFront, cl_uchar3 **texTop
     int dir0, dir1;
     p->getOrientation(&dir0, &dir1);
 
-    glm::vec3 right = glm::normalize(glm::vec3((dir0 == 0 ? 1 : 0) * -1,
+    glm::vec3 left = glm::normalize(glm::vec3((dir0 == 0 ? 1 : 0) * -1,
                                               (dir0 == 1 ? 1 : 0) * -1,
                                               (dir0 == 2 ? 1 : 0) * -1)); //vector to the left, normalized
 
-    glm::vec3 left = glm::normalize(glm::vec3((dir0 == 0 ? 1 : 0) * 1,
+    glm::vec3 right = glm::normalize(glm::vec3((dir0 == 0 ? 1 : 0) * 1,
                                                (dir0 == 1 ? 1 : 0) * 1,
                                                (dir0 == 2 ? 1 : 0) * 1)); //vector to the right, normalized
 
@@ -506,12 +506,12 @@ void PGR_model::getViewFromPatch(int i, cl_uchar3 **texFront, cl_uchar3 **texTop
     glReadPixels(0, 0, 256, 256, GL_RGB, GL_UNSIGNED_BYTE, screen);
 
     /* Copy the bottom part of a screen to texture */
-    for (int h = 128; h < 256; h++)
+    for (int h = 0; h < 128; h++)
     {
         for (int w = 0; w < 256; w++)
         {
             in = w + h * 256;
-            texIn = w + (h - 128) * 256;
+            texIn = w + h * 256;
             (*texTop)[texIn] = screen[in];
         }
     }
@@ -531,12 +531,12 @@ void PGR_model::getViewFromPatch(int i, cl_uchar3 **texFront, cl_uchar3 **texTop
     glReadPixels(0, 0, 256, 256, GL_RGB, GL_UNSIGNED_BYTE, screen);
 
     /* Copy the top part of a screen to texture */
-    for (int h = 0; h < 128; h++)
+    for (int h = 128; h < 256; h++)
     {
         for (int w = 0; w < 256; w++)
         {
             in = w + h * 256;
-            texIn = w + h * 256;
+            texIn = w + (h - 128) * 256;
             (*texBottom)[texIn] = screen[in];
         }
     }

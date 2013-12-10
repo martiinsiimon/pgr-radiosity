@@ -173,7 +173,6 @@ void PGR_radiosity::computeRadiosity()
                 if (j >= this->model->patches.size() || j < 0)
                 {
                     //cout << "ERR" << endl;
-                    //break;
                     continue;
                 }
 

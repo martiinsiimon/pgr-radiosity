@@ -65,7 +65,7 @@ void onWindowRedraw()
 {
     glm::mat4 projection;
 
-    projection = glm::perspective(75.0f, (float) width / (float) height, 0.1f, 200.0f);
+    projection = glm::perspective(90.0f, (float) width / (float) height, 0.1f, 200.0f);
 
     glm::mat4 mvp = glm::rotate(
                                 glm::rotate(
