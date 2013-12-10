@@ -136,79 +136,100 @@ __kernel void sort(__global float* energies, uint patchesCount, __global uint* i
 /*
  * Compute radiosity step - energy distribution of N most energized patches
  */
-__kernel void radiosity(__global float16* patchesGeo, __global float4* patchesInfo, uint patchesCount, __global uint* indices, __global uint* indicesCount, __global float* energies/* array of textures, uint textureSize, __local bit* visited */)
+__kernel void radiosity(__global float8* patchesGeo,
+                        __global uchar3* patchesColors,
+                        uint patchesCount,
+                        __global uint* indices,
+                        __global uint* indicesCount,
+                        __global float* energies,
+                        __global uchar3* diffColors,
+                        __global float* intensities,
+                        __global uchar3* texture,
+                        uint textureSize,
+                        __local bool* isSetEnergy)
 {
     int i = get_global_id(0); //position in indices array
-    //int texI = i * textureSize;
+
 
     if (i >= indicesCount[0])
     {
         return;
     }
 
-    float16 lightGeo = patchesGeo[indices[i]];
-    float4 lightInfo = patchesInfo[indices[i]];
+    uint offset = i*256;
+
+    float8 lightGeo = patchesGeo[indices[i]];
+    uchar3 lightColor = patchesColors[indices[i]];
     float lightEnergy = energies[indices[i]];
     energies[indices[i]] = 0;
 
     float x, y, z;
 
     /* Center of light patch */
-    x = (lightGeo.s0 + lightGeo.s3 + lightGeo.s6 + lightGeo.s9) / 4.0;
-    y = (lightGeo.s1 + lightGeo.s4 + lightGeo.s7 + lightGeo.sA) / 4.0;
-    z = (lightGeo.s2 + lightGeo.s5 + lightGeo.s8 + lightGeo.sB) / 4.0;
-    float4 ShootPos = {x,y,z,0};
+    float4 ShootPos = {lightGeo.s0, lightGeo.s1, lightGeo.s2, 0};
 
     /* Normal of light patch */
-    x = lightGeo.sC;
-    y = lightGeo.sD;
-    z = lightGeo.sE;
+    x = lightGeo.s3;
+    y = lightGeo.s4;
+    z = lightGeo.s5;
     float4 ShootNormal = {x,y,z,0};
 
     /* Area of light patch */
-    float ShootDArea = lightGeo.sF;
+    float ShootDArea = lightGeo.s6;
 
     //go through all the texture
     //every point convert to index and if visited[index]==0 -> compute form factor and set to correct index
     //otherwise continue
 
-    for(int j = 0; j < patchesCount; j++) {
+    for(uint h = 0; h < 768; h++)
+    {
+        for(uint w = offset; w < offset+256; w++)
+        {
+            uchar3 texColor = texture[w + h * 256];
+            int j = texColor.s2;
+            j <<= 8;
+            j |= texColor.s1;
+            j <<= 8;
+            j |= texColor.s0;
 
-        float16 patchGeo = patchesGeo[j];
-        //float4 patchInfo = patchesInfo[j];
+            if (j >= patchesCount || j < 0)
+            {
+                continue;
+            }
 
-        /* Center of patch */
-        x = (patchGeo.s0 + patchGeo.s3 + patchGeo.s6 + patchGeo.s9) / 4.0;
-        y = (patchGeo.s1 + patchGeo.s4 + patchGeo.s7 + patchGeo.sA) / 4.0;
-        z = (patchGeo.s2 + patchGeo.s5 + patchGeo.s8 + patchGeo.sB) / 4.0;
-        float4 RecvPos = {x,y,z,0};
+            if(isSetEnergy[j] == false)
+            {
+                float8 patchGeo = patchesGeo[j];
+                float4 RecvPos = {patchGeo.s0, patchGeo.s1, patchGeo.s2, 0};
 
-        /* Normal of patch */
-        x = patchGeo.sC;
-        y = patchGeo.sD;
-        z = patchGeo.sE;
-        float4 RecvNormal = {x,y,z,0};
+                /* Normal of patch */
+                x = patchGeo.s3;
+                y = patchGeo.s4;
+                z = patchGeo.s5;
+                float4 RecvNormal = {x,y,z,0};
 
-        /* Compute form factor */
-        float delta = formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
+                /* Compute form factor */
+                float delta = formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
 
-        /* Distribute energy */
-        float energyDiff = lightEnergy * 0.5 * delta;
-        //AtomicAdd1(&energies[j], energyDiff);
-        energies[j] += energyDiff;
+                /* Distribute color */
+                uchar colorDiff0 = lightColor.s0 * 0.5 * delta;
+                uchar colorDiff1 = lightColor.s1 * 0.5 * delta;
+                uchar colorDiff2 = lightColor.s2 * 0.5 * delta;
 
-        /* Distribute color */
-        float colorDiff0 = lightInfo.s0 * 0.5 * delta;
-        float colorDiff1 = lightInfo.s1 * 0.5 * delta;
-        float colorDiff2 = lightInfo.s2 * 0.5 * delta;
+                //atom_add(&diffColors[j].s0, colorDiff0);
+                diffColors[j].s0 += colorDiff0; //FIXME ATOMIC!!!
+                diffColors[j].s1 += colorDiff1; //FIXME ATOMIC!!!
+                diffColors[j].s2 += colorDiff2; //FIXME ATOMIC!!!
 
-        patchesInfo[j].s0 += colorDiff0;
-        patchesInfo[j].s1 += colorDiff1;
-        patchesInfo[j].s2 += colorDiff2;
-        //AtomicAdd1(&(patchesInfo[j].s0), energyDiff);
-        //AtomicAdd4(&patchesInfo[j],0, colorDiff0);
-        //AtomicAdd4(&patchesInfo[j],1, colorDiff1);
-        //AtomicAdd4(&patchesInfo[j],2, colorDiff2);
+                 /* Distribute energy */
+                float energyDiff = lightEnergy * delta;
+
+                energies[j] += energyDiff * 0.5; //FIXME ATOMIC!!!
+                intensities[j] += energyDiff; //FIXME ATOMIC!!!
+
+                isSetEnergy[j] = true;
+            }
+        }
     }
 }
 

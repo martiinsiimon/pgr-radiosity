@@ -45,10 +45,13 @@ public:
     int getPatchesCount();
 
     /* Fill given opencl memory object with patches */
-    int getPatchesCL(cl_float4 *data, cl_float *energies);
+    int getPatchesCL(cl_uchar3 *colors, cl_float *energies);
+
+    /* Fill given opencl memory object with texture of views from patches */
+    int getTextureCL(cl_uchar3* texture, cl_uint *indices, int n);
 
     /* Fill given opencl memory object with patches geometry */
-    int getPatchesGeometryCL(cl_float16 *data);
+    int getPatchesGeometryCL(cl_float8 *geometry);
 
     /* Fill a vector of indices of N most energized patches. The index is in vector
      * patches */
@@ -60,7 +63,7 @@ public:
     double getMaximalEnergy();
 
     void decodePatchesGeometryCL(cl_float16 *data, uint size);
-    void decodePatchesCL(cl_float4 *data, cl_float *energies, uint size);
+    void decodePatchesCL(cl_uchar3 *colors, cl_float *energies, uint size);
 
 
     void getViewFromPatch(int i, cl_uchar3 **texFront, cl_uchar3 **texTop, cl_uchar3 **texBottom, cl_uchar3 **texLeft, cl_uchar3 **texRight);

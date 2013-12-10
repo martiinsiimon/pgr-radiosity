@@ -150,10 +150,7 @@ void PGR_radiosity::computeRadiosity()
         }
 
         // center of patches
-        x = (this->model->patches[ids[i]]->vertices[0].position[0] + this->model->patches[ids[i]]->vertices[1].position[0] + this->model->patches[ids[i]]->vertices[2].position[0] + this->model->patches[ids[i]]->vertices[3].position[0]) / 4.0;
-        y = (this->model->patches[ids[i]]->vertices[0].position[1] + this->model->patches[ids[i]]->vertices[1].position[1] + this->model->patches[ids[i]]->vertices[2].position[1] + this->model->patches[ids[i]]->vertices[3].position[1]) / 4.0;
-        z = (this->model->patches[ids[i]]->vertices[0].position[2] + this->model->patches[ids[i]]->vertices[1].position[2] + this->model->patches[ids[i]]->vertices[2].position[2] + this->model->patches[ids[i]]->vertices[3].position[2]) / 4.0;
-        glm::vec3 ShootPos (x, y, z);
+        glm::vec3 ShootPos(this->model->patches[ids[i]]->center.s0, this->model->patches[ids[i]]->center.s1, this->model->patches[ids[i]]->center.s2);
 
         x = this->model->patches[ids[i]]->vertices[0].normal[0];
         y = this->model->patches[ids[i]]->vertices[0].normal[1];
@@ -172,16 +169,12 @@ void PGR_radiosity::computeRadiosity()
                 int j = this->model->uniqueColorToId(texFront[w + h * 256]);
                 if (j >= this->model->patches.size() || j < 0)
                 {
-                    //cout << "ERR" << endl;
-                    //break;
                     continue;
                 }
 
-                if(isSetEnergy[j] == false) {
-                    x = (this->model->patches[j]->vertices[0].position[0] + this->model->patches[j]->vertices[1].position[0] + this->model->patches[j]->vertices[2].position[0] + this->model->patches[j]->vertices[3].position[0]) / 4.0;
-                    y = (this->model->patches[j]->vertices[0].position[1] + this->model->patches[j]->vertices[1].position[1] + this->model->patches[j]->vertices[2].position[1] + this->model->patches[j]->vertices[3].position[1]) / 4.0;
-                    z = (this->model->patches[j]->vertices[0].position[2] + this->model->patches[j]->vertices[1].position[2] + this->model->patches[j]->vertices[2].position[2] + this->model->patches[j]->vertices[3].position[2]) / 4.0;
-                    glm::vec3 RecvPos (x, y, z);
+                if(isSetEnergy[j] == false)
+                {
+                    glm::vec3 RecvPos(this->model->patches[j]->center.s0, this->model->patches[j]->center.s1, this->model->patches[j]->center.s2);
 
                     x = this->model->patches[j]->vertices[0].normal[0];
                     y = this->model->patches[j]->vertices[0].normal[1];
@@ -209,15 +202,12 @@ void PGR_radiosity::computeRadiosity()
                 int j = this->model->uniqueColorToId(texTop[w + h * 256]);
                 if (j >= this->model->patches.size() || j < 0)
                 {
-                    //cout << "ERR" << endl;
                     continue;
                 }
 
-                if(isSetEnergy[j] == false) {
-                    x = (this->model->patches[j]->vertices[0].position[0] + this->model->patches[j]->vertices[1].position[0] + this->model->patches[j]->vertices[2].position[0] + this->model->patches[j]->vertices[3].position[0]) / 4.0;
-                    y = (this->model->patches[j]->vertices[0].position[1] + this->model->patches[j]->vertices[1].position[1] + this->model->patches[j]->vertices[2].position[1] + this->model->patches[j]->vertices[3].position[1]) / 4.0;
-                    z = (this->model->patches[j]->vertices[0].position[2] + this->model->patches[j]->vertices[1].position[2] + this->model->patches[j]->vertices[2].position[2] + this->model->patches[j]->vertices[3].position[2]) / 4.0;
-                    glm::vec3 RecvPos (x, y, z);
+                if(isSetEnergy[j] == false)
+                {
+                    glm::vec3 RecvPos(this->model->patches[j]->center.s0, this->model->patches[j]->center.s1, this->model->patches[j]->center.s2);
 
                     x = this->model->patches[j]->vertices[0].normal[0];
                     y = this->model->patches[j]->vertices[0].normal[1];
@@ -245,15 +235,12 @@ void PGR_radiosity::computeRadiosity()
                 int j = this->model->uniqueColorToId(texBottom[w + h * 256]);
                 if (j >= this->model->patches.size() || j < 0)
                 {
-                    //cout << "ERR" << endl;
                     continue;
                 }
 
-                if(isSetEnergy[j] == false) {
-                    x = (this->model->patches[j]->vertices[0].position[0] + this->model->patches[j]->vertices[1].position[0] + this->model->patches[j]->vertices[2].position[0] + this->model->patches[j]->vertices[3].position[0]) / 4.0;
-                    y = (this->model->patches[j]->vertices[0].position[1] + this->model->patches[j]->vertices[1].position[1] + this->model->patches[j]->vertices[2].position[1] + this->model->patches[j]->vertices[3].position[1]) / 4.0;
-                    z = (this->model->patches[j]->vertices[0].position[2] + this->model->patches[j]->vertices[1].position[2] + this->model->patches[j]->vertices[2].position[2] + this->model->patches[j]->vertices[3].position[2]) / 4.0;
-                    glm::vec3 RecvPos (x, y, z);
+                if(isSetEnergy[j] == false)
+                {
+                    glm::vec3 RecvPos(this->model->patches[j]->center.s0, this->model->patches[j]->center.s1, this->model->patches[j]->center.s2);
 
                     x = this->model->patches[j]->vertices[0].normal[0];
                     y = this->model->patches[j]->vertices[0].normal[1];
@@ -281,15 +268,12 @@ void PGR_radiosity::computeRadiosity()
                 int j = this->model->uniqueColorToId(texLeft[w + h * 128]);
                 if (j >= this->model->patches.size() || j < 0)
                 {
-                    //cout << "ERR" << endl;
                     continue;
                 }
 
-                if(isSetEnergy[j] == false) {
-                    x = (this->model->patches[j]->vertices[0].position[0] + this->model->patches[j]->vertices[1].position[0] + this->model->patches[j]->vertices[2].position[0] + this->model->patches[j]->vertices[3].position[0]) / 4.0;
-                    y = (this->model->patches[j]->vertices[0].position[1] + this->model->patches[j]->vertices[1].position[1] + this->model->patches[j]->vertices[2].position[1] + this->model->patches[j]->vertices[3].position[1]) / 4.0;
-                    z = (this->model->patches[j]->vertices[0].position[2] + this->model->patches[j]->vertices[1].position[2] + this->model->patches[j]->vertices[2].position[2] + this->model->patches[j]->vertices[3].position[2]) / 4.0;
-                    glm::vec3 RecvPos (x, y, z);
+                if(isSetEnergy[j] == false)
+                {
+                    glm::vec3 RecvPos(this->model->patches[j]->center.s0, this->model->patches[j]->center.s1, this->model->patches[j]->center.s2);
 
                     x = this->model->patches[j]->vertices[0].normal[0];
                     y = this->model->patches[j]->vertices[0].normal[1];
@@ -317,15 +301,12 @@ void PGR_radiosity::computeRadiosity()
                 int j = this->model->uniqueColorToId(texRight[w + h * 128]);
                 if (j >= this->model->patches.size() || j < 0)
                 {
-                    //cout << "ERR" << endl;
                     continue;
                 }
 
-                if(isSetEnergy[j] == false) {
-                    x = (this->model->patches[j]->vertices[0].position[0] + this->model->patches[j]->vertices[1].position[0] + this->model->patches[j]->vertices[2].position[0] + this->model->patches[j]->vertices[3].position[0]) / 4.0;
-                    y = (this->model->patches[j]->vertices[0].position[1] + this->model->patches[j]->vertices[1].position[1] + this->model->patches[j]->vertices[2].position[1] + this->model->patches[j]->vertices[3].position[1]) / 4.0;
-                    z = (this->model->patches[j]->vertices[0].position[2] + this->model->patches[j]->vertices[1].position[2] + this->model->patches[j]->vertices[2].position[2] + this->model->patches[j]->vertices[3].position[2]) / 4.0;
-                    glm::vec3 RecvPos (x, y, z);
+                if(isSetEnergy[j] == false)
+                {
+                    glm::vec3 RecvPos(this->model->patches[j]->center.s0, this->model->patches[j]->center.s1, this->model->patches[j]->center.s2);
 
                     x = this->model->patches[j]->vertices[0].normal[0];
                     y = this->model->patches[j]->vertices[0].normal[1];
@@ -350,13 +331,12 @@ void PGR_radiosity::computeRadiosity()
     }
 
 
-    delete[] texFront;
-    delete[] texTop;
-    delete[] texBottom;
-    delete[] texLeft;
-    delete[] texRight;
+    delete [] texFront;
+    delete [] texTop;
+    delete [] texBottom;
+    delete [] texLeft;
+    delete [] texRight;
     delete [] isSetEnergy;
-    //this->model->updateArrays();
 }
 
 /**
@@ -373,7 +353,7 @@ double PGR_radiosity::formFactor(glm::vec3 RecvPos, glm::vec3 ShootPos, glm::vec
 {
     // a normalized vector from shooter to receiver
 
-    if (ShootPos == RecvPos || visible() == false)
+    if (ShootPos == RecvPos)
     {
         return 0.0;
     }
@@ -389,11 +369,6 @@ double PGR_radiosity::formFactor(glm::vec3 RecvPos, glm::vec3 ShootPos, glm::vec
 
     // retrun computed disc approximation form factor
     return (max(cosi * cosj, (double) 0) / (M_PI * distance2)) * ShootDArea;
-}
-
-bool PGR_radiosity::visible()
-{
-    return true;
 }
 
 void PGR_radiosity::computeRadiosityCL()
@@ -412,21 +387,21 @@ void PGR_radiosity::computeRadiosityCL()
     cl_event event_bufferPatchesInfo; //, event_bufferPatchesGeo;
 
     clFinish(this->queue);
+
     /* Read buffers from gpu memory */
     int status = clEnqueueReadBuffer(this->queue,
-                                     this->patchesInfoCL,
+                                     this->patchesColorsCL,
                                      CL_TRUE, //blocking write
                                      0,
-                                     this->model->getPatchesCount() * sizeof (cl_float4),
-                                     this->raw_patchesInfo,
+                                     this->model->getPatchesCount() * sizeof (cl_uchar3),
+                                     this->raw_patchesColors,
                                      0,
                                      0,
                                      &event_bufferPatchesInfo);
     CheckOpenCLError(status, "read patches.");
 
     /* Decode opencl memory objects */
-    this->model->decodePatchesCL(this->raw_patchesInfo, this->raw_patchesEnergies, this->model->getPatchesCount());
-    //this->model->decodePatchesGeometryCL(this->raw_patchesGeo, this->model->getPatchesCount());
+    this->model->decodePatchesCL(this->raw_patchesColors, this->raw_patchesEnergies, this->model->getPatchesCount());
 
     this->model->updateArrays();
 
@@ -629,24 +604,24 @@ int PGR_radiosity::prepareCL()
     CheckOpenCLError(ciErr, "clCreateCommandQueue");
 
 
-    /* Allocate buffer of patches */
-    this->patchesInfoCL = clCreateBuffer(this->context,
+    /* Allocate buffer of colors */
+    this->patchesColorsCL = clCreateBuffer(this->context,
                                      CL_MEM_READ_WRITE,
-                                     this->model->getPatchesCount() * sizeof (cl_float4),
+                                           this->model->getPatchesCount() * sizeof (cl_uchar3),
                                      0,
                                      &ciErr);
     CheckOpenCLError(ciErr, "CreateBuffer patchesCL");
 
-    this->raw_patchesInfo = new cl_float4[this->model->getPatchesCount()];
+    this->raw_patchesColors = new cl_uchar3[this->model->getPatchesCount()];
     this->raw_patchesEnergies = new cl_float[this->model->getPatchesCount()];
-    this->model->getPatchesCL(this->raw_patchesInfo, this->raw_patchesEnergies);
+    this->model->getPatchesCL(this->raw_patchesColors, this->raw_patchesEnergies);
 
     ciErr = clEnqueueWriteBuffer(this->queue,
-                                 this->patchesInfoCL,
+                                 this->patchesColorsCL,
                                  CL_TRUE, //blocking write
                                  0,
-                                 this->model->getPatchesCount() * sizeof (cl_float4),
-                                 this->raw_patchesInfo,
+                                 this->model->getPatchesCount() * sizeof (cl_uchar3),
+                                 this->raw_patchesColors,
                                  0,
                                  0,
                                  0);
@@ -673,18 +648,18 @@ int PGR_radiosity::prepareCL()
     /* Allocate buffer of patches geometry */
     this->patchesGeoCL = clCreateBuffer(this->context,
                                              CL_MEM_READ_WRITE,
-                                             this->model->getPatchesCount() * sizeof (cl_float16),
+                                        this->model->getPatchesCount() * sizeof (cl_float8),
                                              0,
                                              &ciErr);
     CheckOpenCLError(ciErr, "CreateBuffer patchesGeometryCL");
 
-    this->raw_patchesGeo = new cl_float16[this->model->getPatchesCount()];
+    this->raw_patchesGeo = new cl_float8[this->model->getPatchesCount()];
     this->model->getPatchesGeometryCL(raw_patchesGeo);
     ciErr = clEnqueueWriteBuffer(this->queue,
                                  this->patchesGeoCL,
                                  CL_TRUE, //blocking write
                                  0,
-                                 this->model->getPatchesCount() * sizeof (cl_float16),
+                                 this->model->getPatchesCount() * sizeof (cl_float8),
                                  this->raw_patchesGeo,
                                  0,
                                  0,
@@ -840,7 +815,7 @@ void PGR_radiosity::runRadiosityKernelCL()
     status = clSetKernelArg(this->radiosityKernel, 0, sizeof (cl_mem), &this->patchesGeoCL);
     CheckOpenCLError(status, "clSetKernelArg. (patchesCL)");
 
-    status = clSetKernelArg(this->radiosityKernel, 1, sizeof (cl_mem), &this->patchesInfoCL);
+    status = clSetKernelArg(this->radiosityKernel, 1, sizeof (cl_mem), &this->patchesColorsCL);
     CheckOpenCLError(status, "clSetKernelArg. (patchesCL)");
 
     cl_uint patchesCount = (uint)this->model->getPatchesCount();
@@ -882,12 +857,19 @@ void PGR_radiosity::runRadiosityKernelCL()
     status = clSetKernelArg(this->radiosityKernel, 5, sizeof (cl_mem), &this->patchesEnergiesCL);
     CheckOpenCLError(status, "clSetKernelArg. (patchesCL)");
 
-    //TODO add argument with big memory blob of texture from point
-    //TODO write initial memory data ammount
+    status = clSetKernelArg(this->radiosityKernel, 6, sizeof (cl_mem), &this->diffColorsCL);
+    CheckOpenCLError(status, "clSetKernelArg. (diffColorsCL)");
 
-    //TODO add size of one memory blob as a constant - to skip to another texture
+    status = clSetKernelArg(this->radiosityKernel, 7, sizeof (cl_mem), &this->intensitiesCL);
+    CheckOpenCLError(status, "clSetKernelArg. (intensitiesCL)");
 
-    //TODO add parameter as local memory of patchCount*sizeof(bit) size
+    //TODO copy textures
+    status = clSetKernelArg(this->radiosityKernel, 8, sizeof (cl_mem), &this->texturesCL);
+    CheckOpenCLError(status, "clSetKernelArg. (texturesCL)");
+
+    //TODO texture size
+
+    //TODO local bool* isSetEnergy
 
     size_t globalThreadsMain[] = {this->workGroupSize};
     size_t localThreadsMain[] = {this->workGroupSize};
@@ -925,7 +907,7 @@ void PGR_radiosity::runRadiosityKernelCL()
         cout << cycles << " energy: " << maximalEnergy << endl;
         cycles++;
 
-        /* Star kernel - radiosity step*/
+        /* Start kernel - radiosity step*/
         status = clEnqueueNDRangeKernel(this->queue,
                                         this->radiosityKernel,
                                         1, //1D
@@ -938,7 +920,7 @@ void PGR_radiosity::runRadiosityKernelCL()
 
         CheckOpenCLError(status, "clEnqueueNDRangeKernel radiosityKernel.");
 
-        /* Start kerne - recompute indices array */
+        /* Start kernel - recompute indices array */
         status = clEnqueueNDRangeKernel(this->queue,
                                         this->sortKernel,
                                         1, //1D
@@ -987,7 +969,7 @@ void PGR_radiosity::releaseCL()
 
     status = clReleaseMemObject(this->indicesCL);
     CheckOpenCLError(status, "clReleaseMemObject indicesCL");
-    status = clReleaseMemObject(this->patchesInfoCL);
+    status = clReleaseMemObject(this->patchesColorsCL);
     CheckOpenCLError(status, "clReleaseMemObject patchesCL");
     status = clReleaseMemObject(this->patchesGeoCL);
     CheckOpenCLError(status, "clReleaseMemObject patchesGeometryCL");
@@ -1007,7 +989,7 @@ void PGR_radiosity::releaseCL()
     status = clReleaseContext(this->context);
     CheckOpenCLError(status, "clReleaseContext.");
 
-    delete [] this->raw_patchesInfo;
+    delete [] this->raw_patchesColors;
     delete [] this->raw_patchesGeo;
     delete [] this->raw_patchesEnergies;
 }

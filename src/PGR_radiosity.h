@@ -42,8 +42,6 @@ public:
 private:
     void computeRadiosity();
     double formFactor(glm::vec3, glm::vec3, glm::vec3, glm::vec3, float);
-    bool visible();
-    //TODO here should be more function used to compute radiosity on CPU
 
     void computeRadiosityCL();
     int prepareCL();
@@ -60,13 +58,16 @@ private:
     cl_kernel radiosityKernel, sortKernel;
     cl_mem indicesCountCL; // count of all patches needs to be global
     cl_mem indicesCL; // indices of N most energized items
-    cl_mem patchesInfoCL; // struct of all patches colors
+    cl_mem patchesColorsCL; // struct of all patches colors
     cl_mem patchesGeoCL; // struct of all patches geometries
     cl_mem patchesEnergiesCL; //struct of all patches energies
     cl_mem maximalEnergyCL; // maximal energy needs to be global
+    cl_mem diffColorsCL; //diferencies of colors
+    cl_mem intensitiesCL; //intenesition of light
+    cl_mem texturesCL; //textures of viewFromPatch
     cl_program program; // OpenCL program
-    cl_float16 * raw_patchesGeo;
-    cl_float4 * raw_patchesInfo;
+    cl_float8 * raw_patchesGeo;
+    cl_uchar3 * raw_patchesColors;
     cl_uint * raw_indices;
     cl_float * raw_patchesEnergies;
     uint maxWorkGroupSize;

@@ -19,6 +19,9 @@ PGR_patch::PGR_patch()
     this->vertices[1] = Point();
     this->vertices[2] = Point();
     this->vertices[3] = Point();
+    this->center.s0 = 0.0f;
+    this->center.s1 = 0.0f;
+    this->center.s2 = 0.0f;
     this->area = 0;
     this->energy = 0;
 
@@ -35,6 +38,7 @@ PGR_patch::PGR_patch(const PGR_patch& orig)
     this->vertices[1] = orig.vertices[0];
     this->vertices[2] = orig.vertices[0];
     this->vertices[3] = orig.vertices[0];
+    this->center = orig.center;
     this->area = orig.area;
     this->energy = orig.energy;
 
@@ -52,6 +56,7 @@ PGR_patch::PGR_patch(PGR_patch *orig)
     this->vertices[1] = orig->vertices[0];
     this->vertices[2] = orig->vertices[0];
     this->vertices[3] = orig->vertices[0];
+    this->center = orig->center;
     this->area = orig->area;
     this->energy = orig->energy;
 
@@ -74,6 +79,7 @@ void PGR_patch::setVertices(Point p0, Point p1, Point p2, Point p3)
     this->vertices[3] = p3;
 
     this->computeArea();
+    this->computeCenter();
 }
 
 void PGR_patch::printVertices()
@@ -123,6 +129,20 @@ void PGR_patch::computeArea()
     this->getLengths(&l1, &l2);
 
     this->area = l1 * l2;
+}
+
+void PGR_patch::computeCenter()
+{
+    float x, y, z;
+
+    /* Center of light patch */
+    x = (this->vertices[0].position[0] + this->vertices[1].position[0] + this->vertices[2].position[0] + this->vertices[3].position[0]) / 4.0;
+    y = (this->vertices[0].position[1] + this->vertices[1].position[1] + this->vertices[2].position[1] + this->vertices[3].position[1]) / 4.0;
+    z = (this->vertices[0].position[2] + this->vertices[1].position[2] + this->vertices[2].position[2] + this->vertices[3].position[2]) / 4.0;
+
+    this->center.s0 = x;
+    this->center.s1 = y;
+    this->center.s2 = z;
 }
 
 bool PGR_patch::getOrientation(int * c1, int * c2)

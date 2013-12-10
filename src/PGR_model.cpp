@@ -221,7 +221,7 @@ void PGR_model::divide()
     this->patches = tmpPatches;
 }
 
-int PGR_model::getPatchesCL(cl_float4 *data, cl_float *energies)
+int PGR_model::getPatchesCL(cl_uchar3 *color, cl_float *energies)
 {
     int i;
     for (i = 0; i < this->patches.size(); i++)
@@ -230,46 +230,34 @@ int PGR_model::getPatchesCL(cl_float4 *data, cl_float *energies)
         energies[i] = (float) this->patches.at(i)->energy;
 
         //color, all vertices are the same
-        data[i].s0 = this->patches.at(i)->vertices[0].color[0];
-        data[i].s1 = this->patches.at(i)->vertices[0].color[1];
-        data[i].s2 = this->patches.at(i)->vertices[0].color[2];
+        color[i].s0 = this->patches.at(i)->vertices[0].color[0];
+        color[i].s1 = this->patches.at(i)->vertices[0].color[1];
+        color[i].s2 = this->patches.at(i)->vertices[0].color[2];
     }
 
     return i;
 }
 
-int PGR_model::getPatchesGeometryCL(cl_float16 *data)
+int PGR_model::getPatchesGeometryCL(cl_float8 *geometry)
 {
     int i;
     for (i = 0; i < this->patches.size(); i++)
     {
-        //vertex 1
-        data[i].s[0] = this->patches.at(i)->vertices[0].position[0];
-        data[i].s[1] = this->patches.at(i)->vertices[0].position[1];
-        data[i].s[2] = this->patches.at(i)->vertices[0].position[2];
+        /* Center of patch */
+        geometry[i].s0 = this->patches[i]->center.s0;
+        geometry[i].s1 = this->patches[i]->center.s1;
+        geometry[i].s2 = this->patches[i]->center.s2;
 
-        //vertex 2
-        data[i].s[3] = this->patches.at(i)->vertices[1].position[0];
-        data[i].s[4] = this->patches.at(i)->vertices[1].position[1];
-        data[i].s[5] = this->patches.at(i)->vertices[1].position[2];
+        /* Normal of the patch */
+        geometry[i].s3 = this->patches[i]->vertices[0].normal[0];
+        geometry[i].s4 = this->patches[i]->vertices[0].normal[1];
+        geometry[i].s5 = this->patches[i]->vertices[0].normal[2];
 
-        //vertex 3
-        data[i].s[6] = this->patches.at(i)->vertices[2].position[0];
-        data[i].s[7] = this->patches.at(i)->vertices[2].position[1];
-        data[i].s[8] = this->patches.at(i)->vertices[2].position[2];
+        /* Patch area */
+        geometry[i].s6 = this->patches[i]->area;
 
-        //vertex 4
-        data[i].s[9] = this->patches.at(i)->vertices[3].position[0];
-        data[i].s[10] = this->patches.at(i)->vertices[3].position[1];
-        data[i].s[11] = this->patches.at(i)->vertices[3].position[2];
-
-        //normal of patch - the same for all vertices
-        data[i].s[12] = this->patches.at(i)->vertices[0].normal[0];
-        data[i].s[13] = this->patches.at(i)->vertices[0].normal[1];
-        data[i].s[14] = this->patches.at(i)->vertices[0].normal[2];
-
-        //area of patch
-        data[i].s[15] = this->patches.at(i)->area;
+        /* The last float is unused*/
+        geometry[i].s7 = 0.0f;
     }
     return i;
 }
@@ -344,7 +332,7 @@ double PGR_model::getMaximalEnergy()
     return energy;
 }
 
-void PGR_model::decodePatchesCL(cl_float4 *data, cl_float *energies, uint size)
+void PGR_model::decodePatchesCL(cl_uchar3 *colors, cl_float *energies, uint size)
 {
     if (size != this->getPatchesCount())
     {
@@ -356,20 +344,20 @@ void PGR_model::decodePatchesCL(cl_float4 *data, cl_float *energies, uint size)
     {
         this->patches[i]->setEnergy((double) energies[i]);
 
-        this->patches[i]->vertices[0].color[0] = data[i].s[0];
-        this->patches[i]->vertices[1].color[0] = data[i].s[0];
-        this->patches[i]->vertices[2].color[0] = data[i].s[0];
-        this->patches[i]->vertices[3].color[0] = data[i].s[0];
+        this->patches[i]->vertices[0].color[0] = colors[i].s0;
+        this->patches[i]->vertices[1].color[0] = colors[i].s0;
+        this->patches[i]->vertices[2].color[0] = colors[i].s0;
+        this->patches[i]->vertices[3].color[0] = colors[i].s0;
 
-        this->patches[i]->vertices[0].color[1] = data[i].s[1];
-        this->patches[i]->vertices[1].color[1] = data[i].s[1];
-        this->patches[i]->vertices[2].color[1] = data[i].s[1];
-        this->patches[i]->vertices[3].color[1] = data[i].s[1];
+        this->patches[i]->vertices[0].color[1] = colors[i].s1;
+        this->patches[i]->vertices[1].color[1] = colors[i].s1;
+        this->patches[i]->vertices[2].color[1] = colors[i].s1;
+        this->patches[i]->vertices[3].color[1] = colors[i].s1;
 
-        this->patches[i]->vertices[0].color[2] = data[i].s[2];
-        this->patches[i]->vertices[1].color[2] = data[i].s[2];
-        this->patches[i]->vertices[2].color[2] = data[i].s[2];
-        this->patches[i]->vertices[3].color[2] = data[i].s[2];
+        this->patches[i]->vertices[0].color[2] = colors[i].s2;
+        this->patches[i]->vertices[1].color[2] = colors[i].s2;
+        this->patches[i]->vertices[2].color[2] = colors[i].s2;
+        this->patches[i]->vertices[3].color[2] = colors[i].s2;
     }
 }
 
@@ -647,9 +635,6 @@ void PGR_model::recomputeColors()
 {
     for (int i = 0; i < this->patches.size(); i++)
     {
-        //DBG
-        //if (this->patches[i]->intensity > 1.0f) cout << "! " << this->patches[i]->intensity << endl;
-
         /* Normalize intensity */
         this->patches[i]->intensity = MIN(this->patches[i]->intensity, 1.0f);
 
@@ -679,7 +664,6 @@ void PGR_model::recomputeColors()
         this->patches[i]->vertices[0].color[1] = tmp1;
         this->patches[i]->vertices[0].color[2] = tmp2;
 
-
         /* Multiplicate with intensity */
         this->patches[i]->vertices[0].color[0] *= this->patches[i]->intensity;
         this->patches[i]->vertices[0].color[1] *= this->patches[i]->intensity;
@@ -697,117 +681,72 @@ void PGR_model::recomputeColors()
         this->patches[i]->vertices[1].color[2] = this->patches[i]->vertices[0].color[2];
         this->patches[i]->vertices[2].color[2] = this->patches[i]->vertices[0].color[2];
         this->patches[i]->vertices[3].color[2] = this->patches[i]->vertices[0].color[2];
-
-
-        /*
-        if((this->patches[i]->vertices[0].color[0] + this->patches[i]->newDiffColor[0]) > 1.0)
-        {
-            this->patches[i]->vertices[0].color[0] = 1;
-        }
-        else
-        {
-            this->patches[i]->vertices[0].color[0] += this->patches[i]->newDiffColor[0];
-        }
-
-        if((this->patches[i]->vertices[1].color[0] + this->patches[i]->newDiffColor[0]) > 1.0)
-        {
-            this->patches[i]->vertices[1].color[0] = 1;
-        }
-        else
-        {
-            this->patches[i]->vertices[1].color[0] += this->patches[i]->newDiffColor[0];
-        }
-
-        if((this->patches[i]->vertices[2].color[0] + this->patches[i]->newDiffColor[0]) > 1.0)
-        {
-            this->patches[i]->vertices[2].color[0] = 1;
-        }
-        else
-        {
-            this->patches[i]->vertices[2].color[0] += this->patches[i]->newDiffColor[0];
-        }
-
-        if((this->patches[i]->vertices[3].color[0] + this->patches[i]->newDiffColor[0]) > 1.0)
-        {
-            this->patches[i]->vertices[3].color[0] = 1;
-        }
-        else
-        {
-            this->patches[i]->vertices[3].color[0] += this->patches[i]->newDiffColor[0];
-        }*/
-
-        /* G */
-        /*if((this->patches[i]->vertices[0].color[1] + this->patches[i]->newDiffColor[1]) > 1.0)
-        {
-            this->patches[i]->vertices[0].color[1] = 1;
-        }
-        else
-        {
-            this->patches[i]->vertices[0].color[1] += this->patches[i]->newDiffColor[1];
-        }
-
-        if((this->patches[i]->vertices[1].color[1] + this->patches[i]->newDiffColor[1]) > 1.0)
-        {
-            this->patches[i]->vertices[1].color[1] = 1;
-        }
-        else
-        {
-            this->patches[i]->vertices[1].color[1] += this->patches[i]->newDiffColor[1];
-        }
-
-        if((this->patches[i]->vertices[2].color[1] + this->patches[i]->newDiffColor[1]) > 1.0)
-        {
-            this->patches[i]->vertices[2].color[1] = 1;
-        }
-        else
-        {
-            this->patches[i]->vertices[2].color[1] += this->patches[i]->newDiffColor[1];
-        }
-
-        if((this->patches[i]->vertices[3].color[1] + this->patches[i]->newDiffColor[1]) > 1.0)
-        {
-            this->patches[i]->vertices[3].color[1] = 1;
-        }
-        else
-        {
-            this->patches[i]->vertices[3].color[1] += this->patches[i]->newDiffColor[1];
-        }*/
-
-        /* B */
-        /*if((this->patches[i]->vertices[0].color[2] + this->patches[i]->newDiffColor[2]) > 1.0)
-        {
-            this->patches[i]->vertices[0].color[2] = 1;
-        }
-        else
-        {
-            this->patches[i]->vertices[0].color[2] += this->patches[i]->newDiffColor[2];
-        }
-
-        if((this->patches[i]->vertices[1].color[2] + this->patches[i]->newDiffColor[2]) > 1.0)
-        {
-            this->patches[i]->vertices[1].color[2] = 1;
-        }
-        else
-        {
-            this->patches[i]->vertices[1].color[2] += this->patches[i]->newDiffColor[2];
-        }
-
-        if((this->patches[i]->vertices[2].color[2] + this->patches[i]->newDiffColor[2]) > 1.0)
-        {
-            this->patches[i]->vertices[2].color[2] = 1;
-        }
-        else
-        {
-            this->patches[i]->vertices[2].color[2] += this->patches[i]->newDiffColor[2];
-        }
-
-        if((this->patches[i]->vertices[3].color[2] + this->patches[i]->newDiffColor[2]) > 1.0)
-        {
-            this->patches[i]->vertices[3].color[2] = 1;
-        }
-        else
-        {
-            this->patches[i]->vertices[3].color[2] += this->patches[i]->newDiffColor[2];
-        }*/
     }
+}
+
+int PGR_model::getTextureCL(cl_uchar3* texture, cl_uint* indices, int n)
+{
+    cl_uchar3 *texFront = new cl_uchar3 [256 * 256];
+    cl_uchar3 *texTop = new cl_uchar3 [256 * 128];
+    cl_uchar3 *texBottom = new cl_uchar3 [256 * 128];
+    cl_uchar3 *texLeft = new cl_uchar3 [128 * 256];
+    cl_uchar3 *texRight = new cl_uchar3 [128 * 256];
+
+    for (int i = 0; i < n; i++)
+    {
+        uint offset = i * 256;
+        memset(texFront, 0, sizeof (cl_uchar3) * 256 * 256);
+        memset(texTop, 0, sizeof (cl_uchar3) * 256 * 128);
+        memset(texBottom, 0, sizeof (cl_uchar3) * 256 * 128);
+        memset(texLeft, 0, sizeof (cl_uchar3) * 128 * 256);
+        memset(texRight, 0, sizeof (cl_uchar3) * 128 * 256);
+
+        this->getViewFromPatch(indices[i], &texFront, &texTop, &texBottom, &texLeft, &texRight);
+
+        for (int h = 0; h < 768; h++)
+        {
+            for (uint w = offset; w < offset + 256; w++)
+            {
+                if (h < 256)
+                {
+                    /* Write FRONT texture */
+                    texture[h + w * 768] = texFront[h + (w - offset) * 256];
+                    continue;
+                }
+                if (h < 512)
+                {
+                    /* Write BOTTOM or TOP texture */
+                    if (w - offset < 128)
+                    {
+                        /* Write BOTTOM texture */
+                        texture[h + w * 768] = texBottom[(h - 256) + (w - offset)*256];
+                    }
+                    else
+                    {
+                        /* Write TOP texture*/
+                        texture[h + w * 768] = texTop[(h - 256) + (w - offset - 128)*256];
+                    }
+                    continue;
+                }
+                if (h < 640)
+                {
+                    /* Write RIGHT texture */
+                    texture[h + w * 768] = texRight[(h - 512) + (w - offset) * 128];
+                }
+                else
+                {
+                    /* Write LEFT texture */
+                    texture[h + w * 768] = texLeft[(h - 640) + (w - offset) * 128];
+                }
+            }
+        }
+    }
+
+
+
+    delete [] texFront;
+    delete [] texTop;
+    delete [] texBottom;
+    delete [] texLeft;
+    delete [] texRight;
 }

@@ -37,6 +37,7 @@ public:
     float getIntensity();
 
     void computeArea();
+    void computeCenter();
     float getShorterLength();
     float getLongerLength();
     bool getOrientation(int * c1, int * c2);
@@ -52,6 +53,7 @@ private:
 public:
     Point vertices[4];
     float area;
+    cl_float3 center;
     double energy;
     cl_uchar3 uniqueColor;
     cl_uint3 newDiffColor;
