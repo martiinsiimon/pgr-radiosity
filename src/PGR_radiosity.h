@@ -65,6 +65,7 @@ private:
     cl_mem diffColorsCL; //diferencies of colors
     cl_mem intensitiesCL; //intenesition of light
     cl_mem texturesCL; //textures of viewFromPatch
+    cl_mem visitedCL; //array of flags of visition patch
     cl_program program; // OpenCL program
     cl_float8 * raw_patchesGeo;
     cl_uchar3 * raw_patchesColors;

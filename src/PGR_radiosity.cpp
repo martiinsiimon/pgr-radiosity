@@ -144,7 +144,7 @@ void PGR_radiosity::computeRadiosity()
         double x, y, z;
 
         /* Clear the flags */
-        for(int n = 0; n < this->model->patches.size(); n++)
+        for (int n = 0; n < this->model->patches.size(); n++)
         {
             isSetEnergy[n] = false;
         }
@@ -155,16 +155,16 @@ void PGR_radiosity::computeRadiosity()
         x = this->model->patches[ids[i]]->vertices[0].normal[0];
         y = this->model->patches[ids[i]]->vertices[0].normal[1];
         z = this->model->patches[ids[i]]->vertices[0].normal[2];
-        glm::vec3 ShootNormal (x, y, z);
+        glm::vec3 ShootNormal(x, y, z);
 
         float ShootDArea = this->model->patches[ids[i]]->area;
 
         this->model->getViewFromPatch(ids[i], &texFront, &texTop, &texBottom, &texLeft, &texRight);
 
         // Front
-        for(int h = 0; h < 256; h++)
+        for (int h = 0; h < 256; h++)
         {
-            for(int w = 0; w < 256; w++)
+            for (int w = 0; w < 256; w++)
             {
                 int j = this->model->uniqueColorToId(texFront[w + h * 256]);
                 if (j >= this->model->patches.size() || j < 0)
@@ -172,14 +172,14 @@ void PGR_radiosity::computeRadiosity()
                     continue;
                 }
 
-                if(isSetEnergy[j] == false)
+                if (isSetEnergy[j] == false)
                 {
                     glm::vec3 RecvPos(this->model->patches[j]->center.s0, this->model->patches[j]->center.s1, this->model->patches[j]->center.s2);
 
                     x = this->model->patches[j]->vertices[0].normal[0];
                     y = this->model->patches[j]->vertices[0].normal[1];
                     z = this->model->patches[j]->vertices[0].normal[2];
-                    glm::vec3 RecvNormal (x, y, z);
+                    glm::vec3 RecvNormal(x, y, z);
 
                     double delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
 
@@ -197,7 +197,7 @@ void PGR_radiosity::computeRadiosity()
         // Top
         for (int h = 0; h < 128; h++)
         {
-            for(int w = 0; w < 256; w++)
+            for (int w = 0; w < 256; w++)
             {
                 int j = this->model->uniqueColorToId(texTop[w + h * 256]);
                 if (j >= this->model->patches.size() || j < 0)
@@ -205,14 +205,14 @@ void PGR_radiosity::computeRadiosity()
                     continue;
                 }
 
-                if(isSetEnergy[j] == false)
+                if (isSetEnergy[j] == false)
                 {
                     glm::vec3 RecvPos(this->model->patches[j]->center.s0, this->model->patches[j]->center.s1, this->model->patches[j]->center.s2);
 
                     x = this->model->patches[j]->vertices[0].normal[0];
                     y = this->model->patches[j]->vertices[0].normal[1];
                     z = this->model->patches[j]->vertices[0].normal[2];
-                    glm::vec3 RecvNormal (x, y, z);
+                    glm::vec3 RecvNormal(x, y, z);
 
                     double delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
 
@@ -228,9 +228,9 @@ void PGR_radiosity::computeRadiosity()
         }
 
         // Bottom
-        for(int h = 0; h < 128; h++)
+        for (int h = 0; h < 128; h++)
         {
-            for(int w = 0; w < 256; w++)
+            for (int w = 0; w < 256; w++)
             {
                 int j = this->model->uniqueColorToId(texBottom[w + h * 256]);
                 if (j >= this->model->patches.size() || j < 0)
@@ -238,14 +238,14 @@ void PGR_radiosity::computeRadiosity()
                     continue;
                 }
 
-                if(isSetEnergy[j] == false)
+                if (isSetEnergy[j] == false)
                 {
                     glm::vec3 RecvPos(this->model->patches[j]->center.s0, this->model->patches[j]->center.s1, this->model->patches[j]->center.s2);
 
                     x = this->model->patches[j]->vertices[0].normal[0];
                     y = this->model->patches[j]->vertices[0].normal[1];
                     z = this->model->patches[j]->vertices[0].normal[2];
-                    glm::vec3 RecvNormal (x, y, z);
+                    glm::vec3 RecvNormal(x, y, z);
 
                     double delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
 
@@ -261,7 +261,7 @@ void PGR_radiosity::computeRadiosity()
         }
 
         // Left
-        for(int h = 0; h < 256; h++)
+        for (int h = 0; h < 256; h++)
         {
             for (int w = 0; w < 128; w++)
             {
@@ -271,14 +271,14 @@ void PGR_radiosity::computeRadiosity()
                     continue;
                 }
 
-                if(isSetEnergy[j] == false)
+                if (isSetEnergy[j] == false)
                 {
                     glm::vec3 RecvPos(this->model->patches[j]->center.s0, this->model->patches[j]->center.s1, this->model->patches[j]->center.s2);
 
                     x = this->model->patches[j]->vertices[0].normal[0];
                     y = this->model->patches[j]->vertices[0].normal[1];
                     z = this->model->patches[j]->vertices[0].normal[2];
-                    glm::vec3 RecvNormal (x, y, z);
+                    glm::vec3 RecvNormal(x, y, z);
 
                     double delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
 
@@ -294,9 +294,9 @@ void PGR_radiosity::computeRadiosity()
         }
 
         // Right
-        for(int h = 0; h < 256; h++)
+        for (int h = 0; h < 256; h++)
         {
-            for(int w = 0; w < 128; w++)
+            for (int w = 0; w < 128; w++)
             {
                 int j = this->model->uniqueColorToId(texRight[w + h * 128]);
                 if (j >= this->model->patches.size() || j < 0)
@@ -304,14 +304,14 @@ void PGR_radiosity::computeRadiosity()
                     continue;
                 }
 
-                if(isSetEnergy[j] == false)
+                if (isSetEnergy[j] == false)
                 {
                     glm::vec3 RecvPos(this->model->patches[j]->center.s0, this->model->patches[j]->center.s1, this->model->patches[j]->center.s2);
 
                     x = this->model->patches[j]->vertices[0].normal[0];
                     y = this->model->patches[j]->vertices[0].normal[1];
                     z = this->model->patches[j]->vertices[0].normal[2];
-                    glm::vec3 RecvNormal (x, y, z);
+                    glm::vec3 RecvNormal(x, y, z);
 
                     double delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
 
@@ -402,13 +402,13 @@ void PGR_radiosity::computeRadiosityCL()
 
     int status = clEnqueueReadBuffer(this->queue,
                                      this->diffColorsCL,
-                                     CL_TRUE, //blocking write
+                                     CL_TRUE, //blocking read
                                      0,
                                      this->model->getPatchesCount() * sizeof (cl_uchar3),
                                      this->raw_diffColors,
                                      0,
                                      0,
-                                     &event_readDiffColors);
+                                     0);
     CheckOpenCLError(status, "read diffColors.");
 
     status = clEnqueueReadBuffer(this->queue,
@@ -419,12 +419,13 @@ void PGR_radiosity::computeRadiosityCL()
                                  this->raw_intensities,
                                  0,
                                  0,
-                                 &event_readIntensities);
-    CheckOpenCLError(status, "read diffColors.");
+                                 0);
+    CheckOpenCLError(status, "read intensities.");
 
-    cl_event waitFor[] = {event_readIntensities, event_readDiffColors};
-    status = clWaitForEvents(2, waitFor);
-    CheckOpenCLError(status, "clWaitForEvents read data from gpu.");
+
+    //cl_event waitFor[] = {event_readIntensities, event_readDiffColors};
+    //status = clWaitForEvents(2, waitFor);
+    //CheckOpenCLError(status, "clWaitForEvents read data from gpu.");
 
     /* Decode opencl memory objects */
     this->model->decodeData(this->raw_diffColors, this->raw_intensities, this->model->getPatchesCount());
@@ -624,6 +625,8 @@ int PGR_radiosity::prepareCL()
 
     cl_context_properties cps[3] = {CL_CONTEXT_PLATFORM, (cl_context_properties) platform, 0};
 
+
+
     /* Create context */
     this->context = clCreateContext(cps, 1, &cdDevices[deviceIndex], NULL, NULL, &ciErr);
     CheckOpenCLError(ciErr, "clCreateContext");
@@ -631,109 +634,6 @@ int PGR_radiosity::prepareCL()
     /* Create a command queue */
     this->queue = clCreateCommandQueue(this->context, cdDevices[deviceIndex], CL_QUEUE_PROFILING_ENABLE | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &ciErr);
     CheckOpenCLError(ciErr, "clCreateCommandQueue");
-
-
-    /* Allocate buffer of colors */
-    this->patchesColorsCL = clCreateBuffer(this->context,
-                                     CL_MEM_READ_WRITE,
-                                           this->model->getPatchesCount() * sizeof (cl_uchar3),
-                                     0,
-                                     &ciErr);
-    CheckOpenCLError(ciErr, "CreateBuffer patchesCL");
-
-    this->raw_patchesColors = new cl_uchar3[this->model->getPatchesCount()];
-    this->raw_patchesEnergies = new cl_float[this->model->getPatchesCount()];
-    this->model->getPatchesCL(this->raw_patchesColors, this->raw_patchesEnergies);
-
-    ciErr = clEnqueueWriteBuffer(this->queue,
-                                 this->patchesColorsCL,
-                                 CL_TRUE, //blocking write
-                                 0,
-                                 this->model->getPatchesCount() * sizeof (cl_uchar3),
-                                 this->raw_patchesColors,
-                                 0,
-                                 0,
-                                 0);
-    CheckOpenCLError(ciErr, "Copy patches colors");
-
-    /* Alocate buffer of energies */
-    this->patchesEnergiesCL = clCreateBuffer(this->context,
-                                         CL_MEM_READ_WRITE,
-                                             this->model->getPatchesCount() * sizeof (cl_float),
-                                         0,
-                                         &ciErr);
-    CheckOpenCLError(ciErr, "CreateBuffer patchesCL");
-    ciErr = clEnqueueWriteBuffer(this->queue,
-                                 this->patchesEnergiesCL,
-                                 CL_TRUE, //blocking write
-                                 0,
-                                 this->model->getPatchesCount() * sizeof (cl_float),
-                                 this->raw_patchesEnergies,
-                                 0,
-                                 0,
-                                 0);
-    CheckOpenCLError(ciErr, "Copy patches");
-
-    /* Allocate buffer of patches geometry */
-    this->patchesGeoCL = clCreateBuffer(this->context,
-                                             CL_MEM_READ_WRITE,
-                                        this->model->getPatchesCount() * sizeof (cl_float8),
-                                             0,
-                                             &ciErr);
-    CheckOpenCLError(ciErr, "CreateBuffer patchesGeometryCL");
-
-    this->raw_patchesGeo = new cl_float8[this->model->getPatchesCount()];
-    this->model->getPatchesGeometryCL(raw_patchesGeo);
-    ciErr = clEnqueueWriteBuffer(this->queue,
-                                 this->patchesGeoCL,
-                                 CL_TRUE, //blocking write
-                                 0,
-                                 this->model->getPatchesCount() * sizeof (cl_float8),
-                                 this->raw_patchesGeo,
-                                 0,
-                                 0,
-                                 0);
-    CheckOpenCLError(ciErr, "Copy patches geometry");
-
-
-    /* Allocate buffer of indices */
-    this->indicesCL = clCreateBuffer(this->context,
-                                     CL_MEM_READ_WRITE,
-                                     this->model->getPatchesCount() * sizeof (cl_uint),
-                                     0,
-                                     &ciErr);
-    CheckOpenCLError(ciErr, "CreateBuffer indicesCL");
-
-    this->indicesCountCL = clCreateBuffer(this->context,
-                                          CL_MEM_READ_WRITE,
-                                          sizeof (cl_uint),
-                                          0,
-                                          &ciErr);
-    CheckOpenCLError(ciErr, "CreateBuffer indicesCountCL");
-
-    this->maximalEnergyCL = clCreateBuffer(this->context, CL_MEM_READ_WRITE, sizeof (cl_float), 0, &ciErr);
-    CheckOpenCLError(ciErr, "CreateBuffer indicesCountCL");
-
-    this->diffColorsCL = clCreateBuffer(this->context,
-                                        CL_MEM_READ_WRITE,
-                                        this->model->getPatchesCount() * sizeof (cl_uchar3),
-                                        0,
-                                        &ciErr);
-    CheckOpenCLError(ciErr, "CreateBuffer diffColorsCL");
-
-    this->intensitiesCL = clCreateBuffer(this->context,
-                                         CL_MEM_READ_WRITE,
-                                         this->model->getPatchesCount() * sizeof (cl_float),
-                                         0,
-                                         &ciErr);
-    CheckOpenCLError(ciErr, "CreateBuffer intensitiesCL");
-
-    this->texturesCL = clCreateBuffer(this->context,
-                                      CL_MEM_READ_WRITE,
-                                      this->maxWorkGroupSize * 768 * 256 * sizeof (cl_uchar3),
-                                      0,
-                                      &ciErr);
-    CheckOpenCLError(ciErr, "CreateBuffer texturesCL");
 
     /* Create and compile and openCL program */
     char *cSourceCL = loadProgSource("kernels.cl");
@@ -804,10 +704,127 @@ int PGR_radiosity::prepareCL()
         this->workGroupSize = this->maxWorkGroupSize;
     }
 
+
+    /* Allocate buffer of colors */
+    this->patchesColorsCL = clCreateBuffer(this->context, CL_MEM_READ_WRITE, this->model->getPatchesCount() * sizeof (cl_uchar3), 0, &ciErr);
+    CheckOpenCLError(ciErr, "CreateBuffer patchesCL");
+
+    this->raw_patchesColors = new cl_uchar3[this->model->getPatchesCount()];
+    this->raw_patchesEnergies = new cl_float[this->model->getPatchesCount()];
+    this->raw_diffColors = new cl_uchar3[this->model->getPatchesCount()];
+    this->raw_intensities = new cl_float[this->model->getPatchesCount()];
+    this->model->getPatchesCL(this->raw_patchesColors, this->raw_patchesEnergies);
+
+    ciErr = clEnqueueWriteBuffer(this->queue,
+                                 this->patchesColorsCL,
+                                 CL_TRUE, //blocking write
+                                 0,
+                                 this->model->getPatchesCount() * sizeof (cl_uchar3),
+                                 this->raw_patchesColors,
+                                 0,
+                                 0,
+                                 0);
+    CheckOpenCLError(ciErr, "Copy patches colors");
+
+    /* Alocate buffer of energies */
+    this->patchesEnergiesCL = clCreateBuffer(this->context, CL_MEM_READ_WRITE, this->model->getPatchesCount() * sizeof (cl_float), 0, &ciErr);
+    CheckOpenCLError(ciErr, "CreateBuffer patchesCL");
+
+    ciErr = clEnqueueWriteBuffer(this->queue,
+                                 this->patchesEnergiesCL,
+                                 CL_TRUE, //blocking write
+                                 0,
+                                 this->model->getPatchesCount() * sizeof (cl_float),
+                                 this->raw_patchesEnergies,
+                                 0,
+                                 0,
+                                 0);
+    CheckOpenCLError(ciErr, "Copy patches");
+
+    /* Allocate buffer of patches geometry */
+    this->patchesGeoCL = clCreateBuffer(this->context, CL_MEM_READ_ONLY, this->model->getPatchesCount() * sizeof (cl_float8), 0, &ciErr);
+    CheckOpenCLError(ciErr, "CreateBuffer patchesGeometryCL");
+
+    this->raw_patchesGeo = new cl_float8[this->model->getPatchesCount()];
+    this->model->getPatchesGeometryCL(raw_patchesGeo);
+    ciErr = clEnqueueWriteBuffer(this->queue,
+                                 this->patchesGeoCL,
+                                 CL_TRUE, //blocking write
+                                 0,
+                                 this->model->getPatchesCount() * sizeof (cl_float8),
+                                 this->raw_patchesGeo,
+                                 0,
+                                 0,
+                                 0);
+    CheckOpenCLError(ciErr, "Copy patches geometry");
+
+
+    this->indicesCL = clCreateBuffer(this->context, CL_MEM_READ_WRITE, this->maxWorkGroupSize * sizeof (cl_uint), 0, &ciErr);
+    CheckOpenCLError(ciErr, "CreateBuffer indicesCL");
+
+    this->indicesCountCL = clCreateBuffer(this->context, CL_MEM_READ_WRITE, sizeof (cl_uint), 0, &ciErr);
+    CheckOpenCLError(ciErr, "CreateBuffer indicesCountCL");
+
+    this->maximalEnergyCL = clCreateBuffer(this->context, CL_MEM_READ_WRITE, sizeof (cl_float), 0, &ciErr);
+    CheckOpenCLError(ciErr, "CreateBuffer maximalEnergyCL");
+
+    this->diffColorsCL = clCreateBuffer(this->context, CL_MEM_READ_WRITE, this->model->getPatchesCount() * sizeof (cl_uchar3), 0, &ciErr);
+    CheckOpenCLError(ciErr, "CreateBuffer diffColorsCL");
+
+    cl_uchar3* zeros = new cl_uchar3[this->model->getPatchesCount()];
+    memset(zeros, 0, this->model->getPatchesCount() * sizeof (cl_uchar3));
+    ciErr = clEnqueueWriteBuffer(this->queue,
+                                 this->diffColorsCL,
+                                 CL_TRUE, //blocking write
+                                 0,
+                                 this->model->getPatchesCount() * sizeof (cl_uchar3),
+                                 zeros,
+                                 0,
+                                 0,
+                                 0);
+    CheckOpenCLError(ciErr, "Clear diff colors");
+    delete [] zeros;
+
+    this->intensitiesCL = clCreateBuffer(this->context, CL_MEM_READ_WRITE, this->model->getPatchesCount() * sizeof (cl_float), 0, &ciErr);
+    CheckOpenCLError(ciErr, "CreateBuffer intensitiesCL");
+
+    cl_float* zeroIntensity = new cl_float[this->model->getPatchesCount()];
+    memset(zeroIntensity, 0, this->model->getPatchesCount() * sizeof (cl_float));
+    ciErr = clEnqueueWriteBuffer(this->queue,
+                                 this->intensitiesCL,
+                                 CL_TRUE, //blocking write
+                                 0,
+                                 this->model->getPatchesCount() * sizeof (cl_float),
+                                 zeroIntensity,
+                                 0,
+                                 0,
+                                 0);
+    CheckOpenCLError(ciErr, "Clear intensities");
+    delete [] zeroIntensity;
+
+    this->texturesCL = clCreateBuffer(this->context, CL_MEM_READ_ONLY, this->maxWorkGroupSize * 768 * 256 * sizeof (cl_uchar3), 0, &ciErr);
+    CheckOpenCLError(ciErr, "CreateBuffer texturesCL");
+
+    this->visitedCL = clCreateBuffer(this->context, CL_MEM_READ_WRITE, this->maxWorkGroupSize * this->model->getPatchesCount() * sizeof (cl_bool), 0, &ciErr);
+    CheckOpenCLError(ciErr, "CreateBuffer visitedCL");
+
+    cl_bool* zeroVisited = new cl_bool[this->maxWorkGroupSize * this->model->getPatchesCount()];
+    memset(zeroVisited, 0, this->maxWorkGroupSize * this->model->getPatchesCount() * sizeof (cl_bool));
+    ciErr = clEnqueueWriteBuffer(this->queue,
+                                 this->intensitiesCL,
+                                 CL_TRUE, //blocking write
+                                 0,
+                                 this->model->getPatchesCount() * sizeof (cl_bool),
+                                 zeroVisited,
+                                 0,
+                                 0,
+                                 0);
+    CheckOpenCLError(ciErr, "Clear visited flags");
+    delete [] zeroVisited;
+
     free(cdDevices);
 
     return 0;
-
 }
 
 char* PGR_radiosity::loadProgSource(const char* cFilename)
@@ -864,7 +881,7 @@ void PGR_radiosity::runRadiosityKernelCL()
     status = clSetKernelArg(this->radiosityKernel, 1, sizeof (cl_mem), &this->patchesColorsCL);
     CheckOpenCLError(status, "clSetKernelArg. (patchesCL)");
 
-    cl_uint patchesCount = (uint)this->model->getPatchesCount();
+    cl_uint patchesCount = (cl_uint)this->model->getPatchesCount();
     status = clSetKernelArg(this->radiosityKernel, 2, sizeof (cl_uint), &patchesCount);
     CheckOpenCLError(status, "clSetKernelArg. (patchesCount)");
 
@@ -925,8 +942,8 @@ void PGR_radiosity::runRadiosityKernelCL()
     status = clSetKernelArg(this->radiosityKernel, 8, sizeof (cl_mem), &this->texturesCL);
     CheckOpenCLError(status, "clSetKernelArg. (texturesCL)");
 
-    status = clSetKernelArg(this->radiosityKernel, 9, sizeof (cl_bool) * this->model->getPatchesCount(), 0);
-    CheckOpenCLError(status, "clSetKernelArg. (texturesCL)");
+    status = clSetKernelArg(this->radiosityKernel, 9, sizeof (cl_mem), &this->visitedCL);
+    CheckOpenCLError(status, "clSetKernelArg. (visitedCL)");
 
     size_t globalThreadsMain[] = {this->workGroupSize};
     size_t localThreadsMain[] = {this->workGroupSize};
@@ -1002,7 +1019,6 @@ void PGR_radiosity::runRadiosityKernelCL()
                                      &event_maximalEnergy);
         CheckOpenCLError(status, "Read maximal energy");
 
-
         status = clEnqueueReadBuffer(this->queue,
                                      this->indicesCountCL,
                                      CL_TRUE, //blocking write
@@ -1017,14 +1033,18 @@ void PGR_radiosity::runRadiosityKernelCL()
         status = clWaitForEvents(1, &event_indicesCount);
         CheckOpenCLError(status, "clWaitForEvents read indices count.");
 
+        if (indicesCount == 0)
+            break;
+
+        //cout << indicesCount << "," << maximalEnergy << endl;
         status = clEnqueueReadBuffer(this->queue,
                                      this->indicesCL,
                                      CL_TRUE, //blocking write
                                      0,
                                      indicesCount * sizeof (cl_uint),
-                                     &maximalEnergy,
-                                     1,
-                                     &event_indicesCount,
+                                     this->raw_indices,
+                                     0,
+                                     NULL,
                                      &event_indices);
         CheckOpenCLError(status, "Read indices");
 
@@ -1095,4 +1115,6 @@ void PGR_radiosity::releaseCL()
     delete [] this->raw_patchesColors;
     delete [] this->raw_patchesGeo;
     delete [] this->raw_patchesEnergies;
+    delete [] this->raw_intensities;
+    delete [] this->raw_diffColors;
 }

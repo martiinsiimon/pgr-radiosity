@@ -145,19 +145,23 @@ __kernel void radiosity(__global float8* patchesGeo,
                         __global uchar3* diffColors,
                         __global float* intensities,
                         __global uchar3* texture,
+                        __global bool* visited
                        // uint textureSize,
-                        __local bool* isSetEnergy)
+                       // __local bool* isSetEnergy
+                    )
 {
-    int i = get_global_id(0); //position in indices array
 
+    int i = get_global_id(0); //position in indices array
 
     if (i >= indicesCount[0])
     {
         return;
     }
 
-    uint offset = i*256;
 
+
+    uint offset = i*256;
+//printf ("%d: nula",i);
     float8 lightGeo = patchesGeo[indices[i]];
     uchar3 lightColor = patchesColors[indices[i]];
     float lightEnergy = energies[indices[i]];
@@ -180,12 +184,12 @@ __kernel void radiosity(__global float8* patchesGeo,
     //go through all the texture
     //every point convert to index and if visited[index]==0 -> compute form factor and set to correct index
     //otherwise continue
-
+//printf ("%d: jedna\n",i);
     for(uint h = 0; h < 768; h++)
     {
         for(uint w = offset; w < offset+256; w++)
         {
-            uchar3 texColor = texture[w + h * 256];
+            uchar3 texColor = texture[w + h * 768];
             int j = texColor.s2;
             j <<= 8;
             j |= texColor.s1;
@@ -194,10 +198,11 @@ __kernel void radiosity(__global float8* patchesGeo,
 
             if (j >= patchesCount || j < 0)
             {
+                //printf("%d: pruser\n",i);
                 continue;
             }
-
-            if(isSetEnergy[j] == false)
+//printf("%d: OK\n",i);
+            if(visited[j + patchesCount*i])
             {
                 float8 patchGeo = patchesGeo[j];
                 float4 RecvPos = {patchGeo.s0, patchGeo.s1, patchGeo.s2, 0};
@@ -227,7 +232,7 @@ __kernel void radiosity(__global float8* patchesGeo,
                 energies[j] += energyDiff * 0.5; //FIXME ATOMIC!!!
                 intensities[j] += energyDiff; //FIXME ATOMIC!!!
 
-                isSetEnergy[j] = true;
+                visited[j + patchesCount*i] = true;
             }
         }
     }
