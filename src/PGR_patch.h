@@ -54,7 +54,7 @@ public:
     float area;
     double energy;
     cl_uchar3 uniqueColor;
-    cl_uchar3 newDiffColor;
+    cl_uint3 newDiffColor;
     float intensity;
 };
 

@@ -607,20 +607,20 @@ void PGR_model::generateUniqueColor()
 
 void PGR_model::idToUniqueColor(int id, cl_uchar3 *uniqueColor)
 {
-    (*uniqueColor).x = id & 0b11111111;
+    (*uniqueColor).s0 = id & 0b11111111;
     id >>= 8;
-    (*uniqueColor).y = id & 0b11111111;
+    (*uniqueColor).s1 = id & 0b11111111;
     id >>= 8;
-    (*uniqueColor).z = id & 0b11111111;
+    (*uniqueColor).s2 = id & 0b11111111;
 }
 
 int PGR_model::uniqueColorToId(cl_uchar3 uniqueColor)
 {
-    int id = uniqueColor.z;
+    int id = uniqueColor.s2;
     id <<= 8;
-    id |= uniqueColor.y;
+    id |= uniqueColor.s1;
     id <<= 8;
-    id |= uniqueColor.x;
+    id |= uniqueColor.s0;
 
     return id;
 }
@@ -630,9 +630,9 @@ void PGR_model::drawUniqueColorScene()
     glBegin(GL_QUADS);
     for (unsigned int i = 0; i< this->patches.size(); i++)
     {
-        glColor3f(this->patches[i]->uniqueColor.x,
-                  this->patches[i]->uniqueColor.y,
-                  this->patches[i]->uniqueColor.z);
+        glColor3ub(this->patches[i]->uniqueColor.s0,
+                  this->patches[i]->uniqueColor.s1,
+                  this->patches[i]->uniqueColor.s2);
 
         for (int j = 0; j < 4; j++)
             glVertex3f(this->patches[i]->vertices[j].position[0],
@@ -654,8 +654,8 @@ void PGR_model::recomputeColors()
         this->patches[i]->intensity = MIN(this->patches[i]->intensity, 1.0f);
 
         /* Normalize diff with keeping aspect ratio */
-        float max = MAX(MAX(this->patches[i]->newDiffColor.s0, this->patches[i]->newDiffColor.s1), this->patches[i]->newDiffColor.s2);
-        if (max > 1.0f)
+        uint max = MAX(MAX(this->patches[i]->newDiffColor.s0, this->patches[i]->newDiffColor.s1), this->patches[i]->newDiffColor.s2);
+        if (max > 255)
         {
             this->patches[i]->newDiffColor.s0 /= max;
             this->patches[i]->newDiffColor.s1 /= max;
@@ -663,18 +663,22 @@ void PGR_model::recomputeColors()
         }
 
         /* Set new color */
-        this->patches[i]->vertices[0].color[0] += this->patches[i]->newDiffColor.s0;
-        this->patches[i]->vertices[0].color[1] += this->patches[i]->newDiffColor.s1;
-        this->patches[i]->vertices[0].color[2] += this->patches[i]->newDiffColor.s2;
+        uint tmp0 = this->patches[i]->vertices[0].color[0] + this->patches[i]->newDiffColor.s0;
+        uint tmp1 = this->patches[i]->vertices[0].color[1] + this->patches[i]->newDiffColor.s1;
+        uint tmp2 = this->patches[i]->vertices[0].color[2] + this->patches[i]->newDiffColor.s2;
 
         /* Normalize with keeping aspect ratio */
-        max = MAX(MAX(this->patches[i]->vertices[0].color[0], this->patches[i]->vertices[0].color[1]), this->patches[i]->vertices[0].color[2]);
-        if (max > 1.0f)
+        max = MAX(MAX(tmp0, tmp1), tmp2);
+        if (max > 255)
         {
-            this->patches[i]->vertices[0].color[0] /= max;
-            this->patches[i]->vertices[0].color[1] /= max;
-            this->patches[i]->vertices[0].color[2] /= max;
+            tmp0 /= max;
+            tmp1 /= max;
+            tmp2 /= max;
         }
+        this->patches[i]->vertices[0].color[0] = tmp0;
+        this->patches[i]->vertices[0].color[0] = tmp1;
+        this->patches[i]->vertices[0].color[0] = tmp2;
+
 
         /* Multiplicate with intensity */
         this->patches[i]->vertices[0].color[0] *= this->patches[i]->intensity;

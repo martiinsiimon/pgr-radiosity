@@ -9,6 +9,7 @@
 #include "PGR_radiosity.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <string>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -171,12 +172,12 @@ void PGR_radiosity::computeRadiosity()
                 int j = this->model->uniqueColorToId(texFront[w + h * 256]);
                 if (j >= this->model->patches.size() || j < 0)
                 {
-                    cout << "[" << texFront[w + h * 256].x << "," << texFront[w + h * 256].y << "," << texFront[w + h * 256].z << "] -> " << j << endl;
+                    //cout << "[" << (string) (texFront[w + h * 256].s0) << "," << (string) (texFront[w + h * 256].y) << "," << (string) (texFront[w + h * 256].z) << "] -> " << (string) j << endl;
                     for (int s = 0; s<this->model->patches.size(); s++)
                     {
-                        if (this->model->patches[s]->uniqueColor.x == texFront[w + h * 256].x &&
-                            this->model->patches[s]->uniqueColor.y == texFront[w + h * 256].y &&
-                            this->model->patches[s]->uniqueColor.z == texFront[w + h * 256].z)
+                        if (this->model->patches[s]->uniqueColor.s0 == texFront[w + h * 256].s0 &&
+                            this->model->patches[s]->uniqueColor.s1 == texFront[w + h * 256].s1 &&
+                            this->model->patches[s]->uniqueColor.s2 == texFront[w + h * 256].s2)
                         {
                             cout << "tady!" << endl;
                         }
