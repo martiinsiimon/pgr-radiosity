@@ -401,6 +401,26 @@ void PGR_model::decodePatchesGeometryCL(cl_float16* data, uint size)
     }
 }
 
+void PGR_model::decodeData(cl_uchar3* diffs, cl_float* intensities, uint size)
+{
+    if (size != this->getPatchesCount())
+    {
+        cout << "Pole nejsou stejne velka!!!" << endl;
+        return;
+    }
+
+    for (int i = 0; i < size; i++)
+    {
+        /* Copy diffColors */
+        this->patches[i]->newDiffColor.s0 = diffs[i].s0;
+        this->patches[i]->newDiffColor.s1 = diffs[i].s1;
+        this->patches[i]->newDiffColor.s2 = diffs[i].s2;
+
+        /* Copy intensities */
+        this->patches[i]->intensity = intensities[i];
+    }
+}
+
 void PGR_model::getViewFromPatch(int i, cl_uchar3 **texFront, cl_uchar3 **texTop, cl_uchar3 **texBottom, cl_uchar3 **texLeft, cl_uchar3 **texRight)
 {
     PGR_patch * p = this->patches[i];
@@ -469,12 +489,12 @@ void PGR_model::getViewFromPatch(int i, cl_uchar3 **texFront, cl_uchar3 **texTop
     int in;
     int texIn;
     /* Copy the whole screen to texture */
-    for (int h = 0; h < 256; h++)
+    for (int y = 0; y < 256; y++)
     {
-        for (int w = 0; w < 256; w++)
+        for (int x = 0; x < 256; x++)
         {
-            in = w + h * 256;
-            texIn = w + h * 256;
+            in = x + y * 256;
+            texIn = x + y * 256;
             (*texFront)[texIn] = screen[in];
         }
     }
@@ -494,12 +514,12 @@ void PGR_model::getViewFromPatch(int i, cl_uchar3 **texFront, cl_uchar3 **texTop
     glReadPixels(0, 0, 256, 256, GL_RGB, GL_UNSIGNED_BYTE, screen);
 
     /* Copy the bottom part of a screen to texture */
-    for (int h = 0; h < 128; h++)
+    for (int y = 0; y < 128; y++)
     {
-        for (int w = 0; w < 256; w++)
+        for (int x = 0; x < 256; x++)
         {
-            in = w + h * 256;
-            texIn = w + h * 256;
+            in = x + y * 256;
+            texIn = x + y * 256;
             (*texTop)[texIn] = screen[in];
         }
     }
@@ -519,12 +539,12 @@ void PGR_model::getViewFromPatch(int i, cl_uchar3 **texFront, cl_uchar3 **texTop
     glReadPixels(0, 0, 256, 256, GL_RGB, GL_UNSIGNED_BYTE, screen);
 
     /* Copy the top part of a screen to texture */
-    for (int h = 128; h < 256; h++)
+    for (int y = 128; y < 256; y++)
     {
-        for (int w = 0; w < 256; w++)
+        for (int x = 0; x < 256; x++)
         {
-            in = w + h * 256;
-            texIn = w + (h - 128) * 256;
+            in = x + y * 256;
+            texIn = x + (y - 128) * 256;
             (*texBottom)[texIn] = screen[in];
         }
     }
@@ -544,12 +564,12 @@ void PGR_model::getViewFromPatch(int i, cl_uchar3 **texFront, cl_uchar3 **texTop
     glReadPixels(0, 0, 256, 256, GL_RGB, GL_UNSIGNED_BYTE, screen);
 
     /* Copy the right part of a screen to texture */
-    for (int h = 0; h < 256; h++)
+    for (int y = 0; y < 256; y++)
     {
-        for (int w = 128; w < 256; w++)
+        for (int x = 128; x < 256; x++)
         {
-            in = w + h * 256;
-            texIn = (w - 128) + h * 128;
+            in = x + y * 256;
+            texIn = (x - 128) + y * 128;
             (*texLeft)[texIn] = screen[in];
         }
     }
@@ -569,12 +589,12 @@ void PGR_model::getViewFromPatch(int i, cl_uchar3 **texFront, cl_uchar3 **texTop
     glReadPixels(0, 0, 256, 256, GL_RGB, GL_UNSIGNED_BYTE, screen);
 
     /* Copy the left part of a screen to texture */
-    for (int h = 0; h < 256; h++)
+    for (int y = 0; y < 256; y++)
     {
-        for (int w = 0; w < 128; w++)
+        for (int x = 0; x < 128; x++)
         {
-            in = w + h * 256;
-            texIn = w + h * 128;
+            in = x + y * 256;
+            texIn = x + y * 128;
             (*texRight)[texIn] = screen[in];
         }
     }
@@ -703,46 +723,44 @@ int PGR_model::getTextureCL(cl_uchar3* texture, cl_uint* indices, int n)
 
         this->getViewFromPatch(indices[i], &texFront, &texTop, &texBottom, &texLeft, &texRight);
 
-        for (int h = 0; h < 768; h++)
+        for (uint y = offset; y < offset + 256; y++)
         {
-            for (uint w = offset; w < offset + 256; w++)
+            for (uint x = 0; x < 768; x++)
             {
-                if (h < 256)
+                if (x < 256)
                 {
                     /* Write FRONT texture */
-                    texture[h + w * 768] = texFront[h + (w - offset) * 256];
+                    texture[x + y * 768] = texFront[x + (y - offset) * 256];
                     continue;
                 }
-                if (h < 512)
+                if (x < 512)
                 {
                     /* Write BOTTOM or TOP texture */
-                    if (w - offset < 128)
+                    if (y - offset < 128)
                     {
                         /* Write BOTTOM texture */
-                        texture[h + w * 768] = texBottom[(h - 256) + (w - offset)*256];
+                        texture[x + y * 768] = texBottom[(x - 256) + (y - offset)*256];
                     }
                     else
                     {
                         /* Write TOP texture*/
-                        texture[h + w * 768] = texTop[(h - 256) + (w - offset - 128)*256];
+                        texture[x + y * 768] = texTop[(x - 256) + (y - offset - 128)*256];
                     }
                     continue;
                 }
-                if (h < 640)
+                if (x < 640)
                 {
                     /* Write RIGHT texture */
-                    texture[h + w * 768] = texRight[(h - 512) + (w - offset) * 128];
+                    texture[x + y * 768] = texRight[(x - 512) + (y - offset) * 128];
                 }
                 else
                 {
                     /* Write LEFT texture */
-                    texture[h + w * 768] = texLeft[(h - 640) + (w - offset) * 128];
+                    texture[x + y * 768] = texLeft[(x - 640) + (y - offset) * 128];
                 }
             }
         }
     }
-
-
 
     delete [] texFront;
     delete [] texTop;

@@ -70,6 +70,9 @@ private:
     cl_uchar3 * raw_patchesColors;
     cl_uint * raw_indices;
     cl_float * raw_patchesEnergies;
+    cl_uchar3* raw_textures;
+    cl_uchar3* raw_diffColors;
+    cl_float* raw_intensities;
     uint maxWorkGroupSize;
     uint workGroupSize;
 

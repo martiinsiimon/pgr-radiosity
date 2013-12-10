@@ -384,24 +384,53 @@ void PGR_radiosity::computeRadiosityCL()
     this->runRadiosityKernelCL();
 
     /* Events */
-    cl_event event_bufferPatchesInfo; //, event_bufferPatchesGeo;
+    cl_event event_readDiffColors, event_readIntensities; //, event_bufferPatchesGeo;
 
     clFinish(this->queue);
 
     /* Read buffers from gpu memory */
+    //    int status = clEnqueueReadBuffer(this->queue,
+    //                                     this->patchesColorsCL,
+    //                                     CL_TRUE, //blocking write
+    //                                     0,
+    //                                     this->model->getPatchesCount() * sizeof (cl_uchar3),
+    //                                     this->raw_patchesColors,
+    //                                     0,
+    //                                     0,
+    //                                     &event_bufferPatchesInfo);
+    //    CheckOpenCLError(status, "read patches.");
+
     int status = clEnqueueReadBuffer(this->queue,
-                                     this->patchesColorsCL,
+                                     this->diffColorsCL,
                                      CL_TRUE, //blocking write
                                      0,
                                      this->model->getPatchesCount() * sizeof (cl_uchar3),
-                                     this->raw_patchesColors,
+                                     this->raw_diffColors,
                                      0,
                                      0,
-                                     &event_bufferPatchesInfo);
-    CheckOpenCLError(status, "read patches.");
+                                     &event_readDiffColors);
+    CheckOpenCLError(status, "read diffColors.");
+
+    status = clEnqueueReadBuffer(this->queue,
+                                 this->intensitiesCL,
+                                 CL_TRUE, //blocking write
+                                 0,
+                                 this->model->getPatchesCount() * sizeof (cl_float),
+                                 this->raw_intensities,
+                                 0,
+                                 0,
+                                 &event_readIntensities);
+    CheckOpenCLError(status, "read diffColors.");
+
+    cl_event waitFor[] = {event_readIntensities, event_readDiffColors};
+    status = clWaitForEvents(2, waitFor);
+    CheckOpenCLError(status, "clWaitForEvents read data from gpu.");
 
     /* Decode opencl memory objects */
-    this->model->decodePatchesCL(this->raw_patchesColors, this->raw_patchesEnergies, this->model->getPatchesCount());
+    this->model->decodeData(this->raw_diffColors, this->raw_intensities, this->model->getPatchesCount());
+
+    this->model->recomputeColors();
+    //this->model->decodePatchesCL(this->raw_patchesColors, this->raw_patchesEnergies, this->model->getPatchesCount());
 
     this->model->updateArrays();
 
@@ -682,12 +711,29 @@ int PGR_radiosity::prepareCL()
                                           &ciErr);
     CheckOpenCLError(ciErr, "CreateBuffer indicesCountCL");
 
-    this->maximalEnergyCL = clCreateBuffer(this->context,
-                                          CL_MEM_READ_WRITE,
-                                           sizeof (cl_float),
-                                          0,
-                                          &ciErr);
+    this->maximalEnergyCL = clCreateBuffer(this->context, CL_MEM_READ_WRITE, sizeof (cl_float), 0, &ciErr);
     CheckOpenCLError(ciErr, "CreateBuffer indicesCountCL");
+
+    this->diffColorsCL = clCreateBuffer(this->context,
+                                        CL_MEM_READ_WRITE,
+                                        this->model->getPatchesCount() * sizeof (cl_uchar3),
+                                        0,
+                                        &ciErr);
+    CheckOpenCLError(ciErr, "CreateBuffer diffColorsCL");
+
+    this->intensitiesCL = clCreateBuffer(this->context,
+                                         CL_MEM_READ_WRITE,
+                                         this->model->getPatchesCount() * sizeof (cl_float),
+                                         0,
+                                         &ciErr);
+    CheckOpenCLError(ciErr, "CreateBuffer intensitiesCL");
+
+    this->texturesCL = clCreateBuffer(this->context,
+                                      CL_MEM_READ_WRITE,
+                                      this->maxWorkGroupSize * 768 * 256 * sizeof (cl_uchar3),
+                                      0,
+                                      &ciErr);
+    CheckOpenCLError(ciErr, "CreateBuffer texturesCL");
 
     /* Create and compile and openCL program */
     char *cSourceCL = loadProgSource("kernels.cl");
@@ -736,8 +782,8 @@ int PGR_radiosity::prepareCL()
     this->sortKernel = clCreateKernel(program, "sort", &ciErr);
     CheckOpenCLError(ciErr, "clCreateKernel sort");
 
-    this->maxWorkGroupSize = 512;
-    this->workGroupSize = 512;
+    this->maxWorkGroupSize = 1024;
+    this->workGroupSize = 1024;
 
     ciErr = clGetKernelWorkGroupInfo(this->radiosityKernel,
                                      cdDevices[deviceIndex],
@@ -805,7 +851,7 @@ void PGR_radiosity::runRadiosityKernelCL()
 
     /* Events */
     //cl_event event_bufferPatchesInfo;
-    cl_event event_radiosity, event_sort, event_maximalEnergy;
+    cl_event event_radiosity, event_sort, event_maximalEnergy, event_indices, event_textures, event_indicesCount;
 
     float maximalEnergy;
 
@@ -863,13 +909,24 @@ void PGR_radiosity::runRadiosityKernelCL()
     status = clSetKernelArg(this->radiosityKernel, 7, sizeof (cl_mem), &this->intensitiesCL);
     CheckOpenCLError(status, "clSetKernelArg. (intensitiesCL)");
 
-    //TODO copy textures
+    this->raw_textures = new cl_uchar3[768 * 256 * indicesCount];
+    this->model->getTextureCL(this->raw_textures, this->raw_indices, indicesCount);
+    status = clEnqueueWriteBuffer(this->queue,
+                                  this->texturesCL,
+                                  CL_TRUE, //blocking write
+                                  0,
+                                  768 * 256 * indicesCount * sizeof (cl_uchar3),
+                                  this->raw_textures,
+                                  0,
+                                  0,
+                                  0);
+    CheckOpenCLError(status, "Copy textures to GPU");
+
     status = clSetKernelArg(this->radiosityKernel, 8, sizeof (cl_mem), &this->texturesCL);
     CheckOpenCLError(status, "clSetKernelArg. (texturesCL)");
 
-    //TODO texture size
-
-    //TODO local bool* isSetEnergy
+    status = clSetKernelArg(this->radiosityKernel, 9, sizeof (cl_bool) * this->model->getPatchesCount(), 0);
+    CheckOpenCLError(status, "clSetKernelArg. (texturesCL)");
 
     size_t globalThreadsMain[] = {this->workGroupSize};
     size_t localThreadsMain[] = {this->workGroupSize};
@@ -900,7 +957,7 @@ void PGR_radiosity::runRadiosityKernelCL()
     size_t globalThreadsSort[] = {1}; //only one kernel computes
     size_t localThreadsSort[] = {1};
 
-    debug_log = false;
+    //debug_log = false;
     while (maximalEnergy > LIMIT)
     {
 
@@ -944,14 +1001,54 @@ void PGR_radiosity::runRadiosityKernelCL()
                                      &event_sort,
                                      &event_maximalEnergy);
         CheckOpenCLError(status, "Read maximal energy");
+
+
+        status = clEnqueueReadBuffer(this->queue,
+                                     this->indicesCountCL,
+                                     CL_TRUE, //blocking write
+                                     0,
+                                     sizeof (cl_uint),
+                                     &indicesCount,
+                                     1,
+                                     &event_sort,
+                                     &event_indicesCount);
+        CheckOpenCLError(status, "Read indices count");
+
+        status = clWaitForEvents(1, &event_indicesCount);
+        CheckOpenCLError(status, "clWaitForEvents read indices count.");
+
+        status = clEnqueueReadBuffer(this->queue,
+                                     this->indicesCL,
+                                     CL_TRUE, //blocking write
+                                     0,
+                                     indicesCount * sizeof (cl_uint),
+                                     &maximalEnergy,
+                                     1,
+                                     &event_indicesCount,
+                                     &event_indices);
+        CheckOpenCLError(status, "Read indices");
+
+        status = clWaitForEvents(1, &event_indices);
+        CheckOpenCLError(status, "clWaitForEvents read Indices count.");
+
+        this->model->getTextureCL(this->raw_textures, this->raw_indices, indicesCount);
+        status = clEnqueueWriteBuffer(this->queue,
+                                      this->texturesCL,
+                                      CL_TRUE, //blocking write
+                                      0,
+                                      768 * 256 * indicesCount * sizeof (cl_uchar3),
+                                      this->raw_textures,
+                                      0,
+                                      NULL,
+                                      &event_textures);
+        CheckOpenCLError(status, "Copy textures to GPU");
+        status = clWaitForEvents(1, &event_textures);
+        CheckOpenCLError(status, "clWaitForEvents write textures.");
+
         status = clWaitForEvents(1, &event_maximalEnergy);
         CheckOpenCLError(status, "clWaitForEvents read Maximal energy.");
 
-        //TODO read indices to determine which patches need to have texture view
-        //TODO get texture view from these patches
-        //TODO create one big memory blob
-        //TODO write the memory blob to gpu
-        //break;
+        break;
     }
     cout << "cycles: " << cycles << endl;
     debug_log = true;
@@ -979,6 +1076,12 @@ void PGR_radiosity::releaseCL()
     CheckOpenCLError(status, "clReleaseMemObject patchesEnergiesCL");
     status = clReleaseMemObject(this->maximalEnergyCL);
     CheckOpenCLError(status, "clReleaseMemObject maximalEnergyCL");
+    status = clReleaseMemObject(this->diffColorsCL);
+    CheckOpenCLError(status, "clReleaseMemObject diffColorsCL");
+    status = clReleaseMemObject(this->intensitiesCL);
+    CheckOpenCLError(status, "clReleaseMemObject intensitiesCL");
+    status = clReleaseMemObject(this->texturesCL);
+    CheckOpenCLError(status, "clReleaseMemObject texturesCL");
 
     status = clReleaseProgram(this->program);
     CheckOpenCLError(status, "clReleaseProgram.");

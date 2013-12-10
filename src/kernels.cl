@@ -145,7 +145,7 @@ __kernel void radiosity(__global float8* patchesGeo,
                         __global uchar3* diffColors,
                         __global float* intensities,
                         __global uchar3* texture,
-                        uint textureSize,
+                       // uint textureSize,
                         __local bool* isSetEnergy)
 {
     int i = get_global_id(0); //position in indices array

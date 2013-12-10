@@ -64,7 +64,7 @@ public:
 
     void decodePatchesGeometryCL(cl_float16 *data, uint size);
     void decodePatchesCL(cl_uchar3 *colors, cl_float *energies, uint size);
-
+    void decodeData(cl_uchar3 *diffs, cl_float* intensities, uint size);
 
     void getViewFromPatch(int i, cl_uchar3 **texFront, cl_uchar3 **texTop, cl_uchar3 **texBottom, cl_uchar3 **texLeft, cl_uchar3 **texRight);
 
