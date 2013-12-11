@@ -5,8 +5,8 @@
  *
  * Created on 16. listopad 2013, 17:12
  */
+
 #include "PGR_model.h"
-//#include <iostream>
 #include <cstring>
 #include <list>
 #include <GL/glu.h>
@@ -14,7 +14,13 @@
 
 PGR_model::PGR_model()
 {
+    this->indices = NULL;
+    this->vertices = NULL;
 
+    this->indicesCount = 0;
+    this->verticesCount = 0;
+
+    this->maxArea = -1.0;
 }
 
 PGR_model::PGR_model(int t)
@@ -321,9 +327,9 @@ int PGR_model::getIdsOfNMostEnergizedPatches(vector<uint> *ids, int n, double li
 double PGR_model::getMaximalEnergy()
 {
     double energy = 0;
-    for(int i = 0; i < this->patches.size(); i++)
+    for (int i = 0; i < this->patches.size(); i++)
     {
-        if(this->patches[i]->energy > energy)
+        if (this->patches[i]->energy > energy)
         {
             energy = this->patches[i]->energy;
         }
@@ -488,6 +494,7 @@ void PGR_model::getViewFromPatch(int i, cl_uchar3 **texFront, cl_uchar3 **texTop
 
     int in;
     int texIn;
+
     /* Copy the whole screen to texture */
     for (int y = 0; y < 256; y++)
     {
@@ -607,7 +614,7 @@ void PGR_model::getViewFromPatch(int i, cl_uchar3 **texFront, cl_uchar3 **texTop
 
 void PGR_model::generateUniqueColor()
 {
-    for(int i = 0; i < this->patches.size(); i++)
+    for (int i = 0; i < this->patches.size(); i++)
     {
         this->idToUniqueColor(i, &(this->patches[i]->uniqueColor));
     }
@@ -639,8 +646,8 @@ void PGR_model::drawUniqueColorScene()
     for (unsigned int i = 0; i< this->patches.size(); i++)
     {
         glColor3ub(this->patches[i]->uniqueColor.s0,
-                  this->patches[i]->uniqueColor.s1,
-                  this->patches[i]->uniqueColor.s2);
+                   this->patches[i]->uniqueColor.s1,
+                   this->patches[i]->uniqueColor.s2);
 
         for (int j = 0; j < 4; j++)
             glVertex3f(this->patches[i]->vertices[j].position[0],
@@ -731,8 +738,7 @@ int PGR_model::getTextureCL(cl_uchar3* texture, cl_uint* indices, int n)
                 if (x < 256)
                 {
                     /* Write FRONT texture */
-                    texture[x + (y + offset) * 768] = texFront[x + y * 256]; //FIXED
-                    //continue;
+                    texture[x + (y + offset) * 768] = texFront[x + y * 256];
                 }
                 else if (x < 512)
                 {
@@ -740,26 +746,24 @@ int PGR_model::getTextureCL(cl_uchar3* texture, cl_uint* indices, int n)
                     if (y < 128)
                     {
                         /* Write BOTTOM texture */
-                        texture[x + (y + offset) * 768] = texBottom[(x - 256) + y * 256]; //FIXED
+                        texture[x + (y + offset) * 768] = texBottom[(x - 256) + y * 256];
                     }
                     else
                     {
                         /* Write TOP texture*/
-                        texture[x + (y + offset) * 768] = texTop[(x - 256) + (y - 128)*256]; //FIXED
+                        texture[x + (y + offset) * 768] = texTop[(x - 256) + (y - 128)*256];
 
                     }
-                    //continue;
                 }
                 else if (x < 640)
                 {
                     /* Write RIGHT texture */
-                    texture[x + (y + offset) * 768] = texRight[(x - 512) + y * 128]; //FIXED
+                    texture[x + (y + offset) * 768] = texRight[(x - 512) + y * 128];
 
                 }
                 else
                 {
                     /* Write LEFT texture */
-                    //cout << "Read from: [" << (x - 512) << "," << (y - offset) << "]" << endl;
                     texture[x + (y + offset) * 768] = texLeft[(x - 640) + y * 128];
                 }
             }

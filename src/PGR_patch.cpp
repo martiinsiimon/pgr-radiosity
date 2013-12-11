@@ -12,7 +12,6 @@
 
 using namespace std;
 
-
 PGR_patch::PGR_patch()
 {
     this->vertices[0] = Point();
@@ -47,7 +46,6 @@ PGR_patch::PGR_patch(const PGR_patch& orig)
     this->newDiffColor.s2 = orig.newDiffColor.s2;
 
     this->intensity = orig.intensity;
-
 }
 
 PGR_patch::PGR_patch(PGR_patch *orig)
@@ -408,21 +406,3 @@ void PGR_patch::copyNormals(PGR_patch* a, PGR_patch* src)
     a->vertices[3].normal[1] = src->vertices[3].normal[1];
     a->vertices[3].normal[2] = src->vertices[3].normal[2];
 }
-
-//void PGR_patch::updateColor()
-//{
-//    this->vertices[0].color[0] += this->newDiffColor[0];
-//    this->vertices[1].color[0] += this->newDiffColor[0];
-//    this->vertices[2].color[0] += this->newDiffColor[0];
-//    this->vertices[3].color[0] += this->newDiffColor[0];
-//
-//    this->vertices[0].color[1] += this->newDiffColor[1];
-//    this->vertices[1].color[1] += this->newDiffColor[1];
-//    this->vertices[2].color[1] += this->newDiffColor[1];
-//    this->vertices[3].color[1] += this->newDiffColor[1];
-//
-//    this->vertices[0].color[2] += this->newDiffColor[2];
-//    this->vertices[1].color[2] += this->newDiffColor[2];
-//    this->vertices[2].color[2] += this->newDiffColor[2];
-//    this->vertices[3].color[2] += this->newDiffColor[2];
-//}

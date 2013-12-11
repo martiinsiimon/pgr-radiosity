@@ -21,7 +21,6 @@
 
 using namespace std;
 
-
 class PGR_model {
 public:
     PGR_model();
@@ -74,7 +73,6 @@ public:
 
     void recomputeColors();
 
-
     vector<PGR_patch*> patches;
 private:
     void deletePatches();
@@ -88,8 +86,6 @@ private:
     unsigned int indicesCount;
 
     float maxArea;
-
-
 };
 
 #endif	/* PGR_MODEL_H */

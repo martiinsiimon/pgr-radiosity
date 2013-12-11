@@ -99,7 +99,6 @@ void PGR_radiosity::compute()
             this->computeRadiosity();
             cout << cycles << " energy: " << this->model->getMaximalEnergy() << endl;
             cycles++;
-            //break;
         }
         this->model->recomputeColors();
         this->model->updateArrays();
@@ -119,10 +118,6 @@ void PGR_radiosity::compute()
 
 void PGR_radiosity::computeRadiosity()
 {
-    /**
-     * Note: Na form faktory nejspis nezbude misto - pokud spravne pocitan a na jeden faktor je treba 4 byty, tak dohromady pro vsechny se jedna pri milionu ploskach o 36 terabytu... doufam, ze jsem nekde udelal mega chybu a mluvime jen o MB...
-     */
-
     vector<uint> ids;
     int count = this->model->getIdsOfNMostEnergizedPatches(&ids, N, LIMIT);
     bool * isSetEnergy = new bool[this->model->patches.size()];
@@ -132,19 +127,6 @@ void PGR_radiosity::computeRadiosity()
     {
         indices[i] = ids[i];
     }
-
-    //    cl_uchar3 *texFront = new cl_uchar3 [256 * 256];
-    //    cl_uchar3 *texTop = new cl_uchar3 [256 * 128];
-    //    cl_uchar3 *texBottom = new cl_uchar3 [256 * 128];
-    //    cl_uchar3 *texLeft = new cl_uchar3 [128 * 256];
-    //    cl_uchar3 *texRight = new cl_uchar3 [128 * 256];
-    //
-    //    memset(texFront, 0, sizeof (cl_uchar3) * 256 * 256);
-    //    memset(texTop, 0, sizeof (cl_uchar3) * 256 * 128);
-    //    memset(texBottom, 0, sizeof (cl_uchar3) * 256 * 128);
-    //    memset(texLeft, 0, sizeof (cl_uchar3) * 128 * 256);
-    //    memset(texRight, 0, sizeof (cl_uchar3) * 128 * 256);
-
     cl_uchar3 *tex = new cl_uchar3[768 * 256 * count];
     memset(tex, 0, 768 * 256 * sizeof (cl_uchar3));
     this->model->getTextureCL(tex, indices, count);
@@ -202,185 +184,11 @@ void PGR_radiosity::computeRadiosity()
             }
         }
 
-        //this->model->getViewFromPatch(ids[i], &texFront, &texTop, &texBottom, &texLeft, &texRight);
-
-
-        // Front
-        //        for (int h = 0; h < 256; h++)
-        //        {
-        //            for (int w = 0; w < 256; w++)
-        //            {
-        //                int j = this->model->uniqueColorToId(texFront[w + h * 256]);
-        //                if (j >= this->model->patches.size() || j < 0)
-        //                {
-        //                    continue;
-        //                }
-        //
-        //                if (isSetEnergy[j] == false)
-        //                {
-        //                    glm::vec3 RecvPos(this->model->patches[j]->center.s0, this->model->patches[j]->center.s1, this->model->patches[j]->center.s2);
-        //
-        //                    x = this->model->patches[j]->vertices[0].normal[0];
-        //                    y = this->model->patches[j]->vertices[0].normal[1];
-        //                    z = this->model->patches[j]->vertices[0].normal[2];
-        //                    glm::vec3 RecvNormal(x, y, z);
-        //
-        //                    double delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
-        //
-        //                    this->model->patches[j]->newDiffColor.s0 += this->model->patches[ids[i]]->vertices[0].color[0] * 0.5 * delta;
-        //                    this->model->patches[j]->newDiffColor.s1 += this->model->patches[ids[i]]->vertices[0].color[1] * 0.5 * delta;
-        //                    this->model->patches[j]->newDiffColor.s2 += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;
-        //
-        //                    this->model->patches[j]->energy += this->model->patches[ids[i]]->energy * 0.5 * delta;
-        //                    this->model->patches[j]->intensity += this->model->patches[ids[i]]->energy * delta;
-        //                    isSetEnergy[j] = true;
-        //                }
-        //            }
-        //        }
-        //
-        //        // Top
-        //        for (int h = 0; h < 128; h++)
-        //        {
-        //            for (int w = 0; w < 256; w++)
-        //            {
-        //                int j = this->model->uniqueColorToId(texTop[w + h * 256]);
-        //                if (j >= this->model->patches.size() || j < 0)
-        //                {
-        //                    continue;
-        //                }
-        //
-        //                if (isSetEnergy[j] == false)
-        //                {
-        //                    glm::vec3 RecvPos(this->model->patches[j]->center.s0, this->model->patches[j]->center.s1, this->model->patches[j]->center.s2);
-        //
-        //                    x = this->model->patches[j]->vertices[0].normal[0];
-        //                    y = this->model->patches[j]->vertices[0].normal[1];
-        //                    z = this->model->patches[j]->vertices[0].normal[2];
-        //                    glm::vec3 RecvNormal(x, y, z);
-        //
-        //                    double delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
-        //
-        //                    this->model->patches[j]->newDiffColor.s0 += this->model->patches[ids[i]]->vertices[0].color[0] * 0.5 * delta;
-        //                    this->model->patches[j]->newDiffColor.s1 += this->model->patches[ids[i]]->vertices[0].color[1] * 0.5 * delta;
-        //                    this->model->patches[j]->newDiffColor.s2 += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;
-        //
-        //                    this->model->patches[j]->energy += this->model->patches[ids[i]]->energy * 0.5 * delta;
-        //                    this->model->patches[j]->intensity += this->model->patches[ids[i]]->energy * delta;
-        //                    isSetEnergy[j] = true;
-        //                }
-        //            }
-        //        }
-        //
-        //        // Bottom
-        //        for (int h = 0; h < 128; h++)
-        //        {
-        //            for (int w = 0; w < 256; w++)
-        //            {
-        //                int j = this->model->uniqueColorToId(texBottom[w + h * 256]);
-        //                if (j >= this->model->patches.size() || j < 0)
-        //                {
-        //                    continue;
-        //                }
-        //
-        //                if (isSetEnergy[j] == false)
-        //                {
-        //                    glm::vec3 RecvPos(this->model->patches[j]->center.s0, this->model->patches[j]->center.s1, this->model->patches[j]->center.s2);
-        //
-        //                    x = this->model->patches[j]->vertices[0].normal[0];
-        //                    y = this->model->patches[j]->vertices[0].normal[1];
-        //                    z = this->model->patches[j]->vertices[0].normal[2];
-        //                    glm::vec3 RecvNormal(x, y, z);
-        //
-        //                    double delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
-        //
-        //                    this->model->patches[j]->newDiffColor.s0 += this->model->patches[ids[i]]->vertices[0].color[0] * 0.5 * delta;
-        //                    this->model->patches[j]->newDiffColor.s1 += this->model->patches[ids[i]]->vertices[0].color[1] * 0.5 * delta;
-        //                    this->model->patches[j]->newDiffColor.s2 += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;
-        //
-        //                    this->model->patches[j]->energy += this->model->patches[ids[i]]->energy * 0.5 * delta;
-        //                    this->model->patches[j]->intensity += this->model->patches[ids[i]]->energy * delta;
-        //                    isSetEnergy[j] = true;
-        //                }
-        //            }
-        //        }
-        //
-        //        // Left
-        //        for (int h = 0; h < 256; h++)
-        //        {
-        //            for (int w = 0; w < 128; w++)
-        //            {
-        //                int j = this->model->uniqueColorToId(texLeft[w + h * 128]);
-        //                if (j >= this->model->patches.size() || j < 0)
-        //                {
-        //                    continue;
-        //                }
-        //
-        //                if (isSetEnergy[j] == false)
-        //                {
-        //                    glm::vec3 RecvPos(this->model->patches[j]->center.s0, this->model->patches[j]->center.s1, this->model->patches[j]->center.s2);
-        //
-        //                    x = this->model->patches[j]->vertices[0].normal[0];
-        //                    y = this->model->patches[j]->vertices[0].normal[1];
-        //                    z = this->model->patches[j]->vertices[0].normal[2];
-        //                    glm::vec3 RecvNormal(x, y, z);
-        //
-        //                    double delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
-        //
-        //                    this->model->patches[j]->newDiffColor.s0 += this->model->patches[ids[i]]->vertices[0].color[0] * 0.5 * delta;
-        //                    this->model->patches[j]->newDiffColor.s1 += this->model->patches[ids[i]]->vertices[0].color[1] * 0.5 * delta;
-        //                    this->model->patches[j]->newDiffColor.s2 += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;
-        //
-        //                    this->model->patches[j]->energy += this->model->patches[ids[i]]->energy * 0.5 * delta;
-        //                    this->model->patches[j]->intensity += this->model->patches[ids[i]]->energy * delta;
-        //                    isSetEnergy[j] = true;
-        //                }
-        //            }
-        //        }
-        //
-        //        // Right
-        //        for (int h = 0; h < 256; h++)
-        //        {
-        //            for (int w = 0; w < 128; w++)
-        //            {
-        //                int j = this->model->uniqueColorToId(texRight[w + h * 128]);
-        //                if (j >= this->model->patches.size() || j < 0)
-        //                {
-        //                    continue;
-        //                }
-        //
-        //                if (isSetEnergy[j] == false)
-        //                {
-        //                    glm::vec3 RecvPos(this->model->patches[j]->center.s0, this->model->patches[j]->center.s1, this->model->patches[j]->center.s2);
-        //
-        //                    x = this->model->patches[j]->vertices[0].normal[0];
-        //                    y = this->model->patches[j]->vertices[0].normal[1];
-        //                    z = this->model->patches[j]->vertices[0].normal[2];
-        //                    glm::vec3 RecvNormal(x, y, z);
-        //
-        //                    double delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
-        //
-        //                    this->model->patches[j]->newDiffColor.s0 += this->model->patches[ids[i]]->vertices[0].color[0] * 0.5 * delta;
-        //                    this->model->patches[j]->newDiffColor.s1 += this->model->patches[ids[i]]->vertices[0].color[1] * 0.5 * delta;
-        //                    this->model->patches[j]->newDiffColor.s2 += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;
-        //
-        //                    this->model->patches[j]->energy += this->model->patches[ids[i]]->energy * 0.5 * delta;
-        //                    this->model->patches[j]->intensity += this->model->patches[ids[i]]->energy * delta;
-        //                    isSetEnergy[j] = true;
-        //                }
-        //            }
-        //        }
-
-
         this->model->patches[ids[i]]->energy = 0;
     }
 
     delete [] indices;
     delete [] tex;
-    //    delete [] texFront;
-    //    delete [] texTop;
-    //    delete [] texBottom;
-    //    delete [] texLeft;
-    //    delete [] texRight;
     delete [] isSetEnergy;
 }
 
@@ -891,7 +699,6 @@ void PGR_radiosity::runRadiosityKernelCL()
     int cycles = 0;
 
     /* Events */
-    //cl_event event_bufferPatchesInfo;
     cl_event event_radiosity, event_sort, event_maximalEnergy, event_indices, event_textures, event_indicesCount;
 
     float maximalEnergy;
@@ -1004,7 +811,6 @@ void PGR_radiosity::runRadiosityKernelCL()
     debug_log = false;
     while (maximalEnergy > LIMIT)
     {
-
         cout << cycles << " energy: " << maximalEnergy << endl;
         cycles++;
 
@@ -1060,11 +866,9 @@ void PGR_radiosity::runRadiosityKernelCL()
         status = clWaitForEvents(1, &event_indicesCount);
         CheckOpenCLError(status, "clWaitForEvents read indices count.");
 
-        //cout << indicesCount << "," << maximalEnergy << endl;
         if (indicesCount == 0)
             break;
 
-        //cout << indicesCount << "," << maximalEnergy << endl;
         status = clEnqueueReadBuffer(this->queue,
                                      this->indicesCL,
                                      CL_TRUE, //blocking write
@@ -1094,21 +898,20 @@ void PGR_radiosity::runRadiosityKernelCL()
         CheckOpenCLError(status, "clWaitForEvents write textures.");
 
 
-                status = clEnqueueWriteBuffer(this->queue,
-                                              this->visitedCL,
-                                             CL_TRUE, //blocking write
-                                             0,
-                                             this->model->getPatchesCount() * sizeof (cl_bool),
-                                             zeroVisited,
-                                             0,
-                                             0,
-                                             0);
-                CheckOpenCLError(status, "Clear visited flags");
+        status = clEnqueueWriteBuffer(this->queue,
+                                      this->visitedCL,
+                                      CL_TRUE, //blocking write
+                                      0,
+                                      this->model->getPatchesCount() * sizeof (cl_bool),
+                                      zeroVisited,
+                                      0,
+                                      0,
+                                      0);
+        CheckOpenCLError(status, "Clear visited flags");
 
 
         status = clWaitForEvents(1, &event_maximalEnergy);
         CheckOpenCLError(status, "clWaitForEvents read Maximal energy.");
-        //break;
     }
 
     delete [] zeroVisited;

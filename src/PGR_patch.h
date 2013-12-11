@@ -27,11 +27,9 @@ public:
     virtual ~PGR_patch();
 
     void divide(float area, vector<PGR_patch*> *result);
-    //void addVertex(Point p);
     void setVertices(Point p0, Point p1, Point p2, Point p3);
     void setArea(float a);
     void setEnergy(double e);
-    void updateColor();
     double getEnergy();
     void setIntensity(float i);
     float getIntensity();

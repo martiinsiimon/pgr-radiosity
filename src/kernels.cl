@@ -4,57 +4,6 @@
  *          Lukas Brzobohaty  <xbrzob06@stud.fit.vutbr.cz>
  */
 
-/*
- * Sort patches (their indices) into indices array - parallel
- */
-//#pragma OPENCL EXTENSION cl_khr_global_int32_extended_atomics: enable
-//#pragma OPENCL EXTENSION cl_khr_int64_base_atomics: enable
-//
-//inline void AtomicAdd4(__global float4 *source, int i, const float operand)
-//{
-//    union {
-//        unsigned int intVal;
-//        float floatVal;
-//    } newVal;
-//    union {
-//        unsigned int intVal;
-//        float floatVal;
-//    } prevVal;
-//    do
-//    {
-//        if(i == 0)
-//            {prevVal.floatVal = (*source).s0;}
-//        if(i == 1)
-//            {prevVal.floatVal = (*source).s1;}
-//        if(i == 2)
-//            {prevVal.floatVal = (*source).s2;}
-//        if(i == 3)
-//            {prevVal.floatVal = (*source).s3;}
-//
-//        newVal.floatVal = prevVal.floatVal + operand;
-//     } while (atomic_cmpxchg((volatile __global unsigned int *)source, prevVal.intVal, newVal.intVal) != prevVal.intVal);
-//
-//}
-//
-//inline void AtomicAdd1(__global float *source, const float operand)
-//{
-//    union {
-//        unsigned int intVal;
-//        float floatVal;
-//    } newVal;
-//    union {
-//        unsigned int intVal;
-//        float floatVal;
-//    } prevVal;
-//    do
-//    {
-//        prevVal.floatVal = *source;
-//
-//        newVal.floatVal = prevVal.floatVal + operand;
-//     } while (atomic_cmpxchg((volatile __global unsigned int *)source, prevVal.intVal, newVal.intVal) != prevVal.intVal);
-//
-//}
-
 float formFactor(float4 RecvPos, float4 ShootPos, float4 RecvNormal, float4 ShootNormal, float ShootDArea)
 {
     float pi = (float)3.14159265358979323846f;
@@ -184,7 +133,7 @@ __kernel void radiosity(__global float8* patchesGeo,
     //go through all the texture
     //every point convert to index and if visited[index]==0 -> compute form factor and set to correct index
     //otherwise continue
-//printf ("%d: jedna\n",i);
+
     for(uint h = offset; h < offset+256; h++)
     {
         for(uint w = 0; w < 768; w++)
@@ -216,18 +165,11 @@ __kernel void radiosity(__global float8* patchesGeo,
                 float delta = formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
 
                 /* Distribute color */
-                //uchar colorDiff0 = lightColor.s0 * 0.5 * delta;
-                //uchar colorDiff1 = lightColor.s1 * 0.5 * delta;
-                //uchar colorDiff2 = lightColor.s2 * 0.5 * delta;
-
-                //atom_add(&diffColors[j].s0, colorDiff0);
                 diffColors[j].s0 += lightColor.s0 * 0.5 * delta; //FIXME ATOMIC!!!
                 diffColors[j].s1 += lightColor.s1 * 0.5 * delta; //FIXME ATOMIC!!!
                 diffColors[j].s2 += lightColor.s2 * 0.5 * delta; //FIXME ATOMIC!!!
 
                  /* Distribute energy */
-                //float energyDiff = lightEnergy * delta;
-
                 energies[j] += lightEnergy * delta * 0.5; //FIXME ATOMIC!!!
                 intensities[j] += lightEnergy * delta; //FIXME ATOMIC!!!
 

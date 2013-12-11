@@ -106,8 +106,6 @@ void onWindowRedraw()
     }
 }
 
-
-
 /**
  * Main function. Event handlers are registered and scene and renderer are
  * initialized

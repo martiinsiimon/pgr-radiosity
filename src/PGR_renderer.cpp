@@ -7,15 +7,10 @@
  */
 
 #include "pgr.h"
-
 #include "PGR_renderer.h"
 #include "model.h"
-//#include "sphere.h"
-
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
-
 
 /* Buffers */
 extern GLuint roomVBO, roomEBO;
@@ -31,6 +26,10 @@ glm::vec3 light_pos = glm::vec3(0, 2.5, 0);
 
 PGR_renderer::PGR_renderer()
 {
+    this->model = NULL;
+    this->maxArea = -1.0;
+    this->divided = true;
+    this->radiosity = NULL;
 }
 
 PGR_renderer::PGR_renderer(int c)
@@ -41,7 +40,6 @@ PGR_renderer::PGR_renderer(int c)
     delete light;
     this->maxArea = -1.0;
     this->divided = true;
-
 
     this->radiosity = new PGR_radiosity(this->model, c);
 }
@@ -131,7 +129,6 @@ void PGR_renderer::printPatches()
     }
 }
 
-
 void PGR_renderer::refillBuffers()
 {
     glBindBuffer(GL_ARRAY_BUFFER, roomVBO);
@@ -141,6 +138,7 @@ void PGR_renderer::refillBuffers()
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, roomEBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, this->model->getIndicesCount() * sizeof (unsigned int), this->model->getIndices(), GL_STATIC_DRAW);
 }
+
 /**
  * Draw 3D scene using default renderer. This rendering should be real-time and
  * used to set view angle light sources. It doesn't need to run on GPU.
