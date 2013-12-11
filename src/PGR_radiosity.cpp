@@ -170,9 +170,9 @@ void PGR_radiosity::computeRadiosity()
 
         uint offset = i * 256;
 
-        for (uint y = 0; y < 768; y++)
+        for (uint y = offset; y < offset + 256; y++)
         {
-            for (uint x = offset; x < offset + 256; x++)
+            for (uint x = 0; x < 768; x++)
             {
                 int j = this->model->uniqueColorToId(tex[x + y * 768]);
                 if (j >= this->model->patches.size() || j < 0)

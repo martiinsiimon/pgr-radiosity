@@ -185,11 +185,11 @@ __kernel void radiosity(__global float8* patchesGeo,
     //every point convert to index and if visited[index]==0 -> compute form factor and set to correct index
     //otherwise continue
 //printf ("%d: jedna\n",i);
-    for(uint h = 0; h < 768; h++)
+    for(uint h = offset; h < offset+256; h++)
     {
-        for(uint w = offset; w < offset+256; w++)
+        for(uint w = 0; w < 768; w++)
         {
-            uchar3 texColor = texture[h + w * 768];
+            uchar3 texColor = texture[w + h * 768];
             int j = texColor.s2;
             j <<= 8;
             j |= texColor.s1;
