@@ -33,13 +33,25 @@ Pro překlad je potřeba standardních nástrojů \textbf{make}, \textbf{g++} pr
 
 %---------------------------------------------------------------------------
 \section{Nejdůležitější dosažené výsledky}
+Cílem projektu bylo dosáhnout akcelerace výpočtu radiosity pomocí OpenCL. Tohoto zrychlení jsme dosáhli s tím, že zrychlení bylo větší pro větší počet plošek ve scéně. Podbrobnější časy experimentů jsou k vidění v tabulce níže.
 
-Popište 3 věci, které jsou na vašem projektu nejlepší. Nejlépe ukažte a
-komentujte obrázky, v nejhorším případě vypište textově.
+\begin{center}
+    \begin{tabular}{| c | c | c | c | c | c |}
+      \hline
+      Architecture & N & Patches & Cycles & Time & Acceleration \\
+      \hline
+      CPU & 10 & 8464 & 768 & 137.622s & -- \\
+      GPU & 64 & 8464 & 126 & 112.874s & 1,21925x \\
+      \hline
+      CPU & 10 & 68736 & 3062 & 3024.18s & -- \\
+      GPU & 64 & 68736 & 142 & 766.756s & 3,94778x \\
+      \hline
+      CPU & 10 & 902144 & 2928 & 34748.9s & -- \\
+      GPU & 64 & 902144 & N/A & N/A & N/A \\
+      \hline
+    \end{tabular}
+\end{center}
 
-
-cycles: 2928, compTime: 34748.9s, n: 10, area: 0.001
-cycles: 142, compTime: 766.756s, n:64, area: 0.01
 %---------------------------------------------------------------------------
 \section{Použití programu}
 
