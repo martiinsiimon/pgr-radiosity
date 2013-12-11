@@ -383,22 +383,7 @@ void PGR_radiosity::computeRadiosityCL()
     /* Run OpenCL kernel that computes radiosity. It includes a loop */
     this->runRadiosityKernelCL();
 
-    /* Events */
-    cl_event event_readDiffColors, event_readIntensities; //, event_bufferPatchesGeo;
-
     clFinish(this->queue);
-
-    /* Read buffers from gpu memory */
-    //    int status = clEnqueueReadBuffer(this->queue,
-    //                                     this->patchesColorsCL,
-    //                                     CL_TRUE, //blocking write
-    //                                     0,
-    //                                     this->model->getPatchesCount() * sizeof (cl_uchar3),
-    //                                     this->raw_patchesColors,
-    //                                     0,
-    //                                     0,
-    //                                     &event_bufferPatchesInfo);
-    //    CheckOpenCLError(status, "read patches.");
 
     int status = clEnqueueReadBuffer(this->queue,
                                      this->diffColorsCL,
@@ -409,7 +394,7 @@ void PGR_radiosity::computeRadiosityCL()
                                      0,
                                      0,
                                      0);
-    CheckOpenCLError(status, "read diffColors.");
+    CheckOpenCLError(status, "Read diffColors.");
 
     status = clEnqueueReadBuffer(this->queue,
                                  this->intensitiesCL,
@@ -420,18 +405,12 @@ void PGR_radiosity::computeRadiosityCL()
                                  0,
                                  0,
                                  0);
-    CheckOpenCLError(status, "read intensities.");
-
-
-    //cl_event waitFor[] = {event_readIntensities, event_readDiffColors};
-    //status = clWaitForEvents(2, waitFor);
-    //CheckOpenCLError(status, "clWaitForEvents read data from gpu.");
+    CheckOpenCLError(status, "Read intensities.");
 
     /* Decode opencl memory objects */
     this->model->decodeData(this->raw_diffColors, this->raw_intensities, this->model->getPatchesCount());
 
     this->model->recomputeColors();
-    //this->model->decodePatchesCL(this->raw_patchesColors, this->raw_patchesEnergies, this->model->getPatchesCount());
 
     this->model->updateArrays();
 
@@ -682,8 +661,8 @@ int PGR_radiosity::prepareCL()
     this->sortKernel = clCreateKernel(program, "sort", &ciErr);
     CheckOpenCLError(ciErr, "clCreateKernel sort");
 
-    this->maxWorkGroupSize = 1024;
-    this->workGroupSize = 1024;
+    this->maxWorkGroupSize = 512;
+    this->workGroupSize = 512;
 
     ciErr = clGetKernelWorkGroupInfo(this->radiosityKernel,
                                      cdDevices[deviceIndex],
@@ -811,7 +790,7 @@ int PGR_radiosity::prepareCL()
     cl_bool* zeroVisited = new cl_bool[this->maxWorkGroupSize * this->model->getPatchesCount()];
     memset(zeroVisited, 0, this->maxWorkGroupSize * this->model->getPatchesCount() * sizeof (cl_bool));
     ciErr = clEnqueueWriteBuffer(this->queue,
-                                 this->intensitiesCL,
+                                 this->visitedCL,
                                  CL_TRUE, //blocking write
                                  0,
                                  this->model->getPatchesCount() * sizeof (cl_bool),
@@ -926,7 +905,7 @@ void PGR_radiosity::runRadiosityKernelCL()
     status = clSetKernelArg(this->radiosityKernel, 7, sizeof (cl_mem), &this->intensitiesCL);
     CheckOpenCLError(status, "clSetKernelArg. (intensitiesCL)");
 
-    this->raw_textures = new cl_uchar3[768 * 256 * indicesCount];
+    this->raw_textures = new cl_uchar3[768 * 256 * this->workGroupSize];
     this->model->getTextureCL(this->raw_textures, this->raw_indices, indicesCount);
     status = clEnqueueWriteBuffer(this->queue,
                                   this->texturesCL,
@@ -974,7 +953,10 @@ void PGR_radiosity::runRadiosityKernelCL()
     size_t globalThreadsSort[] = {1}; //only one kernel computes
     size_t localThreadsSort[] = {1};
 
-    //debug_log = false;
+    cl_bool* zeroVisited = new cl_bool[this->maxWorkGroupSize * this->model->getPatchesCount()];
+    memset(zeroVisited, 0, this->maxWorkGroupSize * this->model->getPatchesCount() * sizeof (cl_bool));
+
+    debug_log = false;
     while (maximalEnergy > LIMIT)
     {
 
@@ -1033,6 +1015,7 @@ void PGR_radiosity::runRadiosityKernelCL()
         status = clWaitForEvents(1, &event_indicesCount);
         CheckOpenCLError(status, "clWaitForEvents read indices count.");
 
+        //cout << indicesCount << "," << maximalEnergy << endl;
         if (indicesCount == 0)
             break;
 
@@ -1049,7 +1032,7 @@ void PGR_radiosity::runRadiosityKernelCL()
         CheckOpenCLError(status, "Read indices");
 
         status = clWaitForEvents(1, &event_indices);
-        CheckOpenCLError(status, "clWaitForEvents read Indices count.");
+        CheckOpenCLError(status, "clWaitForEvents read Indices");
 
         this->model->getTextureCL(this->raw_textures, this->raw_indices, indicesCount);
         status = clEnqueueWriteBuffer(this->queue,
@@ -1065,11 +1048,25 @@ void PGR_radiosity::runRadiosityKernelCL()
         status = clWaitForEvents(1, &event_textures);
         CheckOpenCLError(status, "clWaitForEvents write textures.");
 
+
+                status = clEnqueueWriteBuffer(this->queue,
+                                              this->visitedCL,
+                                             CL_TRUE, //blocking write
+                                             0,
+                                             this->model->getPatchesCount() * sizeof (cl_bool),
+                                             zeroVisited,
+                                             0,
+                                             0,
+                                             0);
+                CheckOpenCLError(status, "Clear visited flags");
+
+
         status = clWaitForEvents(1, &event_maximalEnergy);
         CheckOpenCLError(status, "clWaitForEvents read Maximal energy.");
-
-        break;
+        //break;
     }
+
+    delete [] zeroVisited;
     cout << "cycles: " << cycles << endl;
     debug_log = true;
 }

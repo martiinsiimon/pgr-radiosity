@@ -7,53 +7,53 @@
 /*
  * Sort patches (their indices) into indices array - parallel
  */
-#pragma OPENCL EXTENSION cl_khr_global_int32_extended_atomics: enable
-#pragma OPENCL EXTENSION cl_khr_int64_base_atomics: enable
-
-inline void AtomicAdd4(__global float4 *source, int i, const float operand)
-{
-    union {
-        unsigned int intVal;
-        float floatVal;
-    } newVal;
-    union {
-        unsigned int intVal;
-        float floatVal;
-    } prevVal;
-    do
-    {
-        if(i == 0)
-            {prevVal.floatVal = (*source).s0;}
-        if(i == 1)
-            {prevVal.floatVal = (*source).s1;}
-        if(i == 2)
-            {prevVal.floatVal = (*source).s2;}
-        if(i == 3)
-            {prevVal.floatVal = (*source).s3;}
-
-        newVal.floatVal = prevVal.floatVal + operand;
-     } while (atomic_cmpxchg((volatile __global unsigned int *)source, prevVal.intVal, newVal.intVal) != prevVal.intVal);
-
-}
-
-inline void AtomicAdd1(__global float *source, const float operand)
-{
-    union {
-        unsigned int intVal;
-        float floatVal;
-    } newVal;
-    union {
-        unsigned int intVal;
-        float floatVal;
-    } prevVal;
-    do
-    {
-        prevVal.floatVal = *source;
-
-        newVal.floatVal = prevVal.floatVal + operand;
-     } while (atomic_cmpxchg((volatile __global unsigned int *)source, prevVal.intVal, newVal.intVal) != prevVal.intVal);
-
-}
+//#pragma OPENCL EXTENSION cl_khr_global_int32_extended_atomics: enable
+//#pragma OPENCL EXTENSION cl_khr_int64_base_atomics: enable
+//
+//inline void AtomicAdd4(__global float4 *source, int i, const float operand)
+//{
+//    union {
+//        unsigned int intVal;
+//        float floatVal;
+//    } newVal;
+//    union {
+//        unsigned int intVal;
+//        float floatVal;
+//    } prevVal;
+//    do
+//    {
+//        if(i == 0)
+//            {prevVal.floatVal = (*source).s0;}
+//        if(i == 1)
+//            {prevVal.floatVal = (*source).s1;}
+//        if(i == 2)
+//            {prevVal.floatVal = (*source).s2;}
+//        if(i == 3)
+//            {prevVal.floatVal = (*source).s3;}
+//
+//        newVal.floatVal = prevVal.floatVal + operand;
+//     } while (atomic_cmpxchg((volatile __global unsigned int *)source, prevVal.intVal, newVal.intVal) != prevVal.intVal);
+//
+//}
+//
+//inline void AtomicAdd1(__global float *source, const float operand)
+//{
+//    union {
+//        unsigned int intVal;
+//        float floatVal;
+//    } newVal;
+//    union {
+//        unsigned int intVal;
+//        float floatVal;
+//    } prevVal;
+//    do
+//    {
+//        prevVal.floatVal = *source;
+//
+//        newVal.floatVal = prevVal.floatVal + operand;
+//     } while (atomic_cmpxchg((volatile __global unsigned int *)source, prevVal.intVal, newVal.intVal) != prevVal.intVal);
+//
+//}
 
 float formFactor(float4 RecvPos, float4 ShootPos, float4 RecvNormal, float4 ShootNormal, float ShootDArea)
 {
@@ -80,9 +80,15 @@ float formFactor(float4 RecvPos, float4 ShootPos, float4 RecvNormal, float4 Shoo
     return (max(cosi * cosj, 0.0f) / (pi * distance2)) * ShootDArea;
 }
 
-__kernel void sort(__global float* energies, uint patchesCount, __global uint* indices, __global uint* indicesCount, uint n, float limit, __global float* maximalEnergy)
+__kernel void sort(__global float* energies,
+                   uint patchesCount,
+                   __global uint* indices,
+                   __global uint* indicesCount,
+                   uint n,
+                   float limit,
+                   __global float* maximalEnergy
+                   )
 {
-
     int count = 0; //real count
     uint pos = 0; //position of maximal energy
     uint maxPos = patchesCount; //sentinel
@@ -109,7 +115,6 @@ __kernel void sort(__global float* energies, uint patchesCount, __global uint* i
             maximalEnergy[0] = max;
         }
 
-
         if (max == 0.0 || max < limit)
         {
             if (j == maxPos)
@@ -121,7 +126,6 @@ __kernel void sort(__global float* energies, uint patchesCount, __global uint* i
             maxPos = patchesCount;
             continue;
         }
-
 
         indices[i] = pos;
         count++;
@@ -146,9 +150,7 @@ __kernel void radiosity(__global float8* patchesGeo,
                         __global float* intensities,
                         __global uchar3* texture,
                         __global bool* visited
-                       // uint textureSize,
-                       // __local bool* isSetEnergy
-                    )
+                        )
 {
 
     int i = get_global_id(0); //position in indices array
@@ -158,10 +160,8 @@ __kernel void radiosity(__global float8* patchesGeo,
         return;
     }
 
-
-
     uint offset = i*256;
-//printf ("%d: nula",i);
+
     float8 lightGeo = patchesGeo[indices[i]];
     uchar3 lightColor = patchesColors[indices[i]];
     float lightEnergy = energies[indices[i]];
@@ -170,7 +170,7 @@ __kernel void radiosity(__global float8* patchesGeo,
     float x, y, z;
 
     /* Center of light patch */
-    float4 ShootPos = {lightGeo.s0, lightGeo.s1, lightGeo.s2, 0};
+    float4 ShootPos = {lightGeo.s0, lightGeo.s1, lightGeo.s2,0};
 
     /* Normal of light patch */
     x = lightGeo.s3;
@@ -189,7 +189,7 @@ __kernel void radiosity(__global float8* patchesGeo,
     {
         for(uint w = offset; w < offset+256; w++)
         {
-            uchar3 texColor = texture[w + h * 768];
+            uchar3 texColor = texture[h + w * 768];
             int j = texColor.s2;
             j <<= 8;
             j |= texColor.s1;
@@ -198,14 +198,13 @@ __kernel void radiosity(__global float8* patchesGeo,
 
             if (j >= patchesCount || j < 0)
             {
-                //printf("%d: pruser\n",i);
                 continue;
             }
-//printf("%d: OK\n",i);
-            if(visited[j + patchesCount*i])
+
+            if(visited[j + patchesCount*i] == false)
             {
                 float8 patchGeo = patchesGeo[j];
-                float4 RecvPos = {patchGeo.s0, patchGeo.s1, patchGeo.s2, 0};
+                float4 RecvPos = {patchGeo.s0, patchGeo.s1, patchGeo.s2,0};
 
                 /* Normal of patch */
                 x = patchGeo.s3;
@@ -217,20 +216,20 @@ __kernel void radiosity(__global float8* patchesGeo,
                 float delta = formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
 
                 /* Distribute color */
-                uchar colorDiff0 = lightColor.s0 * 0.5 * delta;
-                uchar colorDiff1 = lightColor.s1 * 0.5 * delta;
-                uchar colorDiff2 = lightColor.s2 * 0.5 * delta;
+                //uchar colorDiff0 = lightColor.s0 * 0.5 * delta;
+                //uchar colorDiff1 = lightColor.s1 * 0.5 * delta;
+                //uchar colorDiff2 = lightColor.s2 * 0.5 * delta;
 
                 //atom_add(&diffColors[j].s0, colorDiff0);
-                diffColors[j].s0 += colorDiff0; //FIXME ATOMIC!!!
-                diffColors[j].s1 += colorDiff1; //FIXME ATOMIC!!!
-                diffColors[j].s2 += colorDiff2; //FIXME ATOMIC!!!
+                diffColors[j].s0 += lightColor.s0 * 0.5 * delta; //FIXME ATOMIC!!!
+                diffColors[j].s1 += lightColor.s1 * 0.5 * delta; //FIXME ATOMIC!!!
+                diffColors[j].s2 += lightColor.s2 * 0.5 * delta; //FIXME ATOMIC!!!
 
                  /* Distribute energy */
-                float energyDiff = lightEnergy * delta;
+                //float energyDiff = lightEnergy * delta;
 
-                energies[j] += energyDiff * 0.5; //FIXME ATOMIC!!!
-                intensities[j] += energyDiff; //FIXME ATOMIC!!!
+                energies[j] += lightEnergy * delta * 0.5; //FIXME ATOMIC!!!
+                intensities[j] += lightEnergy * delta; //FIXME ATOMIC!!!
 
                 visited[j + patchesCount*i] = true;
             }

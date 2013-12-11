@@ -711,10 +711,11 @@ int PGR_model::getTextureCL(cl_uchar3* texture, cl_uint* indices, int n)
     cl_uchar3 *texBottom = new cl_uchar3 [256 * 128];
     cl_uchar3 *texLeft = new cl_uchar3 [128 * 256];
     cl_uchar3 *texRight = new cl_uchar3 [128 * 256];
+    uint offset = 0;
+
 
     for (int i = 0; i < n; i++)
     {
-        uint offset = i * 256;
         memset(texFront, 0, sizeof (cl_uchar3) * 256 * 256);
         memset(texTop, 0, sizeof (cl_uchar3) * 256 * 128);
         memset(texBottom, 0, sizeof (cl_uchar3) * 256 * 128);
@@ -739,12 +740,13 @@ int PGR_model::getTextureCL(cl_uchar3* texture, cl_uint* indices, int n)
                     if (y - offset < 128)
                     {
                         /* Write BOTTOM texture */
-                        texture[x + y * 768] = texBottom[(x - 256) + (y - offset)*256];
+                        texture[x + y * 768] = texBottom[(x - 256) + (y - offset)*256]; //TODO FIX
                     }
                     else
                     {
                         /* Write TOP texture*/
-                        texture[x + y * 768] = texTop[(x - 256) + (y - offset - 128)*256];
+                        texture[x + y * 768] = texTop[(x - 256) + (y - offset - 128)*256]; //TODO FIX
+
                     }
                     continue;
                 }
@@ -752,6 +754,7 @@ int PGR_model::getTextureCL(cl_uchar3* texture, cl_uint* indices, int n)
                 {
                     /* Write RIGHT texture */
                     texture[x + y * 768] = texRight[(x - 512) + (y - offset) * 128];
+
                 }
                 else
                 {
@@ -760,6 +763,7 @@ int PGR_model::getTextureCL(cl_uchar3* texture, cl_uint* indices, int n)
                 }
             }
         }
+        offset += 256;
     }
 
     delete [] texFront;
