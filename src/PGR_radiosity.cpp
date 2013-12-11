@@ -706,8 +706,8 @@ int PGR_radiosity::prepareCL()
     this->sortKernel = clCreateKernel(program, "sort", &ciErr);
     CheckOpenCLError(ciErr, "clCreateKernel sort");
 
-    this->maxWorkGroupSize = 512;
-    this->workGroupSize = 512;
+    this->maxWorkGroupSize = 64;
+    this->workGroupSize = 64;
 
     ciErr = clGetKernelWorkGroupInfo(this->radiosityKernel,
                                      cdDevices[deviceIndex],
