@@ -724,42 +724,43 @@ int PGR_model::getTextureCL(cl_uchar3* texture, cl_uint* indices, int n)
 
         this->getViewFromPatch(indices[i], &texFront, &texTop, &texBottom, &texLeft, &texRight);
 
-        for (uint y = offset; y < offset + 256; y++)
+        for (uint y = 0; y < 256; y++)
         {
             for (uint x = 0; x < 768; x++)
             {
                 if (x < 256)
                 {
                     /* Write FRONT texture */
-                    texture[x + y * 768] = texFront[x + (y - offset) * 256];
-                    continue;
+                    texture[x + (y + offset) * 768] = texFront[x + y * 256]; //FIXED
+                    //continue;
                 }
-                if (x < 512)
+                else if (x < 512)
                 {
                     /* Write BOTTOM or TOP texture */
-                    if (y - offset < 128)
+                    if (y < 128)
                     {
                         /* Write BOTTOM texture */
-                        texture[x + y * 768] = texBottom[(x - 256) + (y - offset)*256]; //TODO FIX
+                        texture[x + (y + offset) * 768] = texBottom[(x - 256) + y * 256]; //FIXED
                     }
                     else
                     {
                         /* Write TOP texture*/
-                        texture[x + y * 768] = texTop[(x - 256) + (y - offset - 128)*256]; //TODO FIX
+                        texture[x + (y + offset) * 768] = texTop[(x - 256) + (y - 128)*256]; //FIXED
 
                     }
-                    continue;
+                    //continue;
                 }
-                if (x < 640)
+                else if (x < 640)
                 {
                     /* Write RIGHT texture */
-                    texture[x + y * 768] = texRight[(x - 512) + (y - offset) * 128];
+                    texture[x + (y + offset) * 768] = texRight[(x - 512) + y * 128]; //FIXED
 
                 }
                 else
                 {
                     /* Write LEFT texture */
-                    texture[x + y * 768] = texLeft[(x - 640) + (y - offset) * 128];
+                    //cout << "Read from: [" << (x - 512) << "," << (y - offset) << "]" << endl;
+                    texture[x + (y + offset) * 768] = texLeft[(x - 640) + y * 128];
                 }
             }
         }

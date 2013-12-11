@@ -127,22 +127,31 @@ void PGR_radiosity::computeRadiosity()
     int count = this->model->getIdsOfNMostEnergizedPatches(&ids, N, LIMIT);
     bool * isSetEnergy = new bool[this->model->patches.size()];
 
-    cl_uchar3 *texFront = new cl_uchar3 [256 * 256];
-    cl_uchar3 *texTop = new cl_uchar3 [256 * 128];
-    cl_uchar3 *texBottom = new cl_uchar3 [256 * 128];
-    cl_uchar3 *texLeft = new cl_uchar3 [128 * 256];
-    cl_uchar3 *texRight = new cl_uchar3 [128 * 256];
+    uint * indices = new uint[count];
+    for (int i = 0; i < count; i++)
+    {
+        indices[i] = ids[i];
+    }
 
-    memset(texFront, 0, sizeof (cl_uchar3) * 256 * 256);
-    memset(texTop, 0, sizeof (cl_uchar3) * 256 * 128);
-    memset(texBottom, 0, sizeof (cl_uchar3) * 256 * 128);
-    memset(texLeft, 0, sizeof (cl_uchar3) * 128 * 256);
-    memset(texRight, 0, sizeof (cl_uchar3) * 128 * 256);
+    //    cl_uchar3 *texFront = new cl_uchar3 [256 * 256];
+    //    cl_uchar3 *texTop = new cl_uchar3 [256 * 128];
+    //    cl_uchar3 *texBottom = new cl_uchar3 [256 * 128];
+    //    cl_uchar3 *texLeft = new cl_uchar3 [128 * 256];
+    //    cl_uchar3 *texRight = new cl_uchar3 [128 * 256];
+    //
+    //    memset(texFront, 0, sizeof (cl_uchar3) * 256 * 256);
+    //    memset(texTop, 0, sizeof (cl_uchar3) * 256 * 128);
+    //    memset(texBottom, 0, sizeof (cl_uchar3) * 256 * 128);
+    //    memset(texLeft, 0, sizeof (cl_uchar3) * 128 * 256);
+    //    memset(texRight, 0, sizeof (cl_uchar3) * 128 * 256);
+
+    cl_uchar3 *tex = new cl_uchar3[768 * 256 * count];
+    memset(tex, 0, 768 * 256 * sizeof (cl_uchar3));
+    this->model->getTextureCL(tex, indices, count);
+
 
     for (int i = 0; i < count; i++)
     {
-        double x, y, z;
-
         /* Clear the flags */
         for (int n = 0; n < this->model->patches.size(); n++)
         {
@@ -150,192 +159,228 @@ void PGR_radiosity::computeRadiosity()
         }
 
         // center of patches
-        glm::vec3 ShootPos(this->model->patches[ids[i]]->center.s0, this->model->patches[ids[i]]->center.s1, this->model->patches[ids[i]]->center.s2);
-
-        x = this->model->patches[ids[i]]->vertices[0].normal[0];
-        y = this->model->patches[ids[i]]->vertices[0].normal[1];
-        z = this->model->patches[ids[i]]->vertices[0].normal[2];
-        glm::vec3 ShootNormal(x, y, z);
+        glm::vec3 ShootPos(this->model->patches[ids[i]]->center.s0,
+                           this->model->patches[ids[i]]->center.s1,
+                           this->model->patches[ids[i]]->center.s2);
+        glm::vec3 ShootNormal(this->model->patches[ids[i]]->vertices[0].normal[0],
+                              this->model->patches[ids[i]]->vertices[0].normal[1],
+                              this->model->patches[ids[i]]->vertices[0].normal[2]);
 
         float ShootDArea = this->model->patches[ids[i]]->area;
 
-        this->model->getViewFromPatch(ids[i], &texFront, &texTop, &texBottom, &texLeft, &texRight);
+        uint offset = i * 256;
+
+        for (uint y = 0; y < 768; y++)
+        {
+            for (uint x = offset; x < offset + 256; x++)
+            {
+                int j = this->model->uniqueColorToId(tex[x + y * 768]);
+                if (j >= this->model->patches.size() || j < 0)
+                {
+                    continue;
+                }
+
+                if (isSetEnergy[j] == false)
+                {
+                    glm::vec3 RecvPos(this->model->patches[j]->center.s0,
+                                      this->model->patches[j]->center.s1,
+                                      this->model->patches[j]->center.s2);
+                    glm::vec3 RecvNormal(this->model->patches[j]->vertices[0].normal[0],
+                                         this->model->patches[j]->vertices[0].normal[1],
+                                         this->model->patches[j]->vertices[0].normal[2]);
+
+                    double delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
+
+                    this->model->patches[j]->newDiffColor.s0 += this->model->patches[ids[i]]->vertices[0].color[0] * 0.5 * delta;
+                    this->model->patches[j]->newDiffColor.s1 += this->model->patches[ids[i]]->vertices[0].color[1] * 0.5 * delta;
+                    this->model->patches[j]->newDiffColor.s2 += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;
+
+                    this->model->patches[j]->energy += this->model->patches[ids[i]]->energy * 0.5 * delta;
+                    this->model->patches[j]->intensity += this->model->patches[ids[i]]->energy * delta;
+                    isSetEnergy[j] = true;
+                }
+            }
+        }
+
+        //this->model->getViewFromPatch(ids[i], &texFront, &texTop, &texBottom, &texLeft, &texRight);
+
 
         // Front
-        for (int h = 0; h < 256; h++)
-        {
-            for (int w = 0; w < 256; w++)
-            {
-                int j = this->model->uniqueColorToId(texFront[w + h * 256]);
-                if (j >= this->model->patches.size() || j < 0)
-                {
-                    continue;
-                }
-
-                if (isSetEnergy[j] == false)
-                {
-                    glm::vec3 RecvPos(this->model->patches[j]->center.s0, this->model->patches[j]->center.s1, this->model->patches[j]->center.s2);
-
-                    x = this->model->patches[j]->vertices[0].normal[0];
-                    y = this->model->patches[j]->vertices[0].normal[1];
-                    z = this->model->patches[j]->vertices[0].normal[2];
-                    glm::vec3 RecvNormal(x, y, z);
-
-                    double delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
-
-                    this->model->patches[j]->newDiffColor.s0 += this->model->patches[ids[i]]->vertices[0].color[0] * 0.5 * delta;
-                    this->model->patches[j]->newDiffColor.s1 += this->model->patches[ids[i]]->vertices[0].color[1] * 0.5 * delta;
-                    this->model->patches[j]->newDiffColor.s2 += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;
-
-                    this->model->patches[j]->energy += this->model->patches[ids[i]]->energy * 0.5 * delta;
-                    this->model->patches[j]->intensity += this->model->patches[ids[i]]->energy * delta;
-                    isSetEnergy[j] = true;
-                }
-            }
-        }
-
-        // Top
-        for (int h = 0; h < 128; h++)
-        {
-            for (int w = 0; w < 256; w++)
-            {
-                int j = this->model->uniqueColorToId(texTop[w + h * 256]);
-                if (j >= this->model->patches.size() || j < 0)
-                {
-                    continue;
-                }
-
-                if (isSetEnergy[j] == false)
-                {
-                    glm::vec3 RecvPos(this->model->patches[j]->center.s0, this->model->patches[j]->center.s1, this->model->patches[j]->center.s2);
-
-                    x = this->model->patches[j]->vertices[0].normal[0];
-                    y = this->model->patches[j]->vertices[0].normal[1];
-                    z = this->model->patches[j]->vertices[0].normal[2];
-                    glm::vec3 RecvNormal(x, y, z);
-
-                    double delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
-
-                    this->model->patches[j]->newDiffColor.s0 += this->model->patches[ids[i]]->vertices[0].color[0] * 0.5 * delta;
-                    this->model->patches[j]->newDiffColor.s1 += this->model->patches[ids[i]]->vertices[0].color[1] * 0.5 * delta;
-                    this->model->patches[j]->newDiffColor.s2 += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;
-
-                    this->model->patches[j]->energy += this->model->patches[ids[i]]->energy * 0.5 * delta;
-                    this->model->patches[j]->intensity += this->model->patches[ids[i]]->energy * delta;
-                    isSetEnergy[j] = true;
-                }
-            }
-        }
-
-        // Bottom
-        for (int h = 0; h < 128; h++)
-        {
-            for (int w = 0; w < 256; w++)
-            {
-                int j = this->model->uniqueColorToId(texBottom[w + h * 256]);
-                if (j >= this->model->patches.size() || j < 0)
-                {
-                    continue;
-                }
-
-                if (isSetEnergy[j] == false)
-                {
-                    glm::vec3 RecvPos(this->model->patches[j]->center.s0, this->model->patches[j]->center.s1, this->model->patches[j]->center.s2);
-
-                    x = this->model->patches[j]->vertices[0].normal[0];
-                    y = this->model->patches[j]->vertices[0].normal[1];
-                    z = this->model->patches[j]->vertices[0].normal[2];
-                    glm::vec3 RecvNormal(x, y, z);
-
-                    double delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
-
-                    this->model->patches[j]->newDiffColor.s0 += this->model->patches[ids[i]]->vertices[0].color[0] * 0.5 * delta;
-                    this->model->patches[j]->newDiffColor.s1 += this->model->patches[ids[i]]->vertices[0].color[1] * 0.5 * delta;
-                    this->model->patches[j]->newDiffColor.s2 += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;
-
-                    this->model->patches[j]->energy += this->model->patches[ids[i]]->energy * 0.5 * delta;
-                    this->model->patches[j]->intensity += this->model->patches[ids[i]]->energy * delta;
-                    isSetEnergy[j] = true;
-                }
-            }
-        }
-
-        // Left
-        for (int h = 0; h < 256; h++)
-        {
-            for (int w = 0; w < 128; w++)
-            {
-                int j = this->model->uniqueColorToId(texLeft[w + h * 128]);
-                if (j >= this->model->patches.size() || j < 0)
-                {
-                    continue;
-                }
-
-                if (isSetEnergy[j] == false)
-                {
-                    glm::vec3 RecvPos(this->model->patches[j]->center.s0, this->model->patches[j]->center.s1, this->model->patches[j]->center.s2);
-
-                    x = this->model->patches[j]->vertices[0].normal[0];
-                    y = this->model->patches[j]->vertices[0].normal[1];
-                    z = this->model->patches[j]->vertices[0].normal[2];
-                    glm::vec3 RecvNormal(x, y, z);
-
-                    double delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
-
-                    this->model->patches[j]->newDiffColor.s0 += this->model->patches[ids[i]]->vertices[0].color[0] * 0.5 * delta;
-                    this->model->patches[j]->newDiffColor.s1 += this->model->patches[ids[i]]->vertices[0].color[1] * 0.5 * delta;
-                    this->model->patches[j]->newDiffColor.s2 += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;
-
-                    this->model->patches[j]->energy += this->model->patches[ids[i]]->energy * 0.5 * delta;
-                    this->model->patches[j]->intensity += this->model->patches[ids[i]]->energy * delta;
-                    isSetEnergy[j] = true;
-                }
-            }
-        }
-
-        // Right
-        for (int h = 0; h < 256; h++)
-        {
-            for (int w = 0; w < 128; w++)
-            {
-                int j = this->model->uniqueColorToId(texRight[w + h * 128]);
-                if (j >= this->model->patches.size() || j < 0)
-                {
-                    continue;
-                }
-
-                if (isSetEnergy[j] == false)
-                {
-                    glm::vec3 RecvPos(this->model->patches[j]->center.s0, this->model->patches[j]->center.s1, this->model->patches[j]->center.s2);
-
-                    x = this->model->patches[j]->vertices[0].normal[0];
-                    y = this->model->patches[j]->vertices[0].normal[1];
-                    z = this->model->patches[j]->vertices[0].normal[2];
-                    glm::vec3 RecvNormal(x, y, z);
-
-                    double delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
-
-                    this->model->patches[j]->newDiffColor.s0 += this->model->patches[ids[i]]->vertices[0].color[0] * 0.5 * delta;
-                    this->model->patches[j]->newDiffColor.s1 += this->model->patches[ids[i]]->vertices[0].color[1] * 0.5 * delta;
-                    this->model->patches[j]->newDiffColor.s2 += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;
-
-                    this->model->patches[j]->energy += this->model->patches[ids[i]]->energy * 0.5 * delta;
-                    this->model->patches[j]->intensity += this->model->patches[ids[i]]->energy * delta;
-                    isSetEnergy[j] = true;
-                }
-            }
-        }
+        //        for (int h = 0; h < 256; h++)
+        //        {
+        //            for (int w = 0; w < 256; w++)
+        //            {
+        //                int j = this->model->uniqueColorToId(texFront[w + h * 256]);
+        //                if (j >= this->model->patches.size() || j < 0)
+        //                {
+        //                    continue;
+        //                }
+        //
+        //                if (isSetEnergy[j] == false)
+        //                {
+        //                    glm::vec3 RecvPos(this->model->patches[j]->center.s0, this->model->patches[j]->center.s1, this->model->patches[j]->center.s2);
+        //
+        //                    x = this->model->patches[j]->vertices[0].normal[0];
+        //                    y = this->model->patches[j]->vertices[0].normal[1];
+        //                    z = this->model->patches[j]->vertices[0].normal[2];
+        //                    glm::vec3 RecvNormal(x, y, z);
+        //
+        //                    double delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
+        //
+        //                    this->model->patches[j]->newDiffColor.s0 += this->model->patches[ids[i]]->vertices[0].color[0] * 0.5 * delta;
+        //                    this->model->patches[j]->newDiffColor.s1 += this->model->patches[ids[i]]->vertices[0].color[1] * 0.5 * delta;
+        //                    this->model->patches[j]->newDiffColor.s2 += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;
+        //
+        //                    this->model->patches[j]->energy += this->model->patches[ids[i]]->energy * 0.5 * delta;
+        //                    this->model->patches[j]->intensity += this->model->patches[ids[i]]->energy * delta;
+        //                    isSetEnergy[j] = true;
+        //                }
+        //            }
+        //        }
+        //
+        //        // Top
+        //        for (int h = 0; h < 128; h++)
+        //        {
+        //            for (int w = 0; w < 256; w++)
+        //            {
+        //                int j = this->model->uniqueColorToId(texTop[w + h * 256]);
+        //                if (j >= this->model->patches.size() || j < 0)
+        //                {
+        //                    continue;
+        //                }
+        //
+        //                if (isSetEnergy[j] == false)
+        //                {
+        //                    glm::vec3 RecvPos(this->model->patches[j]->center.s0, this->model->patches[j]->center.s1, this->model->patches[j]->center.s2);
+        //
+        //                    x = this->model->patches[j]->vertices[0].normal[0];
+        //                    y = this->model->patches[j]->vertices[0].normal[1];
+        //                    z = this->model->patches[j]->vertices[0].normal[2];
+        //                    glm::vec3 RecvNormal(x, y, z);
+        //
+        //                    double delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
+        //
+        //                    this->model->patches[j]->newDiffColor.s0 += this->model->patches[ids[i]]->vertices[0].color[0] * 0.5 * delta;
+        //                    this->model->patches[j]->newDiffColor.s1 += this->model->patches[ids[i]]->vertices[0].color[1] * 0.5 * delta;
+        //                    this->model->patches[j]->newDiffColor.s2 += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;
+        //
+        //                    this->model->patches[j]->energy += this->model->patches[ids[i]]->energy * 0.5 * delta;
+        //                    this->model->patches[j]->intensity += this->model->patches[ids[i]]->energy * delta;
+        //                    isSetEnergy[j] = true;
+        //                }
+        //            }
+        //        }
+        //
+        //        // Bottom
+        //        for (int h = 0; h < 128; h++)
+        //        {
+        //            for (int w = 0; w < 256; w++)
+        //            {
+        //                int j = this->model->uniqueColorToId(texBottom[w + h * 256]);
+        //                if (j >= this->model->patches.size() || j < 0)
+        //                {
+        //                    continue;
+        //                }
+        //
+        //                if (isSetEnergy[j] == false)
+        //                {
+        //                    glm::vec3 RecvPos(this->model->patches[j]->center.s0, this->model->patches[j]->center.s1, this->model->patches[j]->center.s2);
+        //
+        //                    x = this->model->patches[j]->vertices[0].normal[0];
+        //                    y = this->model->patches[j]->vertices[0].normal[1];
+        //                    z = this->model->patches[j]->vertices[0].normal[2];
+        //                    glm::vec3 RecvNormal(x, y, z);
+        //
+        //                    double delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
+        //
+        //                    this->model->patches[j]->newDiffColor.s0 += this->model->patches[ids[i]]->vertices[0].color[0] * 0.5 * delta;
+        //                    this->model->patches[j]->newDiffColor.s1 += this->model->patches[ids[i]]->vertices[0].color[1] * 0.5 * delta;
+        //                    this->model->patches[j]->newDiffColor.s2 += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;
+        //
+        //                    this->model->patches[j]->energy += this->model->patches[ids[i]]->energy * 0.5 * delta;
+        //                    this->model->patches[j]->intensity += this->model->patches[ids[i]]->energy * delta;
+        //                    isSetEnergy[j] = true;
+        //                }
+        //            }
+        //        }
+        //
+        //        // Left
+        //        for (int h = 0; h < 256; h++)
+        //        {
+        //            for (int w = 0; w < 128; w++)
+        //            {
+        //                int j = this->model->uniqueColorToId(texLeft[w + h * 128]);
+        //                if (j >= this->model->patches.size() || j < 0)
+        //                {
+        //                    continue;
+        //                }
+        //
+        //                if (isSetEnergy[j] == false)
+        //                {
+        //                    glm::vec3 RecvPos(this->model->patches[j]->center.s0, this->model->patches[j]->center.s1, this->model->patches[j]->center.s2);
+        //
+        //                    x = this->model->patches[j]->vertices[0].normal[0];
+        //                    y = this->model->patches[j]->vertices[0].normal[1];
+        //                    z = this->model->patches[j]->vertices[0].normal[2];
+        //                    glm::vec3 RecvNormal(x, y, z);
+        //
+        //                    double delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
+        //
+        //                    this->model->patches[j]->newDiffColor.s0 += this->model->patches[ids[i]]->vertices[0].color[0] * 0.5 * delta;
+        //                    this->model->patches[j]->newDiffColor.s1 += this->model->patches[ids[i]]->vertices[0].color[1] * 0.5 * delta;
+        //                    this->model->patches[j]->newDiffColor.s2 += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;
+        //
+        //                    this->model->patches[j]->energy += this->model->patches[ids[i]]->energy * 0.5 * delta;
+        //                    this->model->patches[j]->intensity += this->model->patches[ids[i]]->energy * delta;
+        //                    isSetEnergy[j] = true;
+        //                }
+        //            }
+        //        }
+        //
+        //        // Right
+        //        for (int h = 0; h < 256; h++)
+        //        {
+        //            for (int w = 0; w < 128; w++)
+        //            {
+        //                int j = this->model->uniqueColorToId(texRight[w + h * 128]);
+        //                if (j >= this->model->patches.size() || j < 0)
+        //                {
+        //                    continue;
+        //                }
+        //
+        //                if (isSetEnergy[j] == false)
+        //                {
+        //                    glm::vec3 RecvPos(this->model->patches[j]->center.s0, this->model->patches[j]->center.s1, this->model->patches[j]->center.s2);
+        //
+        //                    x = this->model->patches[j]->vertices[0].normal[0];
+        //                    y = this->model->patches[j]->vertices[0].normal[1];
+        //                    z = this->model->patches[j]->vertices[0].normal[2];
+        //                    glm::vec3 RecvNormal(x, y, z);
+        //
+        //                    double delta = this->formFactor(RecvPos, ShootPos, RecvNormal, ShootNormal, ShootDArea);
+        //
+        //                    this->model->patches[j]->newDiffColor.s0 += this->model->patches[ids[i]]->vertices[0].color[0] * 0.5 * delta;
+        //                    this->model->patches[j]->newDiffColor.s1 += this->model->patches[ids[i]]->vertices[0].color[1] * 0.5 * delta;
+        //                    this->model->patches[j]->newDiffColor.s2 += this->model->patches[ids[i]]->vertices[0].color[2] * 0.5 * delta;
+        //
+        //                    this->model->patches[j]->energy += this->model->patches[ids[i]]->energy * 0.5 * delta;
+        //                    this->model->patches[j]->intensity += this->model->patches[ids[i]]->energy * delta;
+        //                    isSetEnergy[j] = true;
+        //                }
+        //            }
+        //        }
 
 
         this->model->patches[ids[i]]->energy = 0;
     }
 
-
-    delete [] texFront;
-    delete [] texTop;
-    delete [] texBottom;
-    delete [] texLeft;
-    delete [] texRight;
+    delete [] indices;
+    delete [] tex;
+    //    delete [] texFront;
+    //    delete [] texTop;
+    //    delete [] texBottom;
+    //    delete [] texLeft;
+    //    delete [] texRight;
     delete [] isSetEnergy;
 }
 
@@ -1114,4 +1159,5 @@ void PGR_radiosity::releaseCL()
     delete [] this->raw_patchesEnergies;
     delete [] this->raw_intensities;
     delete [] this->raw_diffColors;
+    delete [] this->raw_textures;
 }
